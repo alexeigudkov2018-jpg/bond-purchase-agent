@@ -43,5 +43,7 @@ next-env.d.ts
 # engine cache and local html
 data/cache/
 data/runs/
+__pycache__/
+*.pyc
 
 agent-tools/
