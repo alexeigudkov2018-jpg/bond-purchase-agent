@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-manrope), sans-serif;
+  --font-serif: var(--font-literata), Georgia, serif;
+}
+
+body {
+  background: #f3efe6;
+  color: #1a1814;
+  font-family: var(--font-manrope), sans-serif;
+}
