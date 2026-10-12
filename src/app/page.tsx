@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { Desk } from "@/components/desk";
+import { Preview } from "@/components/preview";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,18 @@ async function readJson(name: string) {
 }
 
 export default async function Page() {
-  const [report, inputs] = await Promise.all([readJson("latest_package.json"), readJson("inputs.json")]);
-  return <Desk report={report} inputs={inputs || {}} />;
+  const [report, inputs, preview] = await Promise.all([
+    readJson("latest_package.json"),
+    readJson("inputs.json"),
+    readJson("preview_package.json"),
+  ]);
+  return (
+    <>
+      <Preview report={preview} />
+      <details className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
+        <summary className="cursor-pointer text-sm text-[#8d4b32]">Прогон Московской биржи от 6 октября</summary>
+        <Desk report={report} inputs={inputs || {}} />
+      </details>
+    </>
+  );
 }
