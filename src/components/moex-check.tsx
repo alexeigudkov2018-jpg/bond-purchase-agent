@@ -32,6 +32,9 @@ export function MoexCheck({ report }: { report: Dict | null }) {
         <p className="text-xs uppercase tracking-[0.22em] text-[#8d4b32]">Московская биржа · {String(report.asof)}</p>
         <h1 className="mt-2 font-serif text-4xl leading-tight sm:text-5xl">Сверка 49 выпусков</h1>
         <p className="mt-3 max-w-3xl text-[#5c564e]">
+          {report.full_ofz
+            ? "Сегодня весь взнос идёт в две бумаги: ОФЗ 26238 и ОФЗ 26230. ПКТ 2P2 в заявке нет. Слот корпората 35% на этот вторник отдан этим ОФЗ; норма 65/35 на следующие вторники не меняется. "
+            : null}
           Все строки двух файлов нашлись в ISS: {String(match.found)} из {String(match.rows)}. Пакет на вторник {String(report.tuesday)} для {String(broker.name)}, соглашение {String(broker.agreement)}, пересчитан по цене, НКД, доходности и среднему обороту биржи.
           Медианный сдвиг цены {num(match.median_abs_price_pp as number)} п.п., доходности {num(match.median_abs_ytm_pp as number)} п.п.
         </p>
@@ -54,8 +57,14 @@ export function MoexCheck({ report }: { report: Dict | null }) {
         <Stat
           label="Остаток"
           value={rub(cash.remainder as number)}
-          hint={Number(cash.positions) >= 3 ? "Три позиции, почти весь взнос в бумагах" : `${num((Number(cash.remainder_pct) || 0) * 100, 1)}% взноса ещё не разложено`}
-          tone={Number(cash.positions) >= 3 ? "good" : "warn"}
+          hint={
+            report.full_ofz
+              ? "Две ОФЗ на весь взнос, остаток меньше одной бумаги"
+              : Number(cash.positions) >= 3
+                ? "Три позиции, почти весь взнос в бумагах"
+                : `${num((Number(cash.remainder_pct) || 0) * 100, 1)}% взноса ещё не разложено`
+          }
+          tone={report.full_ofz || Number(cash.positions) >= 3 ? "good" : "warn"}
         />
       </section>
 
@@ -82,7 +91,7 @@ export function MoexCheck({ report }: { report: Dict | null }) {
                 <Field label="Купон" value={`${num(item.coupon_percent as number)}%`} />
               </dl>
               <p className="mt-4 text-xs leading-5 text-[#6d675e]">
-                Цена {num(item.price as number)}% в {String(item.price_asof)}, источник: {String(item.price_source)}.
+                Цена {num(item.price as number, 3)}% в {String(item.price_asof)}, источник: {String(item.price_source)}.
                 В файле было {num(item.excel_price as number)}% и YTM {num(item.excel_ytm as number)}%. Дюрация файла {num(item.excel_duration as number)} — это модифицированная дюрация скринера, в отбор взята дюрация биржи.
                 Средний оборот {mln(item.mean_turnover as number)}, медиана биржи {mln(item.median_turnover as number)}, медиана файла {num(item.excel_median_mln as number, 0)} млн ₽.
               </p>
@@ -93,7 +102,16 @@ export function MoexCheck({ report }: { report: Dict | null }) {
               </p>
             </article>
           ))}
-          {slots.filter((slot) => slot.id !== "ofz" && !positions.some((item) => item.slot_id === slot.id)).map((slot) => (
+          {report.full_ofz ? (
+            <article className="rounded-3xl border border-[#e4dccb] bg-[#fbf6ee] p-5 lg:col-span-2">
+              <p className="text-xs uppercase tracking-[0.16em] text-[#8d4b32]">Слот корпората на этот вторник</p>
+              <h3 className="mt-1 font-serif text-3xl">Отдан двум ОФЗ</h3>
+              <p className="mt-3 text-sm leading-6 text-[#5c564e]">
+                Отдельной корпоративной бумаги в заявке нет. Деньги слота 35% добавлены к ОФЗ 26238 и ОФЗ 26230, количества почти равные, обе позиции больше 45 000 ₽. ПКТ 2P2, который стоял на остатке, из заявки убран. Это решение на 13 октября, не новое постоянное правило.
+              </p>
+            </article>
+          ) : null}
+          {!report.full_ofz && slots.filter((slot) => slot.id !== "ofz" && !positions.some((item) => item.slot_id === slot.id)).map((slot) => (
             <article key={String(slot.id)} className="rounded-3xl border border-dashed border-[#c8b49a] bg-[#fbf6ee] p-5 lg:col-span-2">
               <p className="text-xs uppercase tracking-[0.16em] text-[#8d4b32]">{String(slot.title)}</p>
               <h3 className="mt-1 font-serif text-3xl">Не заполнен</h3>
