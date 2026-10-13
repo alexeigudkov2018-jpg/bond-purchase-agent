@@ -1,0 +1,3631 @@
+{
+  "kind": "moex",
+  "asof": "2026-10-13",
+  "tuesday": "2026-10-13",
+  "fetched_at": "2026-10-13T04:25:09.084350+00:00",
+  "file_asof": "2026-10-12",
+  "sessions": [
+    "2026-09-29",
+    "2026-09-30",
+    "2026-10-01",
+    "2026-10-02",
+    "2026-10-05",
+    "2026-10-06",
+    "2026-10-07",
+    "2026-10-08",
+    "2026-10-09",
+    "2026-10-12"
+  ],
+  "quote_times": [
+    "2026-10-12",
+    "2026-10-13 07:24:00",
+    "2026-10-13 07:24:01",
+    "2026-10-13 07:24:04",
+    "2026-10-13 07:24:05",
+    "2026-10-13 07:24:07",
+    "2026-10-13 07:24:12",
+    "2026-10-13 07:24:13"
+  ],
+  "broker": {
+    "id": "alfa",
+    "name": "Альфа 2030",
+    "agreement": "5737728",
+    "commission_rate": 0.00291,
+    "account": "обычный счёт Альфы. До конца 2026 поток на ИИС-3 не уходит. Порог 15 млн не проверен."
+  },
+  "budget": {
+    "contribution": 170000.0,
+    "total": 170000.0,
+    "securities_cap": 169490.0,
+    "reserve_amount": 510.0,
+    "slots": [
+      {
+        "id": "ofz",
+        "title": "ОФЗ",
+        "share": 0.65,
+        "target": 110168.5
+      },
+      {
+        "id": "corp",
+        "title": "Корпорат A и выше",
+        "share": 0.35,
+        "target": 59321.5
+      }
+    ]
+  },
+  "cash": {
+    "spent_dirty": 109791.63,
+    "commission": 319.5,
+    "total_debit": 110111.13,
+    "remainder": 59888.87,
+    "remainder_pct": 0.3523,
+    "unspent_alert": true,
+    "positions": 2
+  },
+  "weights": {
+    "ytm": 16.5704,
+    "ytm_after_tax": 14.5745,
+    "duration_years": 6.684,
+    "meets_target": true,
+    "target": 16.0,
+    "weight_base": "сумма позиций с НКД, без комиссии",
+    "naive_ytm_after_13": 14.4163
+  },
+  "package": [
+    {
+      "isin": "RU000A1038V6",
+      "secid": "SU26238RMFS4",
+      "shortname": "ОФЗ 26238",
+      "issuer": "Минфин России",
+      "slot_id": "ofz",
+      "slot_title": "ОФЗ",
+      "verdict": "брать по сверке с биржей",
+      "qty": 103,
+      "lot": 1,
+      "face": 1000.0,
+      "price": 50.75,
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "price_asof": "2026-10-13 07:24:14",
+      "nkd": 25.87,
+      "dirty": 533.37,
+      "position_sum": 54937.11,
+      "commission": 159.87,
+      "debit": 55096.98,
+      "ytm": 16.4711,
+      "ytm_cashflow": 16.4638,
+      "ytm_after_tax": 14.4495,
+      "ytm_after_tax_method": "IRR фактических дат купонов, НДФЛ 13% с каждого купона и с дисконта к номиналу на погашении; премия к номиналу налогом не компенсируется",
+      "naive_ytm_after_13": 14.3299,
+      "duration": 6.737,
+      "years": 14.59,
+      "maturity": "2041-05-15",
+      "coupon_percent": 7.1,
+      "coupon_label": "раз в полгода",
+      "current_yield": 13.99,
+      "annual_coupon": 71.0,
+      "annual_coupon_position": 7313.0,
+      "mean_turnover": 1107077640.49,
+      "median_turnover": 1009179780.69,
+      "excel_median_mln": 1052.11,
+      "excel_price": 50.6,
+      "excel_ytm": 16.5,
+      "excel_duration": 6.22,
+      "bondization_note": "график MOEX проверен: номинал равен начальному, амортизации и оферты нет",
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26238RMFS4",
+      "coupon_schedule": [
+        {
+          "date": "2021-12-08",
+          "amount": 34.04
+        },
+        {
+          "date": "2022-06-08",
+          "amount": 35.4
+        },
+        {
+          "date": "2022-12-07",
+          "amount": 35.4
+        },
+        {
+          "date": "2023-06-07",
+          "amount": 35.4
+        },
+        {
+          "date": "2023-12-06",
+          "amount": 35.4
+        },
+        {
+          "date": "2024-06-05",
+          "amount": 35.4
+        },
+        {
+          "date": "2024-12-04",
+          "amount": 35.4
+        },
+        {
+          "date": "2025-06-04",
+          "amount": 35.4
+        },
+        {
+          "date": "2025-12-03",
+          "amount": 35.4
+        },
+        {
+          "date": "2026-06-03",
+          "amount": 35.4
+        },
+        {
+          "date": "2026-12-02",
+          "amount": 35.4
+        },
+        {
+          "date": "2027-06-02",
+          "amount": 35.4
+        },
+        {
+          "date": "2027-12-01",
+          "amount": 35.4
+        },
+        {
+          "date": "2028-05-31",
+          "amount": 35.4
+        },
+        {
+          "date": "2028-11-29",
+          "amount": 35.4
+        },
+        {
+          "date": "2029-05-30",
+          "amount": 35.4
+        },
+        {
+          "date": "2029-11-28",
+          "amount": 35.4
+        },
+        {
+          "date": "2030-05-29",
+          "amount": 35.4
+        },
+        {
+          "date": "2030-11-27",
+          "amount": 35.4
+        },
+        {
+          "date": "2031-05-28",
+          "amount": 35.4
+        },
+        {
+          "date": "2031-11-26",
+          "amount": 35.4
+        },
+        {
+          "date": "2032-05-26",
+          "amount": 35.4
+        },
+        {
+          "date": "2032-11-24",
+          "amount": 35.4
+        },
+        {
+          "date": "2033-05-25",
+          "amount": 35.4
+        },
+        {
+          "date": "2033-11-23",
+          "amount": 35.4
+        },
+        {
+          "date": "2034-05-24",
+          "amount": 35.4
+        },
+        {
+          "date": "2034-11-22",
+          "amount": 35.4
+        },
+        {
+          "date": "2035-05-23",
+          "amount": 35.4
+        },
+        {
+          "date": "2035-11-21",
+          "amount": 35.4
+        },
+        {
+          "date": "2036-05-21",
+          "amount": 35.4
+        },
+        {
+          "date": "2036-11-19",
+          "amount": 35.4
+        },
+        {
+          "date": "2037-05-20",
+          "amount": 35.4
+        },
+        {
+          "date": "2037-11-18",
+          "amount": 35.4
+        },
+        {
+          "date": "2038-05-19",
+          "amount": 35.4
+        },
+        {
+          "date": "2038-11-17",
+          "amount": 35.4
+        },
+        {
+          "date": "2039-05-18",
+          "amount": 35.4
+        },
+        {
+          "date": "2039-11-16",
+          "amount": 35.4
+        },
+        {
+          "date": "2040-05-16",
+          "amount": 35.4
+        },
+        {
+          "date": "2040-11-14",
+          "amount": 35.4
+        },
+        {
+          "date": "2041-05-15",
+          "amount": 35.4
+        }
+      ],
+      "bucket": "ofz"
+    },
+    {
+      "isin": "RU000A100EF5",
+      "secid": "SU26230RMFS1",
+      "shortname": "ОФЗ 26230",
+      "issuer": "Минфин России",
+      "slot_id": "ofz",
+      "slot_title": "ОФЗ",
+      "verdict": "брать по сверке с биржей",
+      "qty": 98,
+      "lot": 1,
+      "face": 1000.0,
+      "price": 55.679,
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "price_asof": "2026-10-13 07:24:13",
+      "nkd": 2.95,
+      "dirty": 559.74,
+      "position_sum": 54854.52,
+      "commission": 159.63,
+      "debit": 55014.15,
+      "ytm": 16.6699,
+      "ytm_cashflow": 16.6625,
+      "ytm_after_tax": 14.6997,
+      "ytm_after_tax_method": "IRR фактических дат купонов, НДФЛ 13% с каждого купона и с дисконта к номиналу на погашении; премия к номиналу налогом не компенсируется",
+      "naive_ytm_after_13": 14.5028,
+      "duration": 6.63,
+      "years": 12.42,
+      "maturity": "2039-03-16",
+      "coupon_percent": 7.7,
+      "coupon_label": "раз в полгода",
+      "current_yield": 13.83,
+      "annual_coupon": 77.0,
+      "annual_coupon_position": 7546.0,
+      "mean_turnover": 265542028.63,
+      "median_turnover": 179115340.67,
+      "excel_median_mln": 305.67,
+      "excel_price": 55.45,
+      "excel_ytm": 16.7,
+      "excel_duration": 6.11,
+      "bondization_note": "график MOEX проверен: номинал равен начальному, амортизации и оферты нет",
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26230RMFS1",
+      "coupon_schedule": [
+        {
+          "date": "2019-10-09",
+          "amount": 26.58
+        },
+        {
+          "date": "2020-04-08",
+          "amount": 38.39
+        },
+        {
+          "date": "2020-10-07",
+          "amount": 38.39
+        },
+        {
+          "date": "2021-04-07",
+          "amount": 38.39
+        },
+        {
+          "date": "2021-10-06",
+          "amount": 38.39
+        },
+        {
+          "date": "2022-04-06",
+          "amount": 38.39
+        },
+        {
+          "date": "2022-10-05",
+          "amount": 38.39
+        },
+        {
+          "date": "2023-04-05",
+          "amount": 38.39
+        },
+        {
+          "date": "2023-10-04",
+          "amount": 38.39
+        },
+        {
+          "date": "2024-04-03",
+          "amount": 38.39
+        },
+        {
+          "date": "2024-10-02",
+          "amount": 38.39
+        },
+        {
+          "date": "2025-04-02",
+          "amount": 38.39
+        },
+        {
+          "date": "2025-10-01",
+          "amount": 38.39
+        },
+        {
+          "date": "2026-04-01",
+          "amount": 38.39
+        },
+        {
+          "date": "2026-09-30",
+          "amount": 38.39
+        },
+        {
+          "date": "2027-03-31",
+          "amount": 38.39
+        },
+        {
+          "date": "2027-09-29",
+          "amount": 38.39
+        },
+        {
+          "date": "2028-03-29",
+          "amount": 38.39
+        },
+        {
+          "date": "2028-09-27",
+          "amount": 38.39
+        },
+        {
+          "date": "2029-03-28",
+          "amount": 38.39
+        },
+        {
+          "date": "2029-09-26",
+          "amount": 38.39
+        },
+        {
+          "date": "2030-03-27",
+          "amount": 38.39
+        },
+        {
+          "date": "2030-09-25",
+          "amount": 38.39
+        },
+        {
+          "date": "2031-03-26",
+          "amount": 38.39
+        },
+        {
+          "date": "2031-09-24",
+          "amount": 38.39
+        },
+        {
+          "date": "2032-03-24",
+          "amount": 38.39
+        },
+        {
+          "date": "2032-09-22",
+          "amount": 38.39
+        },
+        {
+          "date": "2033-03-23",
+          "amount": 38.39
+        },
+        {
+          "date": "2033-09-21",
+          "amount": 38.39
+        },
+        {
+          "date": "2034-03-22",
+          "amount": 38.39
+        },
+        {
+          "date": "2034-09-20",
+          "amount": 38.39
+        },
+        {
+          "date": "2035-03-21",
+          "amount": 38.39
+        },
+        {
+          "date": "2035-09-19",
+          "amount": 38.39
+        },
+        {
+          "date": "2036-03-19",
+          "amount": 38.39
+        },
+        {
+          "date": "2036-09-17",
+          "amount": 38.39
+        },
+        {
+          "date": "2037-03-18",
+          "amount": 38.39
+        },
+        {
+          "date": "2037-09-16",
+          "amount": 38.39
+        },
+        {
+          "date": "2038-03-17",
+          "amount": 38.39
+        },
+        {
+          "date": "2038-09-15",
+          "amount": 38.39
+        },
+        {
+          "date": "2039-03-16",
+          "amount": 38.39
+        }
+      ],
+      "bucket": "ofz"
+    }
+  ],
+  "calendar": [
+    {
+      "month": "2026-12",
+      "ofz": 3646.2,
+      "corporate": 0.0,
+      "total": 3646.2
+    },
+    {
+      "month": "2027-03",
+      "ofz": 3762.22,
+      "corporate": 0.0,
+      "total": 3762.22
+    },
+    {
+      "month": "2027-06",
+      "ofz": 3646.2,
+      "corporate": 0.0,
+      "total": 3646.2
+    },
+    {
+      "month": "2027-09",
+      "ofz": 3762.22,
+      "corporate": 0.0,
+      "total": 3762.22
+    }
+  ],
+  "checks": [
+    {
+      "isin": "RU000A108EF8",
+      "file": "ОФЗ",
+      "shortname": "ОФЗ 26247",
+      "found": true,
+      "excel_price": 78.98,
+      "moex_price": 79.205,
+      "excel_ytm": 16.9,
+      "moex_ytm": 16.8097,
+      "excel_nkd": 46.65,
+      "moex_nkd": 46.98,
+      "excel_duration": 5.26,
+      "moex_duration": 5.704,
+      "excel_years": 12.6,
+      "moex_years": 12.57,
+      "mean_turnover": 1541777127.2,
+      "median_turnover": 1261175155.88,
+      "excel_median_mln": 1175.55,
+      "price_asof": "2026-10-13 07:24:14",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.225,
+        "ytm_pp": -0.0903,
+        "nkd": 0.33,
+        "duration_years": 0.444,
+        "years": -0.03
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26247RMFS5"
+    },
+    {
+      "isin": "RU000A10D517",
+      "file": "ОФЗ",
+      "shortname": "ОФЗ 26253",
+      "found": true,
+      "excel_price": 83.29,
+      "moex_price": 83.375,
+      "excel_ytm": 16.9,
+      "moex_ytm": 16.8372,
+      "excel_nkd": 61.97,
+      "moex_nkd": 62.33,
+      "excel_duration": 5.04,
+      "moex_duration": 5.468,
+      "excel_years": 12.0,
+      "moex_years": 11.98,
+      "mean_turnover": 1287721243.97,
+      "median_turnover": 730723695.06,
+      "excel_median_mln": 1409.49,
+      "price_asof": "2026-10-13 07:24:13",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.085,
+        "ytm_pp": -0.0628,
+        "nkd": 0.36,
+        "duration_years": 0.428,
+        "years": -0.02
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26253RMFS3"
+    },
+    {
+      "isin": "RU000A10D533",
+      "file": "ОФЗ",
+      "shortname": "ОФЗ 26254",
+      "found": true,
+      "excel_price": 82.47,
+      "moex_price": 82.6,
+      "excel_ytm": 16.9,
+      "moex_ytm": 16.8396,
+      "excel_nkd": 61.97,
+      "moex_nkd": 62.33,
+      "excel_duration": 5.27,
+      "moex_duration": 5.707,
+      "excel_years": 14.0,
+      "moex_years": 13.97,
+      "mean_turnover": 2473100177.77,
+      "median_turnover": 2338198023.78,
+      "excel_median_mln": 2019.22,
+      "price_asof": "2026-10-13 07:24:13",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.13,
+        "ytm_pp": -0.0604,
+        "nkd": 0.36,
+        "duration_years": 0.437,
+        "years": -0.03
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26254RMFS1"
+    },
+    {
+      "isin": "RU000A10BVH7",
+      "file": "ОФЗ",
+      "shortname": "ОФЗ 26250",
+      "found": true,
+      "excel_price": 78.96,
+      "moex_price": 79.091,
+      "excel_ytm": 16.9,
+      "moex_ytm": 16.821,
+      "excel_nkd": 36.5,
+      "moex_nkd": 36.82,
+      "excel_duration": 5.06,
+      "moex_duration": 5.488,
+      "excel_years": 10.7,
+      "moex_years": 10.66,
+      "mean_turnover": 722317209.53,
+      "median_turnover": 692330096.41,
+      "excel_median_mln": 877.27,
+      "price_asof": "2026-10-13 07:24:13",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.131,
+        "ytm_pp": -0.079,
+        "nkd": 0.32,
+        "duration_years": 0.428,
+        "years": -0.04
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26250RMFS9"
+    },
+    {
+      "isin": "RU000A108EE1",
+      "file": "ОФЗ",
+      "shortname": "ОФЗ 26246",
+      "found": true,
+      "excel_price": 80.1,
+      "moex_price": 80.207,
+      "excel_ytm": 16.8,
+      "moex_ytm": 16.8116,
+      "excel_nkd": 6.58,
+      "moex_nkd": 6.9,
+      "excel_duration": 4.99,
+      "moex_duration": 5.414,
+      "excel_years": 9.4,
+      "moex_years": 9.41,
+      "mean_turnover": 1045482298.01,
+      "median_turnover": 1085204696.21,
+      "excel_median_mln": 899.14,
+      "price_asof": "2026-10-13 07:24:13",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.107,
+        "ytm_pp": 0.0116,
+        "nkd": 0.32,
+        "duration_years": 0.424,
+        "years": 0.01
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26246RMFS7"
+    },
+    {
+      "isin": "RU000A108EG6",
+      "file": "ОФЗ",
+      "shortname": "ОФЗ 26245",
+      "found": true,
+      "excel_price": 80.6,
+      "moex_price": 80.632,
+      "excel_ytm": 16.8,
+      "moex_ytm": 16.8208,
+      "excel_nkd": 1.97,
+      "moex_nkd": 2.3,
+      "excel_duration": 4.91,
+      "moex_duration": 5.321,
+      "excel_years": 9.0,
+      "moex_years": 8.95,
+      "mean_turnover": 2356871181.7,
+      "median_turnover": 1963974137.72,
+      "excel_median_mln": 1022.63,
+      "price_asof": "2026-10-13 07:24:13",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.032,
+        "ytm_pp": 0.0208,
+        "nkd": 0.33,
+        "duration_years": 0.411,
+        "years": -0.05
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26245RMFS9"
+    },
+    {
+      "isin": "RU000A108EH4",
+      "file": "ОФЗ",
+      "shortname": "ОФЗ 26248",
+      "found": true,
+      "excel_price": 78.64,
+      "moex_price": 78.817,
+      "excel_ytm": 16.8,
+      "moex_ytm": 16.7717,
+      "excel_nkd": 44.3,
+      "moex_nkd": 44.64,
+      "excel_duration": 5.39,
+      "moex_duration": 5.849,
+      "excel_years": 13.6,
+      "moex_years": 13.59,
+      "mean_turnover": 2131098785.14,
+      "median_turnover": 1554715605.22,
+      "excel_median_mln": 1038.19,
+      "price_asof": "2026-10-13 07:24:14",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.177,
+        "ytm_pp": -0.0283,
+        "nkd": 0.34,
+        "duration_years": 0.459,
+        "years": -0.01
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26248RMFS3"
+    },
+    {
+      "isin": "RU000A106E90",
+      "file": "ОФЗ",
+      "shortname": "ОФЗ 26243",
+      "found": true,
+      "excel_price": 67.14,
+      "moex_price": 67.1,
+      "excel_ytm": 16.8,
+      "moex_ytm": 16.8133,
+      "excel_nkd": 35.44,
+      "moex_nkd": 35.71,
+      "excel_duration": 5.42,
+      "moex_duration": 5.86,
+      "excel_years": 11.6,
+      "moex_years": 11.6,
+      "mean_turnover": 348189628.54,
+      "median_turnover": 273563054.77,
+      "excel_median_mln": 274.81,
+      "price_asof": "2026-10-13 07:24:13",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": -0.04,
+        "ytm_pp": 0.0133,
+        "nkd": 0.27,
+        "duration_years": 0.44,
+        "years": 0.0
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26243RMFS4"
+    },
+    {
+      "isin": "RU000A100EF5",
+      "file": "ОФЗ",
+      "shortname": "ОФЗ 26230",
+      "found": true,
+      "excel_price": 55.45,
+      "moex_price": 55.679,
+      "excel_ytm": 16.7,
+      "moex_ytm": 16.6699,
+      "excel_nkd": 2.74,
+      "moex_nkd": 2.95,
+      "excel_duration": 6.11,
+      "moex_duration": 6.63,
+      "excel_years": 12.4,
+      "moex_years": 12.42,
+      "mean_turnover": 265542028.63,
+      "median_turnover": 179115340.67,
+      "excel_median_mln": 305.67,
+      "price_asof": "2026-10-13 07:24:13",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.229,
+        "ytm_pp": -0.0301,
+        "nkd": 0.21,
+        "duration_years": 0.52,
+        "years": 0.02
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26230RMFS1"
+    },
+    {
+      "isin": "RU000A10D4Y2",
+      "file": "ОФЗ",
+      "shortname": "ОФЗ 26252",
+      "found": true,
+      "excel_price": 85.38,
+      "moex_price": 85.521,
+      "excel_ytm": 16.7,
+      "moex_ytm": 16.6544,
+      "excel_nkd": 59.59,
+      "moex_nkd": 59.93,
+      "excel_duration": 4.03,
+      "moex_duration": 4.367,
+      "excel_years": 7.0,
+      "moex_years": 7.0,
+      "mean_turnover": 2515208083.7,
+      "median_turnover": 1337319331.22,
+      "excel_median_mln": 1186.3,
+      "price_asof": "2026-10-13 07:24:14",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.141,
+        "ytm_pp": -0.0456,
+        "nkd": 0.34,
+        "duration_years": 0.337,
+        "years": 0.0
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26252RMFS5"
+    },
+    {
+      "isin": "RU000A1074G2",
+      "file": "ОФЗ",
+      "shortname": "ОФЗ 26244",
+      "found": true,
+      "excel_price": 79.67,
+      "moex_price": 79.581,
+      "excel_ytm": 16.7,
+      "moex_ytm": 16.6987,
+      "excel_nkd": 6.16,
+      "moex_nkd": 6.47,
+      "excel_duration": 4.51,
+      "moex_duration": 4.89,
+      "excel_years": 7.4,
+      "moex_years": 7.42,
+      "mean_turnover": 339226174.47,
+      "median_turnover": 202623781.51,
+      "excel_median_mln": 389.31,
+      "price_asof": "2026-10-13 07:24:12",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": -0.089,
+        "ytm_pp": -0.0013,
+        "nkd": 0.31,
+        "duration_years": 0.38,
+        "years": 0.02
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26244RMFS2"
+    },
+    {
+      "isin": "RU000A0ZYUB7",
+      "file": "ОФЗ",
+      "shortname": "ОФЗ 26225",
+      "found": true,
+      "excel_price": 62.54,
+      "moex_price": 62.465,
+      "excel_ytm": 16.6,
+      "moex_ytm": 16.5412,
+      "excel_nkd": 29.0,
+      "moex_nkd": 29.2,
+      "excel_duration": 4.81,
+      "moex_duration": 5.211,
+      "excel_years": 7.6,
+      "moex_years": 7.57,
+      "mean_turnover": 107998502.85,
+      "median_turnover": 72868656.59,
+      "excel_median_mln": 61.68,
+      "price_asof": "2026-10-13 07:24:13",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": -0.075,
+        "ytm_pp": -0.0588,
+        "nkd": 0.2,
+        "duration_years": 0.401,
+        "years": -0.03
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26225RMFS1"
+    },
+    {
+      "isin": "RU000A103BR0",
+      "file": "ОФЗ",
+      "shortname": "ОФЗ 26240",
+      "found": true,
+      "excel_price": 56.45,
+      "moex_price": 56.603,
+      "excel_ytm": 16.6,
+      "moex_ytm": 16.4958,
+      "excel_nkd": 11.89,
+      "moex_nkd": 12.08,
+      "excel_duration": 5.68,
+      "moex_duration": 6.151,
+      "excel_years": 9.8,
+      "moex_years": 9.8,
+      "mean_turnover": 187884420.72,
+      "median_turnover": 102149263.09,
+      "excel_median_mln": 176.86,
+      "price_asof": "2026-10-13 07:24:13",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.153,
+        "ytm_pp": -0.1042,
+        "nkd": 0.19,
+        "duration_years": 0.471,
+        "years": 0.0
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26240RMFS0"
+    },
+    {
+      "isin": "RU000A1038V6",
+      "file": "ОФЗ",
+      "shortname": "ОФЗ 26238",
+      "found": true,
+      "excel_price": 50.6,
+      "moex_price": 50.75,
+      "excel_ytm": 16.5,
+      "moex_ytm": 16.4711,
+      "excel_nkd": 25.67,
+      "moex_nkd": 25.87,
+      "excel_duration": 6.22,
+      "moex_duration": 6.737,
+      "excel_years": 14.6,
+      "moex_years": 14.59,
+      "mean_turnover": 1107077640.49,
+      "median_turnover": 1009179780.69,
+      "excel_median_mln": 1052.11,
+      "price_asof": "2026-10-13 07:24:14",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.15,
+        "ytm_pp": -0.0289,
+        "nkd": 0.2,
+        "duration_years": 0.517,
+        "years": -0.01
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26238RMFS4"
+    },
+    {
+      "isin": "RU000A10BVC8",
+      "file": "ОФЗ",
+      "shortname": "ОФЗ 26249",
+      "found": true,
+      "excel_price": 82.85,
+      "moex_price": 83.032,
+      "excel_ytm": 16.3,
+      "moex_ytm": 16.2104,
+      "excel_nkd": 33.45,
+      "moex_nkd": 33.75,
+      "excel_duration": 3.75,
+      "moex_duration": 4.063,
+      "excel_years": 5.7,
+      "moex_years": 5.68,
+      "mean_turnover": 1010086476.64,
+      "median_turnover": 425368963.75,
+      "excel_median_mln": 892.87,
+      "price_asof": "2026-10-13 07:24:14",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.182,
+        "ytm_pp": -0.0896,
+        "nkd": 0.3,
+        "duration_years": 0.313,
+        "years": -0.02
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26249RMFS1"
+    },
+    {
+      "isin": "RU000A105FZ9",
+      "file": "ОФЗ",
+      "shortname": "ОФЗ 26241",
+      "found": true,
+      "excel_price": 76.4,
+      "moex_price": 76.515,
+      "excel_ytm": 16.2,
+      "moex_ytm": 16.2079,
+      "excel_nkd": 36.18,
+      "moex_nkd": 36.44,
+      "excel_duration": 4.01,
+      "moex_duration": 4.34,
+      "excel_years": 6.1,
+      "moex_years": 6.1,
+      "mean_turnover": 81637979.33,
+      "median_turnover": 68135400.94,
+      "excel_median_mln": 114.6,
+      "price_asof": "2026-10-13 07:24:14",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.115,
+        "ytm_pp": 0.0079,
+        "nkd": 0.26,
+        "duration_years": 0.33,
+        "years": 0.0
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26241RMFS8"
+    },
+    {
+      "isin": "RU000A0JXFM1",
+      "file": "ОФЗ",
+      "shortname": "ОФЗ 26221",
+      "found": true,
+      "excel_price": 68.6,
+      "moex_price": 68.6,
+      "excel_ytm": 16.2,
+      "moex_ytm": 16.2032,
+      "excel_nkd": 2.74,
+      "moex_nkd": 2.95,
+      "excel_duration": 4.51,
+      "moex_duration": 4.871,
+      "excel_years": 6.5,
+      "moex_years": 6.44,
+      "mean_turnover": 51277276.06,
+      "median_turnover": 43961346.59,
+      "excel_median_mln": 57.98,
+      "price_asof": "2026-10-13 07:24:14",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.0,
+        "ytm_pp": 0.0032,
+        "nkd": 0.21,
+        "duration_years": 0.361,
+        "years": -0.06
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26221RMFS0"
+    },
+    {
+      "isin": "RU000A101F94",
+      "file": "ОФЗ",
+      "shortname": "ОФЗ 26233",
+      "found": true,
+      "excel_price": 55.93,
+      "moex_price": 55.883,
+      "excel_ytm": 16.0,
+      "moex_ytm": 16.0466,
+      "excel_nkd": 12.7,
+      "moex_nkd": 12.87,
+      "excel_duration": 5.58,
+      "moex_duration": 6.027,
+      "excel_years": 8.8,
+      "moex_years": 8.76,
+      "mean_turnover": 605717430.23,
+      "median_turnover": 358676876.11,
+      "excel_median_mln": 197.34,
+      "price_asof": "2026-10-13 07:24:14",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": -0.047,
+        "ytm_pp": 0.0466,
+        "nkd": 0.17,
+        "duration_years": 0.447,
+        "years": -0.04
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26233RMFS5"
+    },
+    {
+      "isin": "RU000A0JVW48",
+      "file": "ОФЗ",
+      "shortname": "ОФЗ 26218",
+      "found": true,
+      "excel_price": 77.34,
+      "moex_price": 77.003,
+      "excel_ytm": 15.8,
+      "moex_ytm": 15.8406,
+      "excel_nkd": 4.66,
+      "moex_nkd": 4.89,
+      "excel_duration": 3.69,
+      "moex_duration": 3.973,
+      "excel_years": 4.9,
+      "moex_years": 4.93,
+      "mean_turnover": 431507643.03,
+      "median_turnover": 231452932.29,
+      "excel_median_mln": 471.74,
+      "price_asof": "2026-10-13 07:24:13",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": -0.337,
+        "ytm_pp": 0.0406,
+        "nkd": 0.23,
+        "duration_years": 0.283,
+        "years": 0.03
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26218RMFS6"
+    },
+    {
+      "isin": "RU000A10GC53",
+      "file": "корпорат",
+      "shortname": "ПКТ 2P2",
+      "found": true,
+      "excel_price": 99.31,
+      "moex_price": 99.3,
+      "excel_ytm": 18.7,
+      "moex_ytm": 18.7288,
+      "excel_nkd": 1.86,
+      "moex_nkd": 2.33,
+      "excel_duration": 2.29,
+      "moex_duration": 2.329,
+      "excel_years": 3.0,
+      "moex_years": 2.95,
+      "mean_turnover": 78510972.0,
+      "median_turnover": 0.0,
+      "excel_median_mln": null,
+      "price_asof": "2026-10-13 07:24:01",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": -0.01,
+        "ytm_pp": 0.0288,
+        "nkd": 0.47,
+        "duration_years": 0.039,
+        "years": -0.05
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10GC53"
+    },
+    {
+      "isin": "RU000A10FZ16",
+      "file": "корпорат",
+      "shortname": "ДелПорт1P5",
+      "found": true,
+      "excel_price": 99.95,
+      "moex_price": 99.92,
+      "excel_ytm": 18.5,
+      "moex_ytm": 18.4848,
+      "excel_nkd": 7.47,
+      "moex_nkd": 7.94,
+      "excel_duration": 2.22,
+      "moex_duration": 2.244,
+      "excel_years": 2.8,
+      "moex_years": 2.83,
+      "mean_turnover": 120885216.7,
+      "median_turnover": 104365377.5,
+      "excel_median_mln": null,
+      "price_asof": "2026-10-13 07:24:01",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": -0.03,
+        "ytm_pp": -0.0152,
+        "nkd": 0.47,
+        "duration_years": 0.024,
+        "years": 0.03
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10FZ16"
+    },
+    {
+      "isin": "RU000A106P06",
+      "file": "корпорат",
+      "shortname": "ВСК 1P-04R",
+      "found": true,
+      "excel_price": 92.76,
+      "moex_price": 92.87,
+      "excel_ytm": 17.5,
+      "moex_ytm": 17.439,
+      "excel_nkd": 24.33,
+      "moex_nkd": 24.66,
+      "excel_duration": 1.49,
+      "moex_duration": 1.616,
+      "excel_years": 1.8,
+      "moex_years": 1.79,
+      "mean_turnover": 1492642.84,
+      "median_turnover": 1070629.65,
+      "excel_median_mln": 1.78,
+      "price_asof": "2026-10-13 07:24:00",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.11,
+        "ytm_pp": -0.061,
+        "nkd": 0.33,
+        "duration_years": 0.126,
+        "years": -0.01
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A106P06"
+    },
+    {
+      "isin": "RU000A10DJH8",
+      "file": "корпорат",
+      "shortname": "ПКТ 2P1",
+      "found": true,
+      "excel_price": 99.04,
+      "moex_price": 98.92,
+      "excel_ytm": 17.4,
+      "moex_ytm": 17.479,
+      "excel_nkd": 23.66,
+      "moex_nkd": 24.09,
+      "excel_duration": 2.34,
+      "moex_duration": 2.436,
+      "excel_years": 3.1,
+      "moex_years": 3.09,
+      "mean_turnover": 17947819.47,
+      "median_turnover": 10620740.7,
+      "excel_median_mln": 5.31,
+      "price_asof": "2026-10-13 07:24:01",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": -0.12,
+        "ytm_pp": 0.079,
+        "nkd": 0.43,
+        "duration_years": 0.096,
+        "years": -0.01
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10DJH8"
+    },
+    {
+      "isin": "RU000A10EQ34",
+      "file": "корпорат",
+      "shortname": "АФБАНК1Р18",
+      "found": true,
+      "excel_price": 97.48,
+      "moex_price": 97.6,
+      "excel_ytm": 17.2,
+      "moex_ytm": 17.1691,
+      "excel_nkd": 6.87,
+      "moex_nkd": 7.27,
+      "excel_duration": 2.0,
+      "moex_duration": 2.025,
+      "excel_years": 2.4,
+      "moex_years": 2.42,
+      "mean_turnover": 22870469.63,
+      "median_turnover": 9679459.65,
+      "excel_median_mln": 7.97,
+      "price_asof": "2026-10-13 07:24:00",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.12,
+        "ytm_pp": -0.0309,
+        "nkd": 0.4,
+        "duration_years": 0.025,
+        "years": 0.02
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10EQ34"
+    },
+    {
+      "isin": "RU000A10FGX6",
+      "file": "корпорат",
+      "shortname": "АФБАНК1Р19",
+      "found": true,
+      "excel_price": 96.2,
+      "moex_price": 96.14,
+      "excel_ytm": 17.2,
+      "moex_ytm": 17.2225,
+      "excel_nkd": 8.56,
+      "moex_nkd": 8.95,
+      "excel_duration": 2.16,
+      "moex_duration": 2.192,
+      "excel_years": 2.6,
+      "moex_years": 2.65,
+      "mean_turnover": 3540963.74,
+      "median_turnover": 2345532.9,
+      "excel_median_mln": 4.49,
+      "price_asof": "2026-10-13 07:24:12",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": -0.06,
+        "ytm_pp": 0.0225,
+        "nkd": 0.39,
+        "duration_years": 0.032,
+        "years": 0.05
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10FGX6"
+    },
+    {
+      "isin": "RU000A10CWF7",
+      "file": "корпорат",
+      "shortname": "ПГК3Р01",
+      "found": true,
+      "excel_price": 99.99,
+      "moex_price": 100.1,
+      "excel_ytm": 16.9,
+      "moex_ytm": 16.8753,
+      "excel_nkd": 7.77,
+      "moex_nkd": 8.2,
+      "excel_duration": 1.64,
+      "moex_duration": 1.655,
+      "excel_years": 1.9,
+      "moex_years": 1.92,
+      "mean_turnover": 9929750.18,
+      "median_turnover": 8626909.15,
+      "excel_median_mln": 8.44,
+      "price_asof": "2026-10-13 07:24:01",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.11,
+        "ytm_pp": -0.0247,
+        "nkd": 0.43,
+        "duration_years": 0.015,
+        "years": 0.02
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10CWF7"
+    },
+    {
+      "isin": "RU000A10EYV6",
+      "file": "корпорат",
+      "shortname": "ПГК3Р04",
+      "found": true,
+      "excel_price": 99.22,
+      "moex_price": 99.37,
+      "excel_ytm": 16.9,
+      "moex_ytm": 16.8513,
+      "excel_nkd": 7.59,
+      "moex_nkd": 8.02,
+      "excel_duration": 2.31,
+      "moex_duration": 2.34,
+      "excel_years": 2.9,
+      "moex_years": 2.91,
+      "mean_turnover": 56819533.48,
+      "median_turnover": 35238329.3,
+      "excel_median_mln": 39.6,
+      "price_asof": "2026-10-13 07:24:01",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.15,
+        "ytm_pp": -0.0487,
+        "nkd": 0.43,
+        "duration_years": 0.03,
+        "years": 0.01
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10EYV6"
+    },
+    {
+      "isin": "RU000A10C8C0",
+      "file": "корпорат",
+      "shortname": "РЖД 1Р-44R",
+      "found": true,
+      "excel_price": 97.0,
+      "moex_price": 96.7,
+      "excel_ytm": 16.6,
+      "moex_ytm": 16.8298,
+      "excel_nkd": 7.26,
+      "moex_nkd": 7.64,
+      "excel_duration": 1.95,
+      "moex_duration": 1.978,
+      "excel_years": 2.3,
+      "moex_years": 2.33,
+      "mean_turnover": 75463876.33,
+      "median_turnover": 45693392.2,
+      "excel_median_mln": 30.34,
+      "price_asof": "2026-10-13 07:24:05",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": -0.3,
+        "ytm_pp": 0.2298,
+        "nkd": 0.38,
+        "duration_years": 0.028,
+        "years": 0.03
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10C8C0"
+    },
+    {
+      "isin": "RU000A10BFG2",
+      "file": "корпорат",
+      "shortname": "Атомэнпр05",
+      "found": true,
+      "excel_price": 104.45,
+      "moex_price": 104.66,
+      "excel_ytm": 16.6,
+      "moex_ytm": 16.4758,
+      "excel_nkd": 42.18,
+      "moex_nkd": 42.66,
+      "excel_duration": 2.51,
+      "moex_duration": 2.605,
+      "excel_years": 3.5,
+      "moex_years": 3.49,
+      "mean_turnover": 54553899.02,
+      "median_turnover": 46058592.65,
+      "excel_median_mln": 27.17,
+      "price_asof": "2026-10-13 07:24:15",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.21,
+        "ytm_pp": -0.1242,
+        "nkd": 0.48,
+        "duration_years": 0.095,
+        "years": -0.01
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10BFG2"
+    },
+    {
+      "isin": "RU000A10EJQ7",
+      "file": "корпорат",
+      "shortname": "Атомэнпр11",
+      "found": true,
+      "excel_price": 97.75,
+      "moex_price": 98.02,
+      "excel_ytm": 16.6,
+      "moex_ytm": 16.4253,
+      "excel_nkd": 12.89,
+      "moex_nkd": 13.29,
+      "excel_duration": 2.44,
+      "moex_duration": 2.537,
+      "excel_years": 3.2,
+      "moex_years": 3.15,
+      "mean_turnover": 80676469.74,
+      "median_turnover": 52398293.8,
+      "excel_median_mln": 45.63,
+      "price_asof": "2026-10-13 07:24:04",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.27,
+        "ytm_pp": -0.1747,
+        "nkd": 0.4,
+        "duration_years": 0.097,
+        "years": -0.05
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10EJQ7"
+    },
+    {
+      "isin": "RU000A10C6P6",
+      "file": "корпорат",
+      "shortname": "АФБАНК1Р15",
+      "found": true,
+      "excel_price": 102.17,
+      "moex_price": 102.01,
+      "excel_ytm": 16.4,
+      "moex_ytm": 16.5671,
+      "excel_nkd": 11.47,
+      "moex_nkd": 11.93,
+      "excel_duration": 1.49,
+      "moex_duration": 1.501,
+      "excel_years": 1.7,
+      "moex_years": 1.74,
+      "mean_turnover": 5262142.51,
+      "median_turnover": 4444575.3,
+      "excel_median_mln": 7.23,
+      "price_asof": "2026-10-12",
+      "price_source": "MOEX ISS предыдущая цена PREVPRICE, это не цена текущей сделки",
+      "delta": {
+        "price_pp": -0.16,
+        "ytm_pp": 0.1671,
+        "nkd": 0.46,
+        "duration_years": 0.011,
+        "years": 0.04
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10C6P6"
+    },
+    {
+      "isin": "RU000A10DYC8",
+      "file": "корпорат",
+      "shortname": "ФПК2Р01",
+      "found": true,
+      "excel_price": 100.14,
+      "moex_price": 100.58,
+      "excel_ytm": 16.4,
+      "moex_ytm": 16.0825,
+      "excel_nkd": 10.13,
+      "moex_nkd": 10.55,
+      "excel_duration": 1.44,
+      "moex_duration": 1.458,
+      "excel_years": 1.7,
+      "moex_years": 1.66,
+      "mean_turnover": 72602179.7,
+      "median_turnover": 57388907.55,
+      "excel_median_mln": 17.1,
+      "price_asof": "2026-10-12",
+      "price_source": "MOEX ISS предыдущая цена PREVPRICE, это не цена текущей сделки",
+      "delta": {
+        "price_pp": 0.44,
+        "ytm_pp": -0.3175,
+        "nkd": 0.42,
+        "duration_years": 0.018,
+        "years": -0.04
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10DYC8"
+    },
+    {
+      "isin": "RU000A10C6L5",
+      "file": "корпорат",
+      "shortname": "Атомэнпр07",
+      "found": true,
+      "excel_price": 96.77,
+      "moex_price": 96.65,
+      "excel_ytm": 16.4,
+      "moex_ytm": 16.3903,
+      "excel_nkd": 31.85,
+      "moex_nkd": 32.24,
+      "excel_duration": 2.75,
+      "moex_duration": 2.86,
+      "excel_years": 3.8,
+      "moex_years": 3.76,
+      "mean_turnover": 76916377.77,
+      "median_turnover": 49881248.7,
+      "excel_median_mln": 56.27,
+      "price_asof": "2026-10-13 07:24:05",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": -0.12,
+        "ytm_pp": -0.0097,
+        "nkd": 0.39,
+        "duration_years": 0.11,
+        "years": -0.04
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10C6L5"
+    },
+    {
+      "isin": "RU000A1089X5",
+      "file": "корпорат",
+      "shortname": "РЖДЗО28-1Р",
+      "found": true,
+      "excel_price": 89.01,
+      "moex_price": 88.96,
+      "excel_ytm": 16.3,
+      "moex_ytm": 16.3915,
+      "excel_nkd": 751.44,
+      "moex_nkd": 769.77,
+      "excel_duration": 1.23,
+      "moex_duration": 1.332,
+      "excel_years": 1.4,
+      "moex_years": 1.39,
+      "mean_turnover": 996035.0,
+      "median_turnover": 980385.0,
+      "excel_median_mln": 1.33,
+      "price_asof": "2026-10-12",
+      "price_source": "MOEX ISS предыдущая цена PREVPRICE, это не цена текущей сделки",
+      "delta": {
+        "price_pp": -0.05,
+        "ytm_pp": 0.0915,
+        "nkd": 18.33,
+        "duration_years": 0.102,
+        "years": -0.01
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A1089X5"
+    },
+    {
+      "isin": "RU000A10ETQ6",
+      "file": "корпорат",
+      "shortname": "ПСБ 4P-02",
+      "found": true,
+      "excel_price": 97.7,
+      "moex_price": 97.82,
+      "excel_ytm": 16.3,
+      "moex_ytm": 16.2145,
+      "excel_nkd": 0.77,
+      "moex_nkd": 1.15,
+      "excel_duration": 2.05,
+      "moex_duration": 2.082,
+      "excel_years": 2.5,
+      "moex_years": 2.46,
+      "mean_turnover": 42755203.4,
+      "median_turnover": 16052807.0,
+      "excel_median_mln": 16.05,
+      "price_asof": "2026-10-13 07:24:01",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.12,
+        "ytm_pp": -0.0855,
+        "nkd": 0.38,
+        "duration_years": 0.032,
+        "years": -0.04
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10ETQ6"
+    },
+    {
+      "isin": "RU000A105TY3",
+      "file": "корпорат",
+      "shortname": "ВымпелК1Р6",
+      "found": true,
+      "excel_price": 94.26,
+      "moex_price": 94.35,
+      "excel_ytm": 16.3,
+      "moex_ytm": 16.1923,
+      "excel_nkd": 16.48,
+      "moex_nkd": 16.76,
+      "excel_duration": 1.19,
+      "moex_duration": 1.238,
+      "excel_years": 1.3,
+      "moex_years": 1.34,
+      "mean_turnover": 848602.6,
+      "median_turnover": 504149.5,
+      "excel_median_mln": 0.44,
+      "price_asof": "2026-10-12",
+      "price_source": "MOEX ISS предыдущая цена PREVPRICE, это не цена текущей сделки",
+      "delta": {
+        "price_pp": 0.09,
+        "ytm_pp": -0.1077,
+        "nkd": 0.28,
+        "duration_years": 0.048,
+        "years": 0.04
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A105TY3"
+    },
+    {
+      "isin": "RU000A10D9K0",
+      "file": "корпорат",
+      "shortname": "АФБАНК1Р16",
+      "found": true,
+      "excel_price": 101.86,
+      "moex_price": 101.38,
+      "excel_ytm": 16.2,
+      "moex_ytm": 16.643,
+      "excel_nkd": 9.58,
+      "moex_nkd": 10.04,
+      "excel_duration": 1.18,
+      "moex_duration": 1.195,
+      "excel_years": 1.3,
+      "moex_years": 1.34,
+      "mean_turnover": 14807061.76,
+      "median_turnover": 3219686.05,
+      "excel_median_mln": 3.71,
+      "price_asof": "2026-10-13 07:24:00",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": -0.48,
+        "ytm_pp": 0.443,
+        "nkd": 0.46,
+        "duration_years": 0.015,
+        "years": 0.04
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10D9K0"
+    },
+    {
+      "isin": "RU000A10BWC6",
+      "file": "корпорат",
+      "shortname": "iПозитивР3",
+      "found": true,
+      "excel_price": 103.89,
+      "moex_price": 104.02,
+      "excel_ytm": 16.2,
+      "moex_ytm": 16.0503,
+      "excel_nkd": 11.34,
+      "moex_nkd": 11.84,
+      "excel_duration": 1.29,
+      "moex_duration": 1.31,
+      "excel_years": 1.5,
+      "moex_years": 1.5,
+      "mean_turnover": 15806690.68,
+      "median_turnover": 14404921.25,
+      "excel_median_mln": 12.9,
+      "price_asof": "2026-10-13 07:24:07",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.13,
+        "ytm_pp": -0.1497,
+        "nkd": 0.5,
+        "duration_years": 0.02,
+        "years": 0.0
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10BWC6"
+    },
+    {
+      "isin": "RU000A10CT33",
+      "file": "корпорат",
+      "shortname": "Атомэнпр08",
+      "found": true,
+      "excel_price": 98.38,
+      "moex_price": 98.6,
+      "excel_ytm": 16.1,
+      "moex_ytm": 16.0622,
+      "excel_nkd": 8.46,
+      "moex_nkd": 8.86,
+      "excel_duration": 2.9,
+      "moex_duration": 3.019,
+      "excel_years": 3.9,
+      "moex_years": 3.93,
+      "mean_turnover": 6292774.47,
+      "median_turnover": 4579486.35,
+      "excel_median_mln": 4.75,
+      "price_asof": "2026-10-13 07:24:01",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.22,
+        "ytm_pp": -0.0378,
+        "nkd": 0.4,
+        "duration_years": 0.119,
+        "years": 0.03
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10CT33"
+    },
+    {
+      "isin": "RU000A10F7L0",
+      "file": "корпорат",
+      "shortname": "Атомэнпр12",
+      "found": true,
+      "excel_price": 96.73,
+      "moex_price": 96.96,
+      "excel_ytm": 16.1,
+      "moex_ytm": 16.0143,
+      "excel_nkd": 19.89,
+      "moex_nkd": 20.27,
+      "excel_duration": 2.1,
+      "moex_duration": 2.175,
+      "excel_years": 2.6,
+      "moex_years": 2.6,
+      "mean_turnover": 16824896.32,
+      "median_turnover": 9312820.85,
+      "excel_median_mln": 18.35,
+      "price_asof": "2026-10-13 07:24:07",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.23,
+        "ytm_pp": -0.0857,
+        "nkd": 0.38,
+        "duration_years": 0.075,
+        "years": 0.0
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10F7L0"
+    },
+    {
+      "isin": "RU000A105WP5",
+      "file": "корпорат",
+      "shortname": "ВымпелК1Р7",
+      "found": true,
+      "excel_price": 89.58,
+      "moex_price": 89.5,
+      "excel_ytm": 16.1,
+      "moex_ytm": 16.1765,
+      "excel_nkd": 15.38,
+      "moex_nkd": 15.65,
+      "excel_duration": 1.99,
+      "moex_duration": 2.063,
+      "excel_years": 2.3,
+      "moex_years": 2.34,
+      "mean_turnover": 5064173.81,
+      "median_turnover": 688780.25,
+      "excel_median_mln": 0.38,
+      "price_asof": "2026-10-12",
+      "price_source": "MOEX ISS предыдущая цена PREVPRICE, это не цена текущей сделки",
+      "delta": {
+        "price_pp": -0.08,
+        "ytm_pp": 0.0765,
+        "nkd": 0.27,
+        "duration_years": 0.073,
+        "years": 0.04
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A105WP5"
+    },
+    {
+      "isin": "RU000A0JUAH8",
+      "file": "корпорат",
+      "shortname": "РЖД-30 обл",
+      "found": true,
+      "excel_price": 100.88,
+      "moex_price": 100.94,
+      "excel_ytm": 16.0,
+      "moex_ytm": 16.0054,
+      "excel_nkd": 67.42,
+      "moex_nkd": 67.86,
+      "excel_duration": 1.6,
+      "moex_duration": 1.729,
+      "excel_years": 2.1,
+      "moex_years": 2.07,
+      "mean_turnover": 1514398.38,
+      "median_turnover": 1276934.15,
+      "excel_median_mln": 2.21,
+      "price_asof": "2026-10-12",
+      "price_source": "MOEX ISS предыдущая цена PREVPRICE, это не цена текущей сделки",
+      "delta": {
+        "price_pp": 0.06,
+        "ytm_pp": 0.0054,
+        "nkd": 0.44,
+        "duration_years": 0.129,
+        "years": -0.03
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A0JUAH8"
+    },
+    {
+      "isin": "RU000A10DPS2",
+      "file": "корпорат",
+      "shortname": "Атомэнпр09",
+      "found": true,
+      "excel_price": 100.0,
+      "moex_price": 99.65,
+      "excel_ytm": 16.0,
+      "moex_ytm": 16.0722,
+      "excel_nkd": 16.55,
+      "moex_nkd": 16.96,
+      "excel_duration": 3.23,
+      "moex_duration": 3.351,
+      "excel_years": 4.6,
+      "moex_years": 4.62,
+      "mean_turnover": 70235035.25,
+      "median_turnover": 30828811.55,
+      "excel_median_mln": 15.78,
+      "price_asof": "2026-10-13 07:24:04",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": -0.35,
+        "ytm_pp": 0.0722,
+        "nkd": 0.41,
+        "duration_years": 0.121,
+        "years": 0.02
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10DPS2"
+    },
+    {
+      "isin": "RU000A10DYG9",
+      "file": "корпорат",
+      "shortname": "Атомэнпр10",
+      "found": true,
+      "excel_price": 100.17,
+      "moex_price": 100.41,
+      "excel_ytm": 16.0,
+      "moex_ytm": 15.8906,
+      "excel_nkd": 8.3,
+      "moex_nkd": 8.72,
+      "excel_duration": 3.28,
+      "moex_duration": 3.408,
+      "excel_years": 4.7,
+      "moex_years": 4.68,
+      "mean_turnover": 43668487.05,
+      "median_turnover": 32928304.3,
+      "excel_median_mln": 17.57,
+      "price_asof": "2026-10-13 07:24:01",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.24,
+        "ytm_pp": -0.1094,
+        "nkd": 0.42,
+        "duration_years": 0.128,
+        "years": -0.02
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10DYG9"
+    },
+    {
+      "isin": "RU000A105XE7",
+      "file": "корпорат",
+      "shortname": "ВымпелК1Р2",
+      "found": true,
+      "excel_price": 90.48,
+      "moex_price": 90.32,
+      "excel_ytm": 16.0,
+      "moex_ytm": 16.0917,
+      "excel_nkd": 6.62,
+      "moex_nkd": 6.88,
+      "excel_duration": 1.69,
+      "moex_duration": 1.759,
+      "excel_years": 1.9,
+      "moex_years": 1.92,
+      "mean_turnover": 122340.69,
+      "median_turnover": 77323.6,
+      "excel_median_mln": 0.09,
+      "price_asof": "2026-10-12",
+      "price_source": "MOEX ISS предыдущая цена PREVPRICE, это не цена текущей сделки",
+      "delta": {
+        "price_pp": -0.16,
+        "ytm_pp": 0.0917,
+        "nkd": 0.26,
+        "duration_years": 0.069,
+        "years": 0.02
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A105XE7"
+    },
+    {
+      "isin": "RU000A10CDZ5",
+      "file": "корпорат",
+      "shortname": "РЖД 1Р-45R",
+      "found": true,
+      "excel_price": 97.7,
+      "moex_price": 97.7,
+      "excel_ytm": 15.9,
+      "moex_ytm": 15.9461,
+      "excel_nkd": 1.9,
+      "moex_nkd": 2.28,
+      "excel_duration": 2.22,
+      "moex_duration": 2.252,
+      "excel_years": 2.7,
+      "moex_years": 2.7,
+      "mean_turnover": 14154789.61,
+      "median_turnover": 13854974.65,
+      "excel_median_mln": 15.86,
+      "price_asof": "2026-10-13 07:24:00",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.0,
+        "ytm_pp": 0.0461,
+        "nkd": 0.38,
+        "duration_years": 0.032,
+        "years": 0.0
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10CDZ5"
+    },
+    {
+      "isin": "RU000A10C8T4",
+      "file": "корпорат",
+      "shortname": "СибурХ1Р07",
+      "found": true,
+      "excel_price": 98.2,
+      "moex_price": 98.22,
+      "excel_ytm": 15.9,
+      "moex_ytm": 15.9194,
+      "excel_nkd": 6.88,
+      "moex_nkd": 7.26,
+      "excel_duration": 1.96,
+      "moex_duration": 1.984,
+      "excel_years": 2.3,
+      "moex_years": 2.33,
+      "mean_turnover": 149400837.46,
+      "median_turnover": 84709216.9,
+      "excel_median_mln": 26.92,
+      "price_asof": "2026-10-13 07:24:00",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": 0.02,
+        "ytm_pp": 0.0194,
+        "nkd": 0.38,
+        "duration_years": 0.024,
+        "years": 0.03
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10C8T4"
+    },
+    {
+      "isin": "RU000A10CC24",
+      "file": "корпорат",
+      "shortname": "РусГид2Р07",
+      "found": true,
+      "excel_price": 98.54,
+      "moex_price": 98.48,
+      "excel_ytm": 15.8,
+      "moex_ytm": 15.8699,
+      "excel_nkd": 3.04,
+      "moex_nkd": 3.42,
+      "excel_duration": 1.56,
+      "moex_duration": 1.581,
+      "excel_years": 1.8,
+      "moex_years": 1.79,
+      "mean_turnover": 32110757.76,
+      "median_turnover": 13950727.55,
+      "excel_median_mln": 11.59,
+      "price_asof": "2026-10-13 07:24:04",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": -0.06,
+        "ytm_pp": 0.0699,
+        "nkd": 0.38,
+        "duration_years": 0.021,
+        "years": -0.01
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10CC24"
+    },
+    {
+      "isin": "RU000A10ER66",
+      "file": "корпорат",
+      "shortname": "ФосАгро2П6",
+      "found": true,
+      "excel_price": 97.98,
+      "moex_price": 97.85,
+      "excel_ytm": 15.8,
+      "moex_ytm": 15.8237,
+      "excel_nkd": 5.27,
+      "moex_nkd": 5.65,
+      "excel_duration": 2.09,
+      "moex_duration": 2.115,
+      "excel_years": 2.5,
+      "moex_years": 2.51,
+      "mean_turnover": 84882918.58,
+      "median_turnover": 62306447.65,
+      "excel_median_mln": 59.29,
+      "price_asof": "2026-10-13 07:24:13",
+      "price_source": "MOEX ISS последняя сделка LAST",
+      "delta": {
+        "price_pp": -0.13,
+        "ytm_pp": 0.0237,
+        "nkd": 0.38,
+        "duration_years": 0.025,
+        "years": 0.01
+      },
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10ER66"
+    }
+  ],
+  "match": {
+    "rows": 49,
+    "found": 49,
+    "missing": [],
+    "max_abs_price_pp": 0.48,
+    "max_abs_ytm_pp": 0.443,
+    "median_abs_price_pp": 0.12,
+    "median_abs_ytm_pp": 0.0588
+  },
+  "ofz": [
+    {
+      "isin": "RU000A108EF8",
+      "shortname": "ОФЗ 26247",
+      "status": "eligible",
+      "reason": "длинная фиксированная ОФЗ, приоритет по дюрации биржи",
+      "excel_duration": 5.26,
+      "duration": 5.704,
+      "years": 12.57,
+      "ytm": 16.8097,
+      "mean_turnover": 1541777127.196,
+      "excel_median_mln": 1175.55,
+      "delta": {
+        "price_pp": 0.225,
+        "ytm_pp": -0.0903,
+        "nkd": 0.33,
+        "duration_years": 0.444,
+        "years": -0.03
+      }
+    },
+    {
+      "isin": "RU000A10D517",
+      "shortname": "ОФЗ 26253",
+      "status": "eligible",
+      "reason": "длинная фиксированная ОФЗ, приоритет по дюрации биржи",
+      "excel_duration": 5.04,
+      "duration": 5.468,
+      "years": 11.98,
+      "ytm": 16.8372,
+      "mean_turnover": 1287721243.974,
+      "excel_median_mln": 1409.49,
+      "delta": {
+        "price_pp": 0.085,
+        "ytm_pp": -0.0628,
+        "nkd": 0.36,
+        "duration_years": 0.428,
+        "years": -0.02
+      }
+    },
+    {
+      "isin": "RU000A10D533",
+      "shortname": "ОФЗ 26254",
+      "status": "eligible",
+      "reason": "длинная фиксированная ОФЗ, приоритет по дюрации биржи",
+      "excel_duration": 5.27,
+      "duration": 5.707,
+      "years": 13.97,
+      "ytm": 16.8396,
+      "mean_turnover": 2473100177.77,
+      "excel_median_mln": 2019.22,
+      "delta": {
+        "price_pp": 0.13,
+        "ytm_pp": -0.0604,
+        "nkd": 0.36,
+        "duration_years": 0.437,
+        "years": -0.03
+      }
+    },
+    {
+      "isin": "RU000A10BVH7",
+      "shortname": "ОФЗ 26250",
+      "status": "eligible",
+      "reason": "длинная фиксированная ОФЗ, приоритет по дюрации биржи",
+      "excel_duration": 5.06,
+      "duration": 5.488,
+      "years": 10.66,
+      "ytm": 16.821,
+      "mean_turnover": 722317209.526,
+      "excel_median_mln": 877.27,
+      "delta": {
+        "price_pp": 0.131,
+        "ytm_pp": -0.079,
+        "nkd": 0.32,
+        "duration_years": 0.428,
+        "years": -0.04
+      }
+    },
+    {
+      "isin": "RU000A108EE1",
+      "shortname": "ОФЗ 26246",
+      "status": "eligible",
+      "reason": "длинная фиксированная ОФЗ, приоритет по дюрации биржи",
+      "excel_duration": 4.99,
+      "duration": 5.414,
+      "years": 9.41,
+      "ytm": 16.8116,
+      "mean_turnover": 1045482298.0059999,
+      "excel_median_mln": 899.14,
+      "delta": {
+        "price_pp": 0.107,
+        "ytm_pp": 0.0116,
+        "nkd": 0.32,
+        "duration_years": 0.424,
+        "years": 0.01
+      }
+    },
+    {
+      "isin": "RU000A108EG6",
+      "shortname": "ОФЗ 26245",
+      "status": "eligible",
+      "reason": "длинная фиксированная ОФЗ, приоритет по дюрации биржи",
+      "excel_duration": 4.91,
+      "duration": 5.321,
+      "years": 8.95,
+      "ytm": 16.8208,
+      "mean_turnover": 2356871181.704,
+      "excel_median_mln": 1022.63,
+      "delta": {
+        "price_pp": 0.032,
+        "ytm_pp": 0.0208,
+        "nkd": 0.33,
+        "duration_years": 0.411,
+        "years": -0.05
+      }
+    },
+    {
+      "isin": "RU000A108EH4",
+      "shortname": "ОФЗ 26248",
+      "status": "eligible",
+      "reason": "длинная фиксированная ОФЗ, приоритет по дюрации биржи",
+      "excel_duration": 5.39,
+      "duration": 5.849,
+      "years": 13.59,
+      "ytm": 16.7717,
+      "mean_turnover": 2131098785.139,
+      "excel_median_mln": 1038.19,
+      "delta": {
+        "price_pp": 0.177,
+        "ytm_pp": -0.0283,
+        "nkd": 0.34,
+        "duration_years": 0.459,
+        "years": -0.01
+      }
+    },
+    {
+      "isin": "RU000A106E90",
+      "shortname": "ОФЗ 26243",
+      "status": "eligible",
+      "reason": "длинная фиксированная ОФЗ, приоритет по дюрации биржи",
+      "excel_duration": 5.42,
+      "duration": 5.86,
+      "years": 11.6,
+      "ytm": 16.8133,
+      "mean_turnover": 348189628.542,
+      "excel_median_mln": 274.81,
+      "delta": {
+        "price_pp": -0.04,
+        "ytm_pp": 0.0133,
+        "nkd": 0.27,
+        "duration_years": 0.44,
+        "years": 0.0
+      }
+    },
+    {
+      "isin": "RU000A100EF5",
+      "shortname": "ОФЗ 26230",
+      "status": "eligible",
+      "reason": "длинная фиксированная ОФЗ, приоритет по дюрации биржи",
+      "excel_duration": 6.11,
+      "duration": 6.63,
+      "years": 12.42,
+      "ytm": 16.6699,
+      "mean_turnover": 265542028.63200003,
+      "excel_median_mln": 305.67,
+      "delta": {
+        "price_pp": 0.229,
+        "ytm_pp": -0.0301,
+        "nkd": 0.21,
+        "duration_years": 0.52,
+        "years": 0.02
+      }
+    },
+    {
+      "isin": "RU000A10D4Y2",
+      "shortname": "ОФЗ 26252",
+      "status": "reject",
+      "reason": "ОФЗ короче 8 лет до погашения",
+      "excel_duration": 4.03,
+      "duration": 4.367,
+      "years": 7.0,
+      "ytm": 16.6544,
+      "mean_turnover": 2515208083.697,
+      "excel_median_mln": 1186.3,
+      "delta": {
+        "price_pp": 0.141,
+        "ytm_pp": -0.0456,
+        "nkd": 0.34,
+        "duration_years": 0.337,
+        "years": 0.0
+      }
+    },
+    {
+      "isin": "RU000A1074G2",
+      "shortname": "ОФЗ 26244",
+      "status": "reject",
+      "reason": "ОФЗ короче 8 лет до погашения",
+      "excel_duration": 4.51,
+      "duration": 4.89,
+      "years": 7.42,
+      "ytm": 16.6987,
+      "mean_turnover": 339226174.471,
+      "excel_median_mln": 389.31,
+      "delta": {
+        "price_pp": -0.089,
+        "ytm_pp": -0.0013,
+        "nkd": 0.31,
+        "duration_years": 0.38,
+        "years": 0.02
+      }
+    },
+    {
+      "isin": "RU000A0ZYUB7",
+      "shortname": "ОФЗ 26225",
+      "status": "reject",
+      "reason": "ОФЗ короче 8 лет до погашения",
+      "excel_duration": 4.81,
+      "duration": 5.211,
+      "years": 7.57,
+      "ytm": 16.5412,
+      "mean_turnover": 107998502.85499999,
+      "excel_median_mln": 61.68,
+      "delta": {
+        "price_pp": -0.075,
+        "ytm_pp": -0.0588,
+        "nkd": 0.2,
+        "duration_years": 0.401,
+        "years": -0.03
+      }
+    },
+    {
+      "isin": "RU000A103BR0",
+      "shortname": "ОФЗ 26240",
+      "status": "eligible",
+      "reason": "длинная фиксированная ОФЗ, приоритет по дюрации биржи",
+      "excel_duration": 5.68,
+      "duration": 6.151,
+      "years": 9.8,
+      "ytm": 16.4958,
+      "mean_turnover": 187884420.722,
+      "excel_median_mln": 176.86,
+      "delta": {
+        "price_pp": 0.153,
+        "ytm_pp": -0.1042,
+        "nkd": 0.19,
+        "duration_years": 0.471,
+        "years": 0.0
+      }
+    },
+    {
+      "isin": "RU000A1038V6",
+      "shortname": "ОФЗ 26238",
+      "status": "eligible",
+      "reason": "длинная фиксированная ОФЗ, приоритет по дюрации биржи",
+      "excel_duration": 6.22,
+      "duration": 6.737,
+      "years": 14.59,
+      "ytm": 16.4711,
+      "mean_turnover": 1107077640.491,
+      "excel_median_mln": 1052.11,
+      "delta": {
+        "price_pp": 0.15,
+        "ytm_pp": -0.0289,
+        "nkd": 0.2,
+        "duration_years": 0.517,
+        "years": -0.01
+      }
+    },
+    {
+      "isin": "RU000A10BVC8",
+      "shortname": "ОФЗ 26249",
+      "status": "reject",
+      "reason": "ОФЗ короче 8 лет до погашения",
+      "excel_duration": 3.75,
+      "duration": 4.063,
+      "years": 5.68,
+      "ytm": 16.2104,
+      "mean_turnover": 1010086476.6370001,
+      "excel_median_mln": 892.87,
+      "delta": {
+        "price_pp": 0.182,
+        "ytm_pp": -0.0896,
+        "nkd": 0.3,
+        "duration_years": 0.313,
+        "years": -0.02
+      }
+    },
+    {
+      "isin": "RU000A105FZ9",
+      "shortname": "ОФЗ 26241",
+      "status": "reject",
+      "reason": "ОФЗ короче 8 лет до погашения",
+      "excel_duration": 4.01,
+      "duration": 4.34,
+      "years": 6.1,
+      "ytm": 16.2079,
+      "mean_turnover": 81637979.32699999,
+      "excel_median_mln": 114.6,
+      "delta": {
+        "price_pp": 0.115,
+        "ytm_pp": 0.0079,
+        "nkd": 0.26,
+        "duration_years": 0.33,
+        "years": 0.0
+      }
+    },
+    {
+      "isin": "RU000A0JXFM1",
+      "shortname": "ОФЗ 26221",
+      "status": "reject",
+      "reason": "ОФЗ короче 8 лет до погашения",
+      "excel_duration": 4.51,
+      "duration": 4.871,
+      "years": 6.44,
+      "ytm": 16.2032,
+      "mean_turnover": 51277276.057,
+      "excel_median_mln": 57.98,
+      "delta": {
+        "price_pp": 0.0,
+        "ytm_pp": 0.0032,
+        "nkd": 0.21,
+        "duration_years": 0.361,
+        "years": -0.06
+      }
+    },
+    {
+      "isin": "RU000A101F94",
+      "shortname": "ОФЗ 26233",
+      "status": "eligible",
+      "reason": "длинная фиксированная ОФЗ, приоритет по дюрации биржи",
+      "excel_duration": 5.58,
+      "duration": 6.027,
+      "years": 8.76,
+      "ytm": 16.0466,
+      "mean_turnover": 605717430.23,
+      "excel_median_mln": 197.34,
+      "delta": {
+        "price_pp": -0.047,
+        "ytm_pp": 0.0466,
+        "nkd": 0.17,
+        "duration_years": 0.447,
+        "years": -0.04
+      }
+    },
+    {
+      "isin": "RU000A0JVW48",
+      "shortname": "ОФЗ 26218",
+      "status": "reject",
+      "reason": "ОФЗ короче 8 лет до погашения",
+      "excel_duration": 3.69,
+      "duration": 3.973,
+      "years": 4.93,
+      "ytm": 15.8406,
+      "mean_turnover": 431507643.02700007,
+      "excel_median_mln": 471.74,
+      "delta": {
+        "price_pp": -0.337,
+        "ytm_pp": 0.0406,
+        "nkd": 0.23,
+        "duration_years": 0.283,
+        "years": 0.03
+      }
+    }
+  ],
+  "exceptions": [
+    {
+      "isin": "RU000A10GC53",
+      "shortname": "ПКТ 2P2",
+      "issuer": "АО \"ПКТ\"",
+      "group": "aa",
+      "rating": "AA-",
+      "rating_agency": "Эксперт РА",
+      "screener_rating": "A",
+      "years": 2.95,
+      "duration": 2.329,
+      "ytm": 18.7288,
+      "price": 99.3,
+      "mean_turnover": 78510972.0,
+      "median_turnover": 0.0,
+      "excel_median_mln": null,
+      "g_spread_bp": 375.1,
+      "g_spread_clamped": false,
+      "moex_g_spread_bp": 323.0,
+      "score": 9.0,
+      "score_passed": true,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 3.0,
+          "note": "G-спред от 200 до 600 б.п. включительно",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 2.0,
+          "note": "качество эмитента от 7 → 2 вместо покрытия процентов",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 1.0,
+          "note": "ежемесячный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "flags": [],
+      "notes": [
+        "скринер показывает A, карточка эмитента от 6 октября — AA-. Окно срока по агентству.",
+        "в выгрузке стоит гарантия."
+      ],
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10GC53",
+      "status": "exception",
+      "reason": "AAA/AA короче 4 лет: только отдельное согласие"
+    },
+    {
+      "isin": "RU000A10EQ34",
+      "shortname": "АФБАНК1Р18",
+      "issuer": "АО \"Авто Финанс Банк\"",
+      "group": "aa",
+      "rating": "AA",
+      "rating_agency": "АКРА",
+      "screener_rating": "A",
+      "years": 2.42,
+      "duration": 2.025,
+      "ytm": 17.1691,
+      "price": 97.6,
+      "mean_turnover": 22870469.63,
+      "median_turnover": 9679459.65,
+      "excel_median_mln": 7.97,
+      "g_spread_bp": 233.2,
+      "g_spread_clamped": false,
+      "moex_g_spread_bp": 195.0,
+      "score": 9.0,
+      "score_passed": true,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 3.0,
+          "note": "G-спред от 200 до 600 б.п. включительно",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 2.0,
+          "note": "качество эмитента от 7 → 2 вместо покрытия процентов",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 1.0,
+          "note": "ежемесячный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "flags": [],
+      "notes": [
+        "скринер показывает A, карточка этого выпуска от 6 октября — AA. Окно срока по агентству."
+      ],
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10EQ34",
+      "status": "exception",
+      "reason": "AAA/AA короче 4 лет: только отдельное согласие"
+    },
+    {
+      "isin": "RU000A10D9K0",
+      "shortname": "АФБАНК1Р16",
+      "issuer": "АО \"Авто Финанс Банк\"",
+      "group": "aa",
+      "rating": "AA",
+      "rating_agency": "АКРА",
+      "screener_rating": "A",
+      "years": 1.34,
+      "duration": 1.195,
+      "ytm": 16.643,
+      "price": 101.38,
+      "mean_turnover": 14807061.76,
+      "median_turnover": 3219686.05,
+      "excel_median_mln": 3.71,
+      "g_spread_bp": 277.5,
+      "g_spread_clamped": false,
+      "moex_g_spread_bp": 257.0,
+      "score": 9.0,
+      "score_passed": true,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 3.0,
+          "note": "G-спред от 200 до 600 б.п. включительно",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 2.0,
+          "note": "качество эмитента от 7 → 2 вместо покрытия процентов",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 1.0,
+          "note": "ежемесячный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "flags": [],
+      "notes": [
+        "скринер показывает A, карточка эмитента от 6 октября — AA. Окно срока по агентству."
+      ],
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10D9K0",
+      "status": "exception",
+      "reason": "AAA/AA короче 4 лет: только отдельное согласие"
+    },
+    {
+      "isin": "RU000A10DJH8",
+      "shortname": "ПКТ 2P1",
+      "issuer": "АО \"ПКТ\"",
+      "group": "aa",
+      "rating": "AA-",
+      "rating_agency": "Эксперт РА",
+      "screener_rating": "A",
+      "years": 3.09,
+      "duration": 2.436,
+      "ytm": 17.479,
+      "price": 98.92,
+      "mean_turnover": 17947819.47,
+      "median_turnover": 10620740.7,
+      "excel_median_mln": 5.31,
+      "g_spread_bp": 249.1,
+      "g_spread_clamped": false,
+      "moex_g_spread_bp": 190.0,
+      "score": 8.5,
+      "score_passed": true,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 3.0,
+          "note": "G-спред от 200 до 600 б.п. включительно",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 2.0,
+          "note": "качество эмитента от 7 → 2 вместо покрытия процентов",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 0.5,
+          "note": "квартальный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "flags": [],
+      "notes": [
+        "скринер показывает A, карточка этого выпуска от 6 октября — AA-. Окно срока по агентству."
+      ],
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10DJH8",
+      "status": "exception",
+      "reason": "AAA/AA короче 4 лет: только отдельное согласие"
+    },
+    {
+      "isin": "RU000A10C6P6",
+      "shortname": "АФБАНК1Р15",
+      "issuer": "АО \"Авто Финанс Банк\"",
+      "group": "aa",
+      "rating": "AA",
+      "rating_agency": "АКРА",
+      "screener_rating": "A",
+      "years": 1.74,
+      "duration": 1.501,
+      "ytm": 16.5671,
+      "price": 102.01,
+      "mean_turnover": 5262142.51,
+      "median_turnover": 4444575.3,
+      "excel_median_mln": 7.23,
+      "g_spread_bp": 196.2,
+      "g_spread_clamped": false,
+      "moex_g_spread_bp": 199.0,
+      "score": 8.0,
+      "score_passed": true,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 2.0,
+          "note": "G-спред от 130 до менее 200 б.п.",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 2.0,
+          "note": "качество эмитента от 7 → 2 вместо покрытия процентов",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 1.0,
+          "note": "ежемесячный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "flags": [],
+      "notes": [
+        "скринер показывает A, карточка эмитента от 6 октября — AA. Окно срока по агентству."
+      ],
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10C6P6",
+      "status": "exception",
+      "reason": "AAA/AA короче 4 лет: только отдельное согласие"
+    },
+    {
+      "isin": "RU000A10ETQ6",
+      "shortname": "ПСБ 4P-02",
+      "issuer": "ПАО \"Банк ПСБ\"",
+      "group": "aa",
+      "rating": "AAA",
+      "rating_agency": "АКРА",
+      "screener_rating": "AA",
+      "years": 2.46,
+      "duration": 2.082,
+      "ytm": 16.2145,
+      "price": 97.82,
+      "mean_turnover": 42755203.4,
+      "median_turnover": 16052807.0,
+      "excel_median_mln": 16.05,
+      "g_spread_bp": 135.2,
+      "g_spread_clamped": false,
+      "moex_g_spread_bp": 93.0,
+      "score": 8.0,
+      "score_passed": true,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 2.0,
+          "note": "G-спред от 130 до менее 200 б.п.",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 2.0,
+          "note": "качество эмитента от 7 → 2 вместо покрытия процентов",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 1.0,
+          "note": "ежемесячный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "flags": [],
+      "notes": [
+        "карточка этого выпуска от 6 октября: AAA. Дату 13 октября заново не открывали, балл свежести не начислен."
+      ],
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10ETQ6",
+      "status": "exception",
+      "reason": "AAA/AA короче 4 лет: только отдельное согласие"
+    },
+    {
+      "isin": "RU000A10FZ16",
+      "shortname": "ДелПорт1P5",
+      "issuer": "ООО \"ДелоПортс\"",
+      "group": "aa",
+      "rating": "AA-",
+      "rating_agency": "Эксперт РА",
+      "screener_rating": "A",
+      "years": 2.83,
+      "duration": 2.244,
+      "ytm": 18.4848,
+      "price": 99.92,
+      "mean_turnover": 120885216.7,
+      "median_turnover": 104365377.5,
+      "excel_median_mln": null,
+      "g_spread_bp": 355.0,
+      "g_spread_clamped": false,
+      "moex_g_spread_bp": 306.0,
+      "score": 7.0,
+      "score_passed": true,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 3.0,
+          "note": "G-спред от 200 до 600 б.п. включительно",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 0.0,
+          "note": "качество эмитента ниже 5 → 0",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 1.0,
+          "note": "ежемесячный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "flags": [],
+      "notes": [
+        "скринер показывает A, карточка этого выпуска от 6 октября — AA-. Окно срока по агентству."
+      ],
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10FZ16",
+      "status": "exception",
+      "reason": "AAA/AA короче 4 лет: только отдельное согласие"
+    },
+    {
+      "isin": "RU000A10DYC8",
+      "shortname": "ФПК2Р01",
+      "issuer": "АО \"ФПК\"",
+      "group": "aa",
+      "rating": "AA",
+      "rating_agency": "скринер ДОХОДЪ",
+      "screener_rating": "AA",
+      "years": 1.66,
+      "duration": 1.458,
+      "ytm": 16.0825,
+      "price": 100.58,
+      "mean_turnover": 72602179.7,
+      "median_turnover": 57388907.55,
+      "excel_median_mln": 17.1,
+      "g_spread_bp": 158.0,
+      "g_spread_clamped": false,
+      "moex_g_spread_bp": 157.0,
+      "score": 7.0,
+      "score_passed": true,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 2.0,
+          "note": "G-спред от 130 до менее 200 б.п.",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 1.0,
+          "note": "качество эмитента от 5 до менее 7 → 1",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 1.0,
+          "note": "ежемесячный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "flags": [
+        "ФПК — пассажирская дочка РЖД. Связку с РЖД и ПГК показываем, автоматически не покупаем."
+      ],
+      "notes": [
+        "буква только из выгрузки ДОХОДЪ. Карточки агентства на этот выпуск нет."
+      ],
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10DYC8",
+      "status": "exception",
+      "reason": "AAA/AA короче 4 лет: только отдельное согласие"
+    },
+    {
+      "isin": "RU000A10C8T4",
+      "shortname": "СибурХ1Р07",
+      "issuer": "ПАО \"СИБУР Холдинг\"",
+      "group": "aa",
+      "rating": "AAA",
+      "rating_agency": "АКРА",
+      "screener_rating": "AA",
+      "years": 2.33,
+      "duration": 1.984,
+      "ytm": 15.9194,
+      "price": 98.22,
+      "mean_turnover": 149400837.46,
+      "median_turnover": 84709216.9,
+      "excel_median_mln": 26.92,
+      "g_spread_bp": 110.0,
+      "g_spread_clamped": false,
+      "moex_g_spread_bp": 74.0,
+      "score": 6.0,
+      "score_passed": true,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 1.0,
+          "note": "G-спред от 80 до менее 130 б.п.",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 1.0,
+          "note": "качество эмитента от 5 до менее 7 → 1",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 1.0,
+          "note": "ежемесячный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "flags": [],
+      "notes": [
+        "карточка этого выпуска от 6 октября: AAA. Дату 13 октября заново не открывали, балл свежести не начислен."
+      ],
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10C8T4",
+      "status": "exception",
+      "reason": "AAA/AA короче 4 лет: только отдельное согласие"
+    },
+    {
+      "isin": "RU000A10CC24",
+      "shortname": "РусГид2Р07",
+      "issuer": "ПАО \"РусГидро\"",
+      "group": "aa",
+      "rating": "AAA",
+      "rating_agency": "АКРА",
+      "screener_rating": "AA",
+      "years": 1.79,
+      "duration": 1.581,
+      "ytm": 15.8699,
+      "price": 98.48,
+      "mean_turnover": 32110757.76,
+      "median_turnover": 13950727.55,
+      "excel_median_mln": 11.59,
+      "g_spread_bp": 122.9,
+      "g_spread_clamped": false,
+      "moex_g_spread_bp": 118.0,
+      "score": 6.0,
+      "score_passed": true,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 1.0,
+          "note": "G-спред от 80 до менее 130 б.п.",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 1.0,
+          "note": "качество эмитента от 5 до менее 7 → 1",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 1.0,
+          "note": "ежемесячный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "flags": [],
+      "notes": [
+        "карточка этого выпуска от 6 октября: AAA. Дату 13 октября заново не открывали, балл свежести не начислен."
+      ],
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10CC24",
+      "status": "exception",
+      "reason": "AAA/AA короче 4 лет: только отдельное согласие"
+    },
+    {
+      "isin": "RU000A10ER66",
+      "shortname": "ФосАгро2П6",
+      "issuer": "ПАО \"ФосАгро\"",
+      "group": "aa",
+      "rating": "AAA",
+      "rating_agency": "АКРА",
+      "screener_rating": "AA",
+      "years": 2.51,
+      "duration": 2.115,
+      "ytm": 15.8237,
+      "price": 97.85,
+      "mean_turnover": 84882918.58,
+      "median_turnover": 62306447.65,
+      "excel_median_mln": 59.29,
+      "g_spread_bp": 94.6,
+      "g_spread_clamped": false,
+      "moex_g_spread_bp": 51.0,
+      "score": 6.0,
+      "score_passed": true,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 1.0,
+          "note": "G-спред от 80 до менее 130 б.п.",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 1.0,
+          "note": "качество эмитента от 5 до менее 7 → 1",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 1.0,
+          "note": "ежемесячный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "flags": [],
+      "notes": [
+        "карточка этого выпуска от 6 октября: AAA. Дату 13 октября заново не открывали, балл свежести не начислен."
+      ],
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10ER66",
+      "status": "exception",
+      "reason": "AAA/AA короче 4 лет: только отдельное согласие"
+    },
+    {
+      "isin": "RU000A10BFG2",
+      "shortname": "Атомэнпр05",
+      "issuer": "АО \"Атомэнергопром\"",
+      "group": "aa",
+      "rating": "AAA",
+      "rating_agency": "АКРА",
+      "screener_rating": "AA",
+      "years": 3.49,
+      "duration": 2.605,
+      "ytm": 16.4758,
+      "price": 104.66,
+      "mean_turnover": 54553899.02,
+      "median_turnover": 46058592.65,
+      "excel_median_mln": 27.17,
+      "g_spread_bp": 144.4,
+      "g_spread_clamped": false,
+      "moex_g_spread_bp": 77.0,
+      "score": 5.5,
+      "score_passed": true,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 2.0,
+          "note": "G-спред от 130 до менее 200 б.п.",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 0.0,
+          "note": "качество эмитента ниже 5 → 0",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 0.5,
+          "note": "квартальный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "flags": [],
+      "notes": [
+        "карточка эмитента от 6 октября: AAA. Дату 13 октября заново не открывали, балл свежести не начислен."
+      ],
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10BFG2",
+      "status": "exception",
+      "reason": "AAA/AA короче 4 лет: только отдельное согласие"
+    },
+    {
+      "isin": "RU000A10EJQ7",
+      "shortname": "Атомэнпр11",
+      "issuer": "АО \"Атомэнергопром\"",
+      "group": "aa",
+      "rating": "AAA",
+      "rating_agency": "АКРА",
+      "screener_rating": "AA",
+      "years": 3.15,
+      "duration": 2.537,
+      "ytm": 16.4253,
+      "price": 98.02,
+      "mean_turnover": 80676469.74,
+      "median_turnover": 52398293.8,
+      "excel_median_mln": 45.63,
+      "g_spread_bp": 143.3,
+      "g_spread_clamped": false,
+      "moex_g_spread_bp": 77.0,
+      "score": 5.5,
+      "score_passed": true,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 2.0,
+          "note": "G-спред от 130 до менее 200 б.п.",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 0.0,
+          "note": "качество эмитента ниже 5 → 0",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 0.5,
+          "note": "квартальный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "flags": [],
+      "notes": [
+        "карточка этого выпуска от 6 октября: AAA. Дату 13 октября заново не открывали, балл свежести не начислен."
+      ],
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10EJQ7",
+      "status": "exception",
+      "reason": "AAA/AA короче 4 лет: только отдельное согласие"
+    },
+    {
+      "isin": "RU000A10C6L5",
+      "shortname": "Атомэнпр07",
+      "issuer": "АО \"Атомэнергопром\"",
+      "group": "aa",
+      "rating": "AAA",
+      "rating_agency": "АКРА",
+      "screener_rating": "AA",
+      "years": 3.76,
+      "duration": 2.86,
+      "ytm": 16.3903,
+      "price": 96.65,
+      "mean_turnover": 76916377.77,
+      "median_turnover": 49881248.7,
+      "excel_median_mln": 56.27,
+      "g_spread_bp": 119.4,
+      "g_spread_clamped": false,
+      "moex_g_spread_bp": 53.0,
+      "score": 4.5,
+      "score_passed": false,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 1.0,
+          "note": "G-спред от 80 до менее 130 б.п.",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 0.0,
+          "note": "качество эмитента ниже 5 → 0",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 0.5,
+          "note": "квартальный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "flags": [],
+      "notes": [
+        "карточка этого выпуска от 6 октября: AAA. Дату 13 октября заново не открывали, балл свежести не начислен."
+      ],
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10C6L5",
+      "status": "exception",
+      "reason": "AAA/AA короче 4 лет: только отдельное согласие"
+    },
+    {
+      "isin": "RU000A10F7L0",
+      "shortname": "Атомэнпр12",
+      "issuer": "АО \"Атомэнергопром\"",
+      "group": "aa",
+      "rating": "AAA",
+      "rating_agency": "АКРА",
+      "screener_rating": "AA",
+      "years": 2.6,
+      "duration": 2.175,
+      "ytm": 16.0143,
+      "price": 96.96,
+      "mean_turnover": 16824896.32,
+      "median_turnover": 9312820.85,
+      "excel_median_mln": 18.35,
+      "g_spread_bp": 111.0,
+      "g_spread_clamped": false,
+      "moex_g_spread_bp": 65.0,
+      "score": 4.5,
+      "score_passed": false,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 1.0,
+          "note": "G-спред от 80 до менее 130 б.п.",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 0.0,
+          "note": "качество эмитента ниже 5 → 0",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 0.5,
+          "note": "квартальный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "flags": [],
+      "notes": [
+        "карточка этого выпуска от 6 октября: AAA. Дату 13 октября заново не открывали, балл свежести не начислен."
+      ],
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10F7L0",
+      "status": "exception",
+      "reason": "AAA/AA короче 4 лет: только отдельное согласие"
+    },
+    {
+      "isin": "RU000A10CT33",
+      "shortname": "Атомэнпр08",
+      "issuer": "АО \"Атомэнергопром\"",
+      "group": "aa",
+      "rating": "AAA",
+      "rating_agency": "АКРА",
+      "screener_rating": "AA",
+      "years": 3.93,
+      "duration": 3.019,
+      "ytm": 16.0622,
+      "price": 98.6,
+      "mean_turnover": 6292774.47,
+      "median_turnover": 4579486.35,
+      "excel_median_mln": 4.75,
+      "g_spread_bp": 76.3,
+      "g_spread_clamped": false,
+      "moex_g_spread_bp": 12.0,
+      "score": 3.5,
+      "score_passed": false,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 0.0,
+          "note": "G-спред менее 80 б.п.",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 0.0,
+          "note": "качество эмитента ниже 5 → 0",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 0.5,
+          "note": "квартальный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "flags": [],
+      "notes": [
+        "карточка этого выпуска от 6 октября: AAA. Дату 13 октября заново не открывали, балл свежести не начислен."
+      ],
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10CT33",
+      "status": "exception",
+      "reason": "AAA/AA короче 4 лет: только отдельное согласие"
+    }
+  ],
+  "waitlist": [
+    {
+      "isin": "RU000A10DPS2",
+      "shortname": "Атомэнпр09",
+      "issuer": "АО \"Атомэнергопром\"",
+      "group": "aa",
+      "rating": "AAA",
+      "rating_agency": "АКРА",
+      "screener_rating": "AA",
+      "years": 4.62,
+      "duration": 3.351,
+      "ytm": 16.0722,
+      "price": 99.65,
+      "mean_turnover": 70235035.25,
+      "median_turnover": 30828811.55,
+      "excel_median_mln": 15.78,
+      "g_spread_bp": 47.7,
+      "g_spread_clamped": false,
+      "moex_g_spread_bp": -1.0,
+      "score": 3.5,
+      "score_passed": false,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 0.0,
+          "note": "G-спред менее 80 б.п.",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 0.0,
+          "note": "качество эмитента ниже 5 → 0",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 0.5,
+          "note": "квартальный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "flags": [],
+      "notes": [
+        "карточка этого выпуска от 6 октября: AAA. Дату 13 октября заново не открывали, балл свежести не начислен."
+      ],
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10DPS2",
+      "status": "wait",
+      "reason": "балл 3.5 ниже порога 5.0. С баллом за карточку 2025-11-05 было бы 4.5."
+    },
+    {
+      "isin": "RU000A10DYG9",
+      "shortname": "Атомэнпр10",
+      "issuer": "АО \"Атомэнергопром\"",
+      "group": "aa",
+      "rating": "AAA",
+      "rating_agency": "АКРА",
+      "screener_rating": "AA",
+      "years": 4.68,
+      "duration": 3.408,
+      "ytm": 15.8906,
+      "price": 100.41,
+      "mean_turnover": 43668487.05,
+      "median_turnover": 32928304.3,
+      "excel_median_mln": 17.57,
+      "g_spread_bp": 28.7,
+      "g_spread_clamped": false,
+      "moex_g_spread_bp": -22.0,
+      "score": 3.5,
+      "score_passed": false,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 0.0,
+          "note": "G-спред менее 80 б.п.",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 0.0,
+          "note": "качество эмитента ниже 5 → 0",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 0.5,
+          "note": "квартальный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "flags": [],
+      "notes": [
+        "карточка этого выпуска от 6 октября: AAA. Дату 13 октября заново не открывали, балл свежести не начислен."
+      ],
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10DYG9",
+      "status": "wait",
+      "reason": "балл 3.5 ниже порога 5.0. С баллом за карточку 2025-11-05 было бы 4.5."
+    }
+  ],
+  "review": [],
+  "rejected": [
+    {
+      "isin": "RU000A106P06",
+      "shortname": "ВСК 1P-04R",
+      "status": "reject",
+      "reason": "средний оборот за 10 сессий ниже 5 млн ₽",
+      "mean_turnover": 1492642.84,
+      "excel_median_mln": 1.78,
+      "ytm": 17.439,
+      "years": 1.79,
+      "price": 92.87
+    },
+    {
+      "isin": "RU000A10FGX6",
+      "shortname": "АФБАНК1Р19",
+      "status": "reject",
+      "reason": "средний оборот за 10 сессий ниже 5 млн ₽",
+      "mean_turnover": 3540963.7399999998,
+      "excel_median_mln": 4.49,
+      "ytm": 17.2225,
+      "years": 2.65,
+      "price": 96.14
+    },
+    {
+      "isin": "RU000A10CWF7",
+      "shortname": "ПГК3Р01",
+      "status": "reject",
+      "reason": "ПГК: полный стоп на новые покупки до 2029 года",
+      "mean_turnover": 9929750.18,
+      "excel_median_mln": 8.44,
+      "ytm": 16.8753,
+      "years": 1.92,
+      "price": 100.1
+    },
+    {
+      "isin": "RU000A10EYV6",
+      "shortname": "ПГК3Р04",
+      "status": "reject",
+      "reason": "ПГК: полный стоп на новые покупки до 2029 года",
+      "mean_turnover": 56819533.48,
+      "excel_median_mln": 39.6,
+      "ytm": 16.8513,
+      "years": 2.91,
+      "price": 99.37
+    },
+    {
+      "isin": "RU000A10C8C0",
+      "shortname": "РЖД 1Р-44R",
+      "status": "reject",
+      "reason": "РЖД: запрет из-за связки с ПГК",
+      "mean_turnover": 75463876.33000001,
+      "excel_median_mln": 30.34,
+      "ytm": 16.8298,
+      "years": 2.33,
+      "price": 96.7
+    },
+    {
+      "isin": "RU000A1089X5",
+      "shortname": "РЖДЗО28-1Р",
+      "status": "reject",
+      "reason": "РЖД: запрет из-за связки с ПГК",
+      "mean_turnover": 996035.0,
+      "excel_median_mln": 1.33,
+      "ytm": 16.3915,
+      "years": 1.39,
+      "price": 88.96
+    },
+    {
+      "isin": "RU000A105TY3",
+      "shortname": "ВымпелК1Р6",
+      "status": "reject",
+      "reason": "событие в дату: «досрочное погашение», допускается только «погашение»",
+      "mean_turnover": 848602.6,
+      "excel_median_mln": 0.44,
+      "ytm": 16.1923,
+      "years": 1.34,
+      "price": 94.35
+    },
+    {
+      "isin": "RU000A10BWC6",
+      "shortname": "iПозитивР3",
+      "issuer": "ПАО \"Группа Позитив\"",
+      "group": "a",
+      "rating": "A",
+      "rating_agency": "скринер ДОХОДЪ",
+      "screener_rating": "A",
+      "years": 1.5,
+      "duration": 1.31,
+      "ytm": 16.0503,
+      "price": 104.02,
+      "mean_turnover": 15806690.68,
+      "median_turnover": 14404921.25,
+      "excel_median_mln": 12.9,
+      "g_spread_bp": 190.4,
+      "g_spread_clamped": false,
+      "moex_g_spread_bp": 178.0,
+      "score": 8.0,
+      "score_passed": true,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 2.0,
+          "note": "G-спред от 130 до менее 200 б.п.",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 2.0,
+          "note": "качество эмитента от 7 → 2 вместо покрытия процентов",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 1.0,
+          "note": "ежемесячный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "flags": [],
+      "notes": [
+        "буква только из выгрузки ДОХОДЪ. Карточки агентства на этот выпуск нет."
+      ],
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10BWC6",
+      "status": "reject",
+      "reason": "срок до погашения вне окна рейтинга"
+    },
+    {
+      "isin": "RU000A105WP5",
+      "shortname": "ВымпелК1Р7",
+      "status": "reject",
+      "reason": "событие в дату: «досрочное погашение», допускается только «погашение»",
+      "mean_turnover": 5064173.8100000005,
+      "excel_median_mln": 0.38,
+      "ytm": 16.1765,
+      "years": 2.34,
+      "price": 89.5
+    },
+    {
+      "isin": "RU000A0JUAH8",
+      "shortname": "РЖД-30 обл",
+      "status": "reject",
+      "reason": "РЖД: запрет из-за связки с ПГК",
+      "mean_turnover": 1514398.3800000001,
+      "excel_median_mln": 2.21,
+      "ytm": 16.0054,
+      "years": 2.07,
+      "price": 100.94
+    },
+    {
+      "isin": "RU000A105XE7",
+      "shortname": "ВымпелК1Р2",
+      "status": "reject",
+      "reason": "событие в дату: «досрочное погашение», допускается только «погашение»",
+      "mean_turnover": 122340.69000000002,
+      "excel_median_mln": 0.09,
+      "ytm": 16.0917,
+      "years": 1.92,
+      "price": 90.32
+    },
+    {
+      "isin": "RU000A10CDZ5",
+      "shortname": "РЖД 1Р-45R",
+      "status": "reject",
+      "reason": "РЖД: запрет из-за связки с ПГК",
+      "mean_turnover": 14154789.61,
+      "excel_median_mln": 15.86,
+      "ytm": 15.9461,
+      "years": 2.7,
+      "price": 97.7
+    }
+  ],
+  "rejected_counts": {
+    "РЖД: запрет из-за связки с ПГК": 4,
+    "событие в дату: «досрочное погашение», допускается только «погашение»": 3,
+    "средний оборот за 10 сессий ниже 5 млн ₽": 2,
+    "ПГК: полный стоп на новые покупки до 2029 года": 2,
+    "срок вне окна рейтинга": 1
+  },
+  "longer_ofz_outside_file": [],
+  "curve": {
+    "points": 30,
+    "method": "G-спред: numpy.interp YTM фиксированных ОФЗ по дюрации биржи. В кривой средний оборот за 10 сессий от 20 млн ₽, пропуск дня равен нулю.",
+    "tenor_ytm": {
+      "2": {
+        "ytm": 14.768,
+        "clamped": false
+      },
+      "5": {
+        "ytm": 15.8751,
+        "clamped": false
+      },
+      "10": {
+        "ytm": 16.5714,
+        "clamped": false
+      },
+      "15": {
+        "ytm": 16.4711,
+        "clamped": true
+      }
+    }
+  },
+  "turnover": {
+    "metric": "средний VALUE",
+    "sessions": [
+      "2026-09-29",
+      "2026-09-30",
+      "2026-10-01",
+      "2026-10-02",
+      "2026-10-05",
+      "2026-10-06",
+      "2026-10-07",
+      "2026-10-08",
+      "2026-10-09",
+      "2026-10-12"
+    ],
+    "session_count": 10,
+    "missing_day": "ноль"
+  },
+  "caveats": [
+    "Цены, НКД, YTM, дюрация и оборот взяты с ISS Московской биржи. Буквы скринера и числа кредитного качества остались из выгрузки: биржа их не публикует.",
+    "Балл за свежесть рейтинга равен нулю: сайты АКРА, Эксперт РА и НКР 13 октября не открывались.",
+    "Средний оборот считается по 10 торговым дням якоря ОФЗ 26238. Медиана выгрузки показана рядом и порог не закрывает.",
+    "Лимит 5% и порог 15 млн не проверены: состава портфеля нет.",
+    "Это не инвестиционная рекомендация и не поручение брокеру."
+  ],
+  "disclaimer": "Сверка с Московской биржей. Это не индивидуальная инвестиционная рекомендация."
+}
