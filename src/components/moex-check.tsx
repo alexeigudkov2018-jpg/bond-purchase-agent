@@ -54,8 +54,8 @@ export function MoexCheck({ report }: { report: Dict | null }) {
         <Stat
           label="Остаток"
           value={rub(cash.remainder as number)}
-          hint={`${num((Number(cash.remainder_pct) || 0) * 100, 1)}% взноса. Корпоративный слот пуст`}
-          tone="warn"
+          hint={Number(cash.positions) >= 3 ? "Три позиции, почти весь взнос в бумагах" : `${num((Number(cash.remainder_pct) || 0) * 100, 1)}% взноса ещё не разложено`}
+          tone={Number(cash.positions) >= 3 ? "good" : "warn"}
         />
       </section>
 
@@ -86,13 +86,14 @@ export function MoexCheck({ report }: { report: Dict | null }) {
                 В файле было {num(item.excel_price as number)}% и YTM {num(item.excel_ytm as number)}%. Дюрация файла {num(item.excel_duration as number)} — это модифицированная дюрация скринера, в отбор взята дюрация биржи.
                 Средний оборот {mln(item.mean_turnover as number)}, медиана биржи {mln(item.median_turnover as number)}, медиана файла {num(item.excel_median_mln as number, 0)} млн ₽.
               </p>
+              {item.note ? <p className="mt-4 text-sm leading-6 text-[#5c564e]">{String(item.note)}</p> : null}
               <p className="mt-2 text-xs leading-5 text-[#6d675e]">
                 {String(item.bondization_note)}. Наивное {num(item.naive_ytm_after_13 as number)}% — это YTM × 0,87, ответом служит IRR.
                 <a className="ml-2 underline" href={String(item.moex_url)}>Биржа</a>
               </p>
             </article>
           ))}
-          {slots.filter((slot) => slot.id !== "ofz").map((slot) => (
+          {slots.filter((slot) => slot.id !== "ofz" && !positions.some((item) => item.slot_id === slot.id)).map((slot) => (
             <article key={String(slot.id)} className="rounded-3xl border border-dashed border-[#c8b49a] bg-[#fbf6ee] p-5 lg:col-span-2">
               <p className="text-xs uppercase tracking-[0.16em] text-[#8d4b32]">{String(slot.title)}</p>
               <h3 className="mt-1 font-serif text-3xl">Не заполнен</h3>
