@@ -1,0 +1,66 @@
+{
+  "purchases": [
+    {
+      "id": "2026-10-20-alfa",
+      "trade_date": "2026-10-20",
+      "status": "recorded_by_user",
+      "confirmation": "Пользователь подтвердил список 16:11. Номера брокерского поручения нет: это запись расчёта, не отчёт об исполнении.",
+      "broker_ticket": null,
+      "broker": "Альфа 2030",
+      "broker_id": "alfa",
+      "agreement": "5737728",
+      "account": "обычный",
+      "commission_rate": 0.00291,
+      "contribution": 170000.0,
+      "spent_dirty": 169502.76,
+      "commission": 493.25,
+      "total_debit": 169996.01,
+      "remainder": 3.99,
+      "ytm": 16.35,
+      "duration_years": 6.712,
+      "one_off": "Весь взнос в двух ОФЗ. Норма 65/35 на следующие вторники не отменена.",
+      "legs": [
+        {
+          "isin": "RU000A1038V6",
+          "secid": "SU26238RMFS4",
+          "shortname": "ОФЗ 26238",
+          "issuer": "Минфин России",
+          "qty": 165,
+          "price": 51.484,
+          "nkd": 27.23,
+          "dirty": 542.07,
+          "face": 1000.0,
+          "lot": 1,
+          "position_sum": 89441.55,
+          "commission": 260.27,
+          "debit": 89701.82,
+          "ytm": 16.2425,
+          "duration": 6.773,
+          "maturity": "2041-05-15",
+          "price_asof": "2026-10-20 16:11:34",
+          "price_source": "MOEX ISS последняя сделка LAST"
+        },
+        {
+          "isin": "RU000A100EF5",
+          "secid": "SU26230RMFS1",
+          "shortname": "ОФЗ 26230",
+          "issuer": "Минфин России",
+          "qty": 141,
+          "price": 56.338,
+          "nkd": 4.43,
+          "dirty": 567.81,
+          "face": 1000.0,
+          "lot": 1,
+          "position_sum": 80061.21,
+          "commission": 232.98,
+          "debit": 80294.19,
+          "ytm": 16.4702,
+          "duration": 6.644,
+          "maturity": "2039-03-16",
+          "price_asof": "2026-10-20 16:11:30",
+          "price_source": "MOEX ISS последняя сделка LAST"
+        }
+      ]
+    }
+  ]
+}

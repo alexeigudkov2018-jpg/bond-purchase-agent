@@ -26,13 +26,14 @@ export function Preview({ report }: { report: Dict | null }) {
   const ofz = (report.ofz as Dict[]) || [];
   const focus = (report.focus as Dict) || null;
   const focusRows = ((focus?.rows as Dict[]) || []);
+  const recorded = (report.recorded as Dict) || null;
   const meets = Boolean(weights.meets_target);
   const unspent = Boolean(cash.unspent_alert);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
       <header className="border-b border-[#d9d0c2] pb-8">
-        <p className="text-xs uppercase tracking-[0.22em] text-[#8d4b32]">Выгрузка ДОХОДЪ · предварительно</p>
+        <p className="text-xs uppercase tracking-[0.22em] text-[#8d4b32]">{recorded ? "Покупка записана · 20 октября" : "Выгрузка ДОХОДЪ · предварительно"}</p>
         <h1 className="mt-2 font-serif text-4xl leading-tight sm:text-5xl">Пакет на 170 000 ₽</h1>
         <p className="mt-3 max-w-3xl text-[#5c564e]">
           {report.full_ofz
@@ -64,7 +65,7 @@ export function Preview({ report }: { report: Dict | null }) {
 
       <section className="mt-10">
         <div className="flex items-baseline justify-between gap-4">
-          <h2 className="font-serif text-3xl">К покупке</h2>
+          <h2 className="font-serif text-3xl">{recorded ? "Записано" : "К покупке"}</h2>
           <p className="text-sm text-[#5c564e]">{report.full_ofz ? "Две позиции на весь взнос" : `${Number(cash.positions)} из 3 позиций`}</p>
         </div>
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -76,7 +77,7 @@ export function Preview({ report }: { report: Dict | null }) {
                   <h3 className="mt-1 font-serif text-3xl">{String(item.shortname)}</h3>
                   <p className="text-sm text-[#5c564e]">{String(item.isin)}</p>
                 </div>
-                <span className="rounded-full bg-[#e7f3ec] px-3 py-1 text-xs font-medium text-[#1d6b45]">{report.full_ofz ? "к покупке" : "предварительно"}</span>
+                <span className="rounded-full bg-[#e7f3ec] px-3 py-1 text-xs font-medium text-[#1d6b45]">{recorded ? "записано" : report.full_ofz ? "к покупке" : "предварительно"}</span>
               </div>
               <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3">
                 <Field label="Количество" value={`${item.qty} шт.`} />
@@ -202,8 +203,8 @@ export function Preview({ report }: { report: Dict | null }) {
       </section>
 
       <section className="mt-8 rounded-3xl bg-[#1a1814] px-5 py-5 text-[#f6f1e7]">
-        <p className="text-xs uppercase tracking-[0.16em] text-[#e2b5a4]">Совпадение с черновиком 6 октября</p>
-        <h2 className="mt-1 font-serif text-2xl">26238 и 26230 уже могли быть куплены</h2>
+        <p className="text-xs uppercase tracking-[0.16em] text-[#e2b5a4]">{recorded ? "Журнал покупок" : "Совпадение с черновиком 6 октября"}</p>
+        <h2 className="mt-1 font-serif text-2xl">{recorded ? "165 и 141 записаны на 20 октября" : "26238 и 26230 уже могли быть куплены"}</h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-[#ddd6cb]">{String(repeat.note)}</p>
         {alternateRows.length > 0 && (
           <p className="mt-3 text-sm leading-6 text-[#ddd6cb]">
