@@ -1,4 +1,4 @@
-import { num, rub } from "@/lib/utils";
+import { mln, num, rub } from "@/lib/utils";
 
 type Dict = Record<string, unknown>;
 
@@ -24,6 +24,8 @@ export function Preview({ report }: { report: Dict | null }) {
   const limits = (report.limits as Dict) || {};
   const counts = (report.rejected_counts as Dict) || {};
   const ofz = (report.ofz as Dict[]) || [];
+  const focus = (report.focus as Dict) || null;
+  const focusRows = ((focus?.rows as Dict[]) || []);
   const meets = Boolean(weights.meets_target);
   const unspent = Boolean(cash.unspent_alert);
 
@@ -113,6 +115,42 @@ export function Preview({ report }: { report: Dict | null }) {
           ))}
         </div>
       </section>
+
+      {focus && (
+        <section className="mt-10">
+          <h2 className="font-serif text-3xl">{String(focus.title)}</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#5c564e]">{String(focus.summary)} Сверка на {String(focus.checked_at)}. Рейтинг — с агрегатора, страница агентства сегодня не открывалась. G-спред посчитан по дюрации биржи и кривой ОФЗ со средним оборотом от 20 млн.</p>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[860px] text-left text-sm">
+              <thead className="text-xs uppercase tracking-wider text-[#8a8175]">
+                <tr>
+                  <th className="py-2 pr-3 font-medium">Выпуск</th>
+                  <th className="py-2 pr-3 font-medium">Вердикт</th>
+                  <th className="py-2 pr-3 font-medium">YTM биржи</th>
+                  <th className="py-2 pr-3 font-medium">Срок</th>
+                  <th className="py-2 pr-3 font-medium">Балл</th>
+                  <th className="py-2 font-medium">Средний оборот</th>
+                </tr>
+              </thead>
+              <tbody>
+                {focusRows.map((item) => (
+                  <tr key={String(item.isin)} className="border-t border-[#eadfce] align-top">
+                    <td className="py-2 pr-3">
+                      <div className="font-medium">{String(item.shortname)}</div>
+                      <div className="text-xs text-[#6d675e]">{String(item.reason)}</div>
+                    </td>
+                    <td className="py-2 pr-3">{String(item.verdict)}</td>
+                    <td className="py-2 pr-3">{num(item.ytm as number)}%</td>
+                    <td className="py-2 pr-3">{num(item.years as number)} лет</td>
+                    <td className="py-2 pr-3">{num(item.score as number, 1)}</td>
+                    <td className="py-2">{mln(item.mean_turnover as number)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       <section className="mt-10 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <div>
