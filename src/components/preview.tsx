@@ -101,7 +101,7 @@ export function Preview({ report }: { report: Dict | null }) {
               <p className="text-xs uppercase tracking-[0.16em] text-[#8d4b32]">{String(slot.title)}</p>
               <h3 className="mt-1 font-serif text-3xl">Не заполнен</h3>
               <p className="mt-3 text-sm leading-6 text-[#5c564e]">
-                Цель слота {rub(slot.target as number, 0)}. Внутри окна 4–7 лет для AAA/AA балл ниже 5. Окно группы A по агентской букве пустое: выпуски, которые скринер помечает как A, по карточкам 6 октября стоят в AA и короче четырёх лет.
+                Цель слота {rub(slot.target as number, 0)}. Внутри окна срока балл ниже 5, эти выпуски ниже. Короткие AAA/AA в пакет не переносятся.
               </p>
               {waitlist.map((item) => (
                 <p key={String(item.isin)} className="mt-3 text-sm leading-6">
@@ -169,7 +169,7 @@ export function Preview({ report }: { report: Dict | null }) {
       <section className="mt-10">
         <h2 className="font-serif text-3xl">Короткие AAA/AA</h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-[#5c564e]">
-          В пакет они не входят. Срок короче четырёх лет один и тот же для всей таблицы, включая ФосАгро. Буква агентства, где она есть, взята из карточек прогона 6 октября. G-спред у всех этих строк снят с края кривой: их дюрация короче 3,69 года.
+          В пакет они не входят. Срок короче четырёх лет один и тот же для всей таблицы, включая ФосАгро. Буква агентства, где она есть, взята из карточек прогона 6 октября. Кратчайшая дюрация ОФЗ в кривой файла — {num(curve.duration_min as number)} года. Пометка «край» стоит только там, где спред упёрся в границу.
         </p>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[980px] text-left text-sm">
@@ -202,7 +202,7 @@ export function Preview({ report }: { report: Dict | null }) {
                   <td className="py-2 pr-3">{num(item.years as number)} лет</td>
                   <td className="py-2 pr-3">{num(item.duration as number)}</td>
                   <td className="py-2 pr-3">{num(item.ytm as number)}%</td>
-                  <td className="py-2 pr-3">{item.g_spread_bp == null ? "—" : `${num(item.g_spread_bp as number, 0)} б.п.`}</td>
+                  <td className="py-2 pr-3">{item.g_spread_bp == null ? "—" : `${num(item.g_spread_bp as number, 0)} б.п.`}{item.g_spread_clamped ? <div className="text-xs text-[#8d4b32]">край кривой</div> : null}</td>
                   <td className="py-2 pr-3">{num(item.score as number, 1)}</td>
                   <td className="py-2 pr-3">{num(item.price as number)}%</td>
                   <td className="py-2">{item.median_mln == null ? "—" : `${num(item.median_mln as number, 2)} млн`}</td>

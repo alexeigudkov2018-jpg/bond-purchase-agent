@@ -24,10 +24,10 @@ export default async function Page() {
   ]);
   return (
     <>
-      <MoexCheck report={moex} />
+      <Preview report={preview} />
       <details className="mx-auto max-w-6xl px-4 pb-8 sm:px-6">
-        <summary className="cursor-pointer text-sm text-[#8d4b32]">Предварительный расчёт только по файлу, без биржи</summary>
-        <Preview report={preview} />
+        <summary className="cursor-pointer text-sm text-[#8d4b32]">13 октября: весь взнос в две ОФЗ, сверка с биржей</summary>
+        <MoexCheck report={moex} />
       </details>
       <details className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
         <summary className="cursor-pointer text-sm text-[#8d4b32]">Прогон Московской биржи от 6 октября</summary>
