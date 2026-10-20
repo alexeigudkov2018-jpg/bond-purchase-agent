@@ -35,9 +35,9 @@ export function Preview({ report }: { report: Dict | null }) {
         <p className="text-xs uppercase tracking-[0.22em] text-[#8d4b32]">Выгрузка ДОХОДЪ · предварительно</p>
         <h1 className="mt-2 font-serif text-4xl leading-tight sm:text-5xl">Пакет на 170 000 ₽</h1>
         <p className="mt-3 max-w-3xl text-[#5c564e]">
-          Расчёт на вторник {String(report.tuesday)} для {String(broker.name)}, соглашение {String(broker.agreement)}.
-          Октябрь чётный: ОФЗ 65% двумя выпусками, корпорат — одна позиция A и выше на 35%.
-          Котировки взяты из двух книг скринера. Дата доходности в файлах стоит прочерком.
+          {report.full_ofz
+            ? String(report.order_note)
+            : `Расчёт на вторник ${String(report.tuesday)} для ${String(broker.name)}, соглашение ${String(broker.agreement)}. Октябрь чётный: ОФЗ 65% двумя выпусками, корпорат — одна позиция A и выше на 35%. Котировки взяты из двух книг скринера. Дата доходности в файлах стоит прочерком.`}
         </p>
       </header>
 
@@ -46,7 +46,7 @@ export function Preview({ report }: { report: Dict | null }) {
         <Stat
           label="YTM до налога"
           value={`${num(weights.ytm as number)}%`}
-          hint={meets ? "Ориентир 16% выполнен" : "Ниже ориентира 16%"}
+          hint={weights.ytm_after_tax != null ? `После налога ${num(weights.ytm_after_tax as number)}%. ${meets ? "Ориентир 16% выполнен" : "Ниже ориентира 16%"}` : meets ? "Ориентир 16% выполнен" : "Ниже ориентира 16%"}
           tone={meets ? "good" : "warn"}
         />
         <Stat
@@ -56,16 +56,16 @@ export function Preview({ report }: { report: Dict | null }) {
         />
         <Stat
           label="Остаток"
-          value={rub(cash.remainder as number)}
-          hint={unspent ? `${num((cash.remainder_pct as number) * 100, 1)}% взноса. Фильтры не сдвигались` : "В пределах 10%"}
-          tone={unspent ? "warn" : "good"}
+          value={rub(cash.remainder as number, report.full_ofz ? 2 : 0)}
+          hint={report.full_ofz ? "Весь взнос в двух ОФЗ, остаток меньше одной бумаги" : unspent ? `${num((cash.remainder_pct as number) * 100, 1)}% взноса. Фильтры не сдвигались` : "В пределах 10%"}
+          tone={report.full_ofz || !unspent ? "good" : "warn"}
         />
       </section>
 
       <section className="mt-10">
         <div className="flex items-baseline justify-between gap-4">
           <h2 className="font-serif text-3xl">К покупке</h2>
-          <p className="text-sm text-[#5c564e]">{Number(cash.positions)} из 3 позиций</p>
+          <p className="text-sm text-[#5c564e]">{report.full_ofz ? "Две позиции на весь взнос" : `${Number(cash.positions)} из 3 позиций`}</p>
         </div>
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           {positions.map((item) => (
@@ -76,7 +76,7 @@ export function Preview({ report }: { report: Dict | null }) {
                   <h3 className="mt-1 font-serif text-3xl">{String(item.shortname)}</h3>
                   <p className="text-sm text-[#5c564e]">{String(item.isin)}</p>
                 </div>
-                <span className="rounded-full bg-[#e7f3ec] px-3 py-1 text-xs font-medium text-[#1d6b45]">предварительно</span>
+                <span className="rounded-full bg-[#e7f3ec] px-3 py-1 text-xs font-medium text-[#1d6b45]">{report.full_ofz ? "к покупке" : "предварительно"}</span>
               </div>
               <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3">
                 <Field label="Количество" value={`${item.qty} шт.`} />
@@ -93,12 +93,22 @@ export function Preview({ report }: { report: Dict | null }) {
                 <Field label="Медиана оборота" value={`${num(item.median_mln as number, 0)} млн ₽`} />
               </dl>
               <p className="mt-4 text-xs leading-5 text-[#6d675e]">
-                Цена {num(item.price as number)}% номинала, НКД {rub(item.nkd as number, 2)}. Номинал {rub(item.face as number, 0)}, лот {String(item.lot)} бумага.
-                Погашение {String(item.maturity)}. Источник цены: выгрузка, без даты расчёта.
+                Цена {num(item.price as number, 3)}% номинала, НКД {rub(item.nkd as number, 2)}. Номинал {rub(item.face as number, 0)}, лот {String(item.lot)} бумага.
+                Погашение {String(item.maturity)}. {item.price_asof ? `Цена биржи на ${String(item.price_asof)}.` : "Источник цены: выгрузка, без даты расчёта."}
+                {item.ytm_after_tax != null ? ` После налога ${num(item.ytm_after_tax as number)}%.` : ""}
               </p>
             </article>
           ))}
-          {slots.filter((slot) => !positions.some((item) => item.slot_id === slot.id)).map((slot) => (
+          {report.full_ofz ? (
+            <article className="rounded-3xl border border-[#e4dccb] bg-[#fbf6ee] p-5 lg:col-span-2">
+              <p className="text-xs uppercase tracking-[0.16em] text-[#8d4b32]">Слот корпората на этот вторник</p>
+              <h3 className="mt-1 font-serif text-3xl">Отдан двум ОФЗ</h3>
+              <p className="mt-3 text-sm leading-6 text-[#5c564e]">
+                ФосАгро и выпуски ПСБ в эту заявку не вошли: срок короче четырёх лет, доходность ниже ОФЗ. Деньги слота добавлены к 26238 и 26230. Это решение на 20 октября, норма 65/35 на следующие вторники не меняется.
+              </p>
+            </article>
+          ) : null}
+          {!report.full_ofz && slots.filter((slot) => !positions.some((item) => item.slot_id === slot.id)).map((slot) => (
             <article key={String(slot.id)} className="rounded-3xl border border-dashed border-[#c8b49a] bg-[#fbf6ee] p-5">
               <p className="text-xs uppercase tracking-[0.16em] text-[#8d4b32]">{String(slot.title)}</p>
               <h3 className="mt-1 font-serif text-3xl">Не заполнен</h3>
