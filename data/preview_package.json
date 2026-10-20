@@ -36,16 +36,16 @@
     "extras_note": "Купоны и погашения сверху взноса не добавлялись: в вводных их нет."
   },
   "cash": {
-    "spent_dirty": 169504.12,
-    "commission": 493.26,
-    "total_debit": 169997.38,
-    "remainder": 2.62,
+    "spent_dirty": 169502.76,
+    "commission": 493.25,
+    "total_debit": 169996.01,
+    "remainder": 3.99,
     "remainder_pct": 0.0,
     "unspent_alert": false,
     "positions": 2
   },
   "weights": {
-    "ytm": 16.3533,
+    "ytm": 16.35,
     "ytm_after_tax": 14.3746,
     "duration_years": 6.712,
     "meets_target": true,
@@ -60,8 +60,8 @@
       "issuer": "Минфин России",
       "years": 14.57,
       "duration": 6.773,
-      "ytm": 16.2469,
-      "price": 51.47,
+      "ytm": 16.2425,
+      "price": 51.484,
       "nkd": 27.23,
       "face": 1000.0,
       "lot": 1,
@@ -74,17 +74,17 @@
       "slot_id": "ofz",
       "slot_title": "ОФЗ, весь взнос",
       "verdict": "брать сегодня, весь взнос в двух ОФЗ",
-      "qty": 164,
-      "dirty": 541.93,
-      "position_sum": 88876.52,
-      "commission": 258.63,
-      "debit": 89135.15,
-      "annual_coupon_position": 11644.0,
+      "qty": 165,
+      "dirty": 542.07,
+      "position_sum": 89441.55,
+      "commission": 260.27,
+      "debit": 89701.82,
+      "annual_coupon_position": 11715.0,
       "naive_ytm_after_13": 14.1348,
       "ytm_after_tax": 14.2463,
       "price_source": "MOEX ISS последняя сделка LAST",
       "ytm_cashflow": 16.2398,
-      "price_asof": "2026-10-20 10:39:38",
+      "price_asof": "2026-10-20 16:11:34",
       "bondization_note": "график MOEX проверен: номинал равен начальному, амортизации и оферты нет",
       "bucket": "ofz"
     },
@@ -94,8 +94,8 @@
       "issuer": "Минфин России",
       "years": 12.4,
       "duration": 6.644,
-      "ytm": 16.4705,
-      "price": 56.337,
+      "ytm": 16.4702,
+      "price": 56.338,
       "nkd": 4.43,
       "face": 1000.0,
       "lot": 1,
@@ -108,17 +108,17 @@
       "slot_id": "ofz",
       "slot_title": "ОФЗ, весь взнос",
       "verdict": "брать сегодня, весь взнос в двух ОФЗ",
-      "qty": 142,
-      "dirty": 567.8,
-      "position_sum": 80627.6,
-      "commission": 234.63,
-      "debit": 80862.23,
-      "annual_coupon_position": 10934.0,
+      "qty": 141,
+      "dirty": 567.81,
+      "position_sum": 80061.21,
+      "commission": 232.98,
+      "debit": 80294.19,
+      "annual_coupon_position": 10857.0,
       "naive_ytm_after_13": 14.3293,
       "ytm_after_tax": 14.516,
       "price_source": "MOEX ISS последняя сделка LAST",
       "ytm_cashflow": 16.4632,
-      "price_asof": "2026-10-20 10:39:35",
+      "price_asof": "2026-10-20 16:11:30",
       "bondization_note": "график MOEX проверен: номинал равен начальному, амортизации и оферты нет",
       "bucket": "ofz"
     }
@@ -3558,29 +3558,29 @@
   "calendar": [
     {
       "month": "2026-12",
-      "ofz": 5805.6,
+      "ofz": 5841.0,
       "corporate": 0.0,
-      "total": 5805.6
+      "total": 5841.0
     },
     {
       "month": "2027-03",
-      "ofz": 5451.38,
+      "ofz": 5412.99,
       "corporate": 0.0,
-      "total": 5451.38
+      "total": 5412.99
     },
     {
       "month": "2027-06",
-      "ofz": 5805.6,
+      "ofz": 5841.0,
       "corporate": 0.0,
-      "total": 5805.6
+      "total": 5841.0
     },
     {
       "month": "2027-09",
-      "ofz": 5451.38,
+      "ofz": 5412.99,
       "corporate": 0.0,
-      "total": 5451.38
+      "total": 5412.99
     }
   ],
   "full_ofz": true,
-  "order_note": "20 октября весь взнос 170 000 ₽ в ОФЗ 26238 и ОФЗ 26230. Цены на 2026-10-20 10:39:38. Слот корпората на этот вторник отдан этим двум бумагам. Норма 65/35 дальше не меняется."
+  "order_note": "20 октября, 16:11. Весь взнос: 165 штук ОФЗ 26238 и 141 штука ОФЗ 26230. 164 и 142 уже не входят."
 }
