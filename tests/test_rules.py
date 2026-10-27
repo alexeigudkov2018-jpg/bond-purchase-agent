@@ -13,7 +13,7 @@ from engine.scoring import (
     score_corporate,
 )
 from engine.dohod import blocker, group_from_text
-from engine.select import _size, ban_reason, sector_exception
+from engine.select import _assess_ofz, _size, ban_reason, sector_exception
 
 
 class ScoringTests(unittest.TestCase):
@@ -160,6 +160,72 @@ class RuleTests(unittest.TestCase):
         self.assertIsNotNone(pretax)
         haircut = naive_haircut(pretax * 100, 0.13)
         self.assertNotAlmostEqual(tax["ytm"], haircut, places=2)
+
+
+class LastWeekOfzTests(unittest.TestCase):
+    def test_ofz_bought_last_week_is_not_eligible(self):
+        bond = {
+            "SECID": "SU26238RMFS4",
+            "ISIN": "RU000A1038V6",
+            "SHORTNAME": "ОФЗ 26238",
+            "FACEVALUE": 1000,
+            "MATDATE": "2041-05-15",
+            "COUPONPERCENT": 7.1,
+            "COUPONPERIOD": 182,
+            "ACCRUEDINT": 27.23,
+            "LOTSIZE": 1,
+            "STATUS": "A",
+            "FACEUNIT": "SUR",
+            "board": "TQOB",
+            "market": {"LAST": 51.5, "SYSTIME": "2026-10-26 13:00:00"},
+            "yields": {"EFFECTIVEYIELD": 16.2, "DURATION": 2470},
+            "turnover": {"mean": 100_000_000, "median": 90_000_000, "traded_days": 10, "sessions": 10},
+            "dohod": {
+                "currency": "RUB",
+                "coupon_type": "1",
+                "event": "погашение",
+                "eventFlag": "",
+                "emitent_type": "государственные",
+                "emitent": "Минфин России",
+            },
+        }
+        verdict = _assess_ofz(bond, date(2026, 10, 26), ["2026-10-13"], {"RU000A1038V6"})
+        self.assertEqual(verdict["status"], "reject")
+        self.assertIn("прошлой неделе", verdict["reason"])
+
+    def test_sale_horizon_keeps_big_coupon_and_drops_the_longest(self):
+        def bond(secid, isin, maturity, coupon):
+            return {
+                "SECID": secid,
+                "ISIN": isin,
+                "SHORTNAME": secid,
+                "FACEVALUE": 1000,
+                "MATDATE": maturity,
+                "COUPONPERCENT": coupon,
+                "COUPONPERIOD": 182,
+                "ACCRUEDINT": 2.4,
+                "LOTSIZE": 1,
+                "STATUS": "A",
+                "FACEUNIT": "SUR",
+                "board": "TQOB",
+                "market": {"LAST": 86.0, "SYSTIME": "2026-10-27 07:40:00"},
+                "yields": {"EFFECTIVEYIELD": 16.5, "DURATION": 1700},
+                "turnover": {"mean": 100_000_000, "median": 90_000_000, "traded_days": 10, "sessions": 10},
+                "dohod": {
+                    "currency": "RUB",
+                    "coupon_type": "1",
+                    "event": "погашение",
+                    "eventFlag": "",
+                    "emitent_type": "государственные",
+                    "emitent": "Минфин России",
+                },
+            }
+
+        short = _assess_ofz(bond("SU26252RMFS5", "RU000A1025A6", "2033-10-12", 12.5), date(2026, 10, 27), [], set())
+        long = _assess_ofz(bond("SU26238RMFS4", "RU000A1038V6", "2041-05-15", 7.1), date(2026, 10, 27), [], set())
+        self.assertEqual(short["status"], "eligible")
+        self.assertEqual(long["status"], "reject")
+        self.assertIn("9,5", long["reason"])
 
 
 if __name__ == "__main__":

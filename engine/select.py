@@ -39,6 +39,9 @@ from engine.rules import (
     MIN_TURNOVER_RUB,
     SCORE_THRESHOLD,
     SECTOR_BANS,
+    OFZ_MAX_YEARS,
+    OFZ_MIN_COUPON,
+    OFZ_MIN_YEARS,
     TARGET_YTM_PRETAX,
     TAX_RATE,
     UNSPENT_ALERT,
@@ -252,7 +255,7 @@ def build_package(
     eligible: dict[str, list[dict]] = {"ofz": [], "aa": [], "a": [], "corp": []}
 
     for bond in ofz_rows:
-        verdict = _assess_ofz(bond, asof, sessions)
+        verdict = _assess_ofz(bond, asof, sessions, last_week_isins)
         if verdict["status"] == "reject":
             rejected.append(verdict)
             continue
@@ -404,7 +407,7 @@ def _corp_structural(bond: dict, asof: date) -> bool:
     return True
 
 
-def _assess_ofz(bond: dict, asof: date, sessions: list[str]) -> dict:
+def _assess_ofz(bond: dict, asof: date, sessions: list[str], last_week_isins: set[str] | None = None) -> dict:
     years = years_to(bond, asof) or 0
     screen = bond.get("dohod") or {}
     base = _base_fields(bond, asof, (screen.get("emitent") if screen else None) or "Минфин России")
@@ -412,8 +415,15 @@ def _assess_ofz(bond: dict, asof: date, sessions: list[str]) -> dict:
     blocked = dohod_blocker(screen or None)
     if blocked:
         return {**base, "status": "reject", "reason": blocked}
-    if years < 8:
-        return {**base, "status": "reject", "reason": "ОФЗ короче 8 лет до погашения"}
+    if (bond.get("ISIN") or "").upper() in (last_week_isins or set()):
+        return {**base, "status": "reject", "reason": "выпуск куплен на прошлой неделе"}
+    if years < OFZ_MIN_YEARS:
+        return {**base, "status": "reject", "reason": "ОФЗ короче 6,5 лет: для продажи в 2030–2032 году доходность уже слабее большого купона"}
+    if years > OFZ_MAX_YEARS:
+        return {**base, "status": "reject", "reason": "ОФЗ длиннее 9,5 лет: к продаже в 2032 году бумага остаётся слишком длинной"}
+    coupon = float(bond.get("COUPONPERCENT") or 0)
+    if coupon < OFZ_MIN_COUPON:
+        return {**base, "status": "reject", "reason": "купон ниже 11%: в этом окне берём большой купон"}
     turnover = bond.get("turnover") or {}
     if turnover.get("mean") is None:
         return {**base, "status": "reject", "reason": "нет данных об обороте"}
@@ -424,8 +434,8 @@ def _assess_ofz(bond: dict, asof: date, sessions: list[str]) -> dict:
     base.update({
         "status": "eligible",
         "bucket": "ofz",
-        "reason": "длинная фиксированная ОФЗ без оферты",
-        "sort_key": (-(base["duration_days"] or 0), -(base["ytm"] or 0)),
+        "reason": "большой купон, погашение в 2033–2036, под продажу в 2030–2032",
+        "sort_key": (0 if coupon >= 12 else 1, years, -(base["ytm"] or 0)),
         "score": None,
         "flags": [],
     })
