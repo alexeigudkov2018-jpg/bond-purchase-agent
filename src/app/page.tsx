@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { Desk } from "@/components/desk";
+import { Horizon } from "@/components/horizon";
 import { MoexCheck } from "@/components/moex-check";
 import { Preview } from "@/components/preview";
 
@@ -16,15 +17,20 @@ async function readJson(name: string) {
 }
 
 export default async function Page() {
-  const [report, inputs, preview, moex] = await Promise.all([
+  const [report, inputs, preview, moex, horizon] = await Promise.all([
     readJson("latest_package.json"),
     readJson("inputs.json"),
     readJson("preview_package.json"),
     readJson("moex_package.json"),
+    readJson("horizon_package.json"),
   ]);
   return (
     <>
-      <Preview report={preview} />
+      <Horizon report={horizon} />
+      <details className="mx-auto max-w-6xl px-4 pb-8 sm:px-6">
+        <summary className="cursor-pointer text-sm text-[#8d4b32]">20 октября: записанная покупка 165 и 141</summary>
+        <Preview report={preview} />
+      </details>
       <details className="mx-auto max-w-6xl px-4 pb-8 sm:px-6">
         <summary className="cursor-pointer text-sm text-[#8d4b32]">13 октября: весь взнос в две ОФЗ, сверка с биржей</summary>
         <MoexCheck report={moex} />
