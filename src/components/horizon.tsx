@@ -8,11 +8,12 @@ export function Horizon({ report }: { report: Dict | null }) {
   const cash = report.cash as Dict;
   const weights = report.weights as Dict;
   const positions = (report.package as Dict[]) || [];
+  const recorded = (report.recorded as Dict) || null;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
       <header className="border-b border-[#d9d0c2] pb-8">
-        <p className="text-xs uppercase tracking-[0.22em] text-[#8d4b32]">27 октября · к покупке</p>
+        <p className="text-xs uppercase tracking-[0.22em] text-[#8d4b32]">{recorded ? "Покупка записана · 27 октября" : "27 октября · к покупке"}</p>
         <h1 className="mt-2 font-serif text-4xl leading-tight sm:text-5xl">Пакет на 170 000 ₽</h1>
         <p className="mt-3 max-w-3xl text-[#5c564e]">{String(report.order_note)}</p>
       </header>
@@ -26,13 +27,16 @@ export function Horizon({ report }: { report: Dict | null }) {
 
       <section className="mt-10">
         <div className="flex items-baseline justify-between gap-4">
-          <h2 className="font-serif text-3xl">К покупке</h2>
+          <h2 className="font-serif text-3xl">{recorded ? "Записано" : "К покупке"}</h2>
           <p className="text-sm text-[#5c564e]">Три позиции, срок до 2030–2032</p>
         </div>
         <div className="mt-4 grid gap-4 lg:grid-cols-3">
           {positions.map((item) => (
             <article key={String(item.isin)} className="rounded-3xl border border-[#e4dccb] bg-white p-5">
-              <p className="text-xs uppercase tracking-[0.16em] text-[#8d4b32]">{String(item.slot)}</p>
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-xs uppercase tracking-[0.16em] text-[#8d4b32]">{String(item.slot)}</p>
+                {recorded ? <span className="rounded-full bg-[#e7f3ec] px-3 py-1 text-xs font-medium text-[#1d6b45]">записано</span> : null}
+              </div>
               <h3 className="mt-1 font-serif text-3xl">{String(item.shortname)}</h3>
               <p className="text-sm text-[#5c564e]">{String(item.isin)}</p>
               <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
