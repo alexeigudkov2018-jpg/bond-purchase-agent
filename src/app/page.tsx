@@ -28,7 +28,7 @@ export default async function Page() {
     <>
       <Horizon report={horizon} />
       <details className="mx-auto max-w-6xl px-4 pb-8 sm:px-6">
-        <summary className="cursor-pointer text-sm text-[#8d4b32]">20 октября: записанная покупка 165 и 141</summary>
+        <summary className="cursor-pointer text-sm text-[#8d4b32]">20 октября: куплены 165 ОФЗ 26238 и 141 ОФЗ 26230</summary>
         <Preview report={preview} />
       </details>
       <details className="mx-auto max-w-6xl px-4 pb-8 sm:px-6">

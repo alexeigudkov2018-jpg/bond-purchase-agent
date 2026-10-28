@@ -33,7 +33,7 @@ export function Preview({ report }: { report: Dict | null }) {
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
       <header className="border-b border-[#d9d0c2] pb-8">
-        <p className="text-xs uppercase tracking-[0.22em] text-[#8d4b32]">{recorded ? "Покупка записана · 20 октября" : "Выгрузка ДОХОДЪ · предварительно"}</p>
+        <p className="text-xs uppercase tracking-[0.22em] text-[#8d4b32]">{recorded ? "Куплено · 20 октября" : "Выгрузка ДОХОДЪ · предварительно"}</p>
         <h1 className="mt-2 font-serif text-4xl leading-tight sm:text-5xl">Пакет на 170 000 ₽</h1>
         <p className="mt-3 max-w-3xl text-[#5c564e]">
           {report.full_ofz
@@ -204,7 +204,7 @@ export function Preview({ report }: { report: Dict | null }) {
 
       <section className="mt-8 rounded-3xl bg-[#1a1814] px-5 py-5 text-[#f6f1e7]">
         <p className="text-xs uppercase tracking-[0.16em] text-[#e2b5a4]">{recorded ? "Журнал покупок" : "Совпадение с черновиком 6 октября"}</p>
-        <h2 className="mt-1 font-serif text-2xl">{recorded ? "165 и 141 записаны на 20 октября" : "26238 и 26230 уже могли быть куплены"}</h2>
+        <h2 className="mt-1 font-serif text-2xl">{recorded ? "165 и 141 куплены 20 октября" : "26238 и 26230 уже могли быть куплены"}</h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-[#ddd6cb]">{String(repeat.note)}</p>
         {alternateRows.length > 0 && (
           <p className="mt-3 text-sm leading-6 text-[#ddd6cb]">
