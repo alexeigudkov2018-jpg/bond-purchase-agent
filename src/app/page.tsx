@@ -27,6 +27,11 @@ export default async function Page() {
   return (
     <>
       <Horizon report={horizon} />
+      <p className="mx-auto max-w-6xl px-4 pb-6 text-sm sm:px-6">
+        <a href="/markup" className="text-[#8d4b32] underline-offset-4 hover:underline">
+          Регрессивная наценка ассортимента
+        </a>
+      </p>
       <details className="mx-auto max-w-6xl px-4 pb-8 sm:px-6">
         <summary className="cursor-pointer text-sm text-[#8d4b32]">20 октября: куплены 165 ОФЗ 26238 и 141 ОФЗ 26230</summary>
         <Preview report={preview} />
