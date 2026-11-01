@@ -263,6 +263,12 @@ def render_text(report: dict) -> str:
         )
     if report["cash"]["unspent_alert"]:
         lines.append("Остаток больше 10% бюджета.")
+    from engine.rules import BUFFETT_WEEKLY_CHECKS
+
+    lines.append("")
+    lines.append("Линза Баффета (вторник, до подтверждения):")
+    for i, check in enumerate(BUFFETT_WEEKLY_CHECKS, 1):
+        lines.append(f"  B{i}. {check}")
     return "\n".join(lines)
 
 

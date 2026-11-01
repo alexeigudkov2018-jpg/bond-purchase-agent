@@ -4,6 +4,7 @@ from datetime import date
 from engine.cashflows import after_tax_ytm, naive_haircut, xirr
 from engine.corpbonds import _normalize_rating, rating_group
 from engine.rules import (
+    BUFFETT_WEEKLY_CHECKS,
     CORP_MIN_G_SPREAD_BP,
     broker_for_month,
     group_a_allowed,
@@ -263,6 +264,11 @@ class LastWeekOfzTests(unittest.TestCase):
         self.assertEqual(short["status"], "eligible")
         self.assertEqual(long["status"], "reject")
         self.assertIn("9,5", long["reason"])
+
+    def test_buffett_weekly_checks(self):
+        self.assertEqual(len(BUFFETT_WEEKLY_CHECKS), 8)
+        self.assertTrue(any("G-спред" in item for item in BUFFETT_WEEKLY_CHECKS))
+        self.assertTrue(any("мистер Рынок" in item for item in BUFFETT_WEEKLY_CHECKS))
 
 
 if __name__ == "__main__":
