@@ -38,15 +38,66 @@
 ════════════════════════════════════
 Сначала собери риторику из публичных каналов. Это основной сигнал «что обсуждают».
 
-МОЙ WATCHLIST (обязательно обходи; пользователь дополняет список):
-Telegram (публичные @ / t.me):
-- @cbr_official (или актуальный канал ЦБ, если другой)
-- @minfin (Минфин — если публичный актуальный)
-- @moex (Московская биржа — если публичный)
-- @interfaxonline / @rian_ru / @tass_agency (ленты)
-- @rbc_news / @kommersant / @vedomosti
-- @banksta / @markettwits / @selfinvestor / @economics (и аналоги рынка — только публичные)
-- ДОПИСАТЬ СВОИ: ________________ @... ________________
+МОЙ WATCHLIST (обязательно обходи; только ПУБЛИЧНЫЕ).
+Если @ мёртвый/переименован — строка «нет доступа», ищи актуальное публичное зеркало.
+Пользователь может дописать свои в конец.
+
+Telegram — официальные / ленты:
+- @cbr_official (или актуальный канал ЦБ)
+- @minfin / @minfin_gov (Минфин, какой доступен)
+- @moex / @moscowexchange
+- @interfaxonline
+- @rian_ru
+- @tass_agency
+- @prime_agency
+- @finmarket_news
+- @rbc_news
+- @rbc_quote
+- @kommersant
+- @vedomosti
+- @forbesrussia
+- @thebell_io
+- @frank_media (если публичный)
+
+Telegram — аналитики, авторы, рыночная риторика:
+- @banksta
+- @markettwits
+- @selfinvestor
+- @bitkogan
+- @spydell_finance
+- @economics
+- @economika
+- @russianmacro
+- @investfuture
+- @if_stocks
+- @smartlabru
+- @finanzru
+- @profinansy
+- @cbonds
+- @dohod
+- @mmibonds
+- @bonds
+- @akatov
+- @gostevinwest
+- @if_market
+- @marketoverview
+- @stock_and_bonds
+- @ofz_news
+- @ru_bonds
+
+Telegram — брокеры / research (тон «домашний» vs независимый):
+- @tinkoff_invest
+- @bcs_express
+- @finam_official
+- @alfainvestments
+- @sberinvesticii
+- @vtbinvestments
+- @aton
+- @kitfinance
+- @open_broker
+- @psb_invest
+
+ДОПИСАТЬ СВОИ TG: ________________
 
 MAX (публичные каналы / чаты по финансам РФ):
 - ДОПИСАТЬ СВОИ ссылки/названия: ________________
