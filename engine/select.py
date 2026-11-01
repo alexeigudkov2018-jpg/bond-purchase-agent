@@ -32,6 +32,7 @@ from engine.moex import (
     bondization,
 )
 from engine.rules import (
+    CORP_MIN_G_SPREAD_BP,
     ISSUER_BANS,
     ISSUER_LIMIT,
     MAX_POSITIONS,
@@ -508,9 +509,30 @@ def _assess_corp(
         return {**base, "status": "reject", "reason": "нет цены, доходности или дюрации"}
 
     g_spread, clamped = (None, False)
+    curve_ytm = None
     if curve and base["duration_years"] is not None:
         curve_ytm, clamped = _curve(curve, base["duration_years"])
         g_spread = (base["ytm"] - curve_ytm) * 100
+    if g_spread is None:
+        return {
+            **base,
+            "status": "reject",
+            "reason": "нет G-спреда к кривой ОФЗ: нельзя проверить выгоду против ОФЗ",
+        }
+    if g_spread <= CORP_MIN_G_SPREAD_BP:
+        return {
+            **base,
+            "status": "reject",
+            "bucket": group,
+            "g_spread_bp": round(g_spread, 1),
+            "g_spread_clamped": clamped,
+            "ofz_curve_ytm": None if curve_ytm is None else round(curve_ytm, 4),
+            "reason": (
+                f"не выгоднее ОФЗ: G-спред {g_spread:.1f} б.п. "
+                f"к кривой {curve_ytm:.2f}% на дюрации {base['duration_years']:.2f} г "
+                f"(нужен спред выше {CORP_MIN_G_SPREAD_BP:.0f} б.п.)"
+            ),
+        }
     csv_row = screener.get(isin, {})
     confirmed = confirmed_within_year(rating, asof) if rating and rating.get("date") else False
     credit_quality = _float(csv_row.get("credit_quality"))

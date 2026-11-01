@@ -3,7 +3,7 @@ from datetime import date
 
 from engine.cashflows import after_tax_ytm, naive_haircut, xirr
 from engine.corpbonds import _normalize_rating, rating_group
-from engine.rules import broker_for_month, state_participation
+from engine.rules import CORP_MIN_G_SPREAD_BP, broker_for_month, state_participation
 from engine.scoring import (
     coverage_points,
     credit_quality_points,
@@ -107,6 +107,12 @@ class RuleTests(unittest.TestCase):
         self.assertTrue(state_participation("СОПФ ДОМ.РФ"))
         self.assertFalse(state_participation("АО «Авто Финанс Банк»"))
         self.assertFalse(state_participation("ООО Балтийский лизинг"))
+
+    def test_corp_must_beat_ofz_curve(self):
+        self.assertEqual(CORP_MIN_G_SPREAD_BP, 0.0)
+        self.assertTrue(25.0 > CORP_MIN_G_SPREAD_BP)
+        self.assertFalse(0.0 > CORP_MIN_G_SPREAD_BP)
+        self.assertFalse(-5.0 > CORP_MIN_G_SPREAD_BP)
 
     def test_bans_and_container_exception(self):
         self.assertIn("РЖД", ban_reason("ОАО «Российские железные дороги»", "Транспорт"))

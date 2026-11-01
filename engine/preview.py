@@ -20,6 +20,7 @@ from engine.corpbonds import rating_group
 from engine.dohod import group_from_text
 from engine.rules import (
     CONTRIBUTION_RUB,
+    CORP_MIN_G_SPREAD_BP,
     CURVE_TURNOVER_RUB,
     MIN_POSITION_RUB,
     MIN_TURNOVER_RUB,
@@ -28,6 +29,7 @@ from engine.rules import (
     TAX_RATE,
     UNSPENT_ALERT,
     broker_for_month,
+    state_participation,
 )
 from engine.scoring import score_corporate
 from engine.select import _curve, _money, _position_dirty, _size, ban_reason
