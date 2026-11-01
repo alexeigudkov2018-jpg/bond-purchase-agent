@@ -284,7 +284,8 @@ def build_package(
         elif status == "eligible":
             bucket = verdict["bucket"]
             eligible[bucket].append(verdict)
-            if bucket in ("aa", "a"):
+            # Слот corp оставлен для старых отчётов; в него идут только AAA/AA.
+            if bucket == "aa":
                 eligible["corp"].append(verdict)
 
     for bucket in eligible.values():
@@ -550,6 +551,13 @@ def _assess_corp(
         "rating_confirmed": confirmed,
         "sort_key": (int(agency_group is None), len(flags), -scored["total"], -(base["ytm"] or 0)),
     })
+    if group == "a":
+        base.update({
+            "status": "reject",
+            "bucket": "a",
+            "reason": "группа A с 01.11.2026 вне автоматического пакета: только ОФЗ и AAA/AA",
+        })
+        return base
     if short_aa:
         base.update({
             "status": "exception",

@@ -92,6 +92,15 @@ class RuleTests(unittest.TestCase):
         self.assertEqual(broker_for_month(10)["agreement"], "5737728")
         self.assertEqual(broker_for_month(11)["agreement"], "4225FH3")
 
+    def test_slots_only_ofz_and_aa(self):
+        sber = broker_for_month(11)
+        alfa = broker_for_month(12)
+        self.assertEqual([slot["bucket"] for slot in sber["slots"]], ["ofz", "aa"])
+        self.assertEqual([slot["share"] for slot in sber["slots"]], [0.35, 0.65])
+        self.assertEqual([slot["bucket"] for slot in alfa["slots"]], ["ofz", "aa"])
+        self.assertEqual([slot["share"] for slot in alfa["slots"]], [0.65, 0.35])
+        self.assertNotIn("a", [slot["bucket"] for slot in sber["slots"] + alfa["slots"]])
+
     def test_bans_and_container_exception(self):
         self.assertIn("РЖД", ban_reason("ОАО «Российские железные дороги»", "Транспорт"))
         self.assertIn("МТС", ban_reason("ПАО МТС", "Телеком"))

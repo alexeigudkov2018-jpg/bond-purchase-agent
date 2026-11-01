@@ -38,7 +38,7 @@ export function Preview({ report }: { report: Dict | null }) {
         <p className="mt-3 max-w-3xl text-[#5c564e]">
           {report.full_ofz
             ? String(report.order_note)
-            : `Расчёт на вторник ${String(report.tuesday)} для ${String(broker.name)}, соглашение ${String(broker.agreement)}. Октябрь чётный: ОФЗ 65% двумя выпусками, корпорат — одна позиция A и выше на 35%. Котировки взяты из двух книг скринера. Дата доходности в файлах стоит прочерком.`}
+            : `Расчёт на вторник ${String(report.tuesday)} для ${String(broker.name)}, соглашение ${String(broker.agreement)}. Чётный месяц: ОФЗ 65% двумя выпусками, корпораты только AAA/AA на 35%. Группа A в пакет не входит. Котировки взяты из двух книг скринера. Дата доходности в файлах стоит прочерком.`}
         </p>
       </header>
 

@@ -94,7 +94,7 @@ export function Desk({ report, inputs }: { report: Dict | null; inputs: Dict }) 
           <p className="text-xs uppercase tracking-[0.22em] text-[#8d4b32]">Каждый вторник, 09:00 МСК</p>
           <h1 className="mt-2 font-serif text-4xl leading-tight sm:text-5xl">Вторничный пакет</h1>
           <p className="mt-3 max-w-xl text-[#5c564e]">
-            {String(tuesday.kind || "Расчёт")} {String(tuesday.date || data.asof)}. Брокер {String(broker.name)}, договор {String(broker.agreement)}. Месяц {String(broker.parity)}, поэтому ОФЗ занимают 65% слота, корпорат — одну позицию A и выше.
+            {String(tuesday.kind || "Расчёт")} {String(tuesday.date || data.asof)}. Брокер {String(broker.name)}, договор {String(broker.agreement)}. Месяц {String(broker.parity)}: только ОФЗ и корпораты AAA/AA, группа A в пакет не входит.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

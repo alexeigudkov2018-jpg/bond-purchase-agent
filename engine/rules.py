@@ -27,6 +27,8 @@ OFZ_MIN_YEARS = 6.5
 OFZ_MAX_YEARS = 9.5
 OFZ_MIN_COUPON = 11.0
 
+# С 01.11.2026 корпораты группы A в автоматический пакет не входят.
+# Покупаем только ОФЗ и корпораты AAA/AA. На Сбере слот AAA/AA расширен до 65%.
 BROKERS = {
     "sber": {
         "id": "sber",
@@ -36,8 +38,7 @@ BROKERS = {
         "months": (1, 3, 5, 7, 9, 11),
         "slots": (
             {"id": "ofz", "title": "ОФЗ", "share": 0.35, "bucket": "ofz"},
-            {"id": "aa", "title": "Корпораты AAA/AA", "share": 0.325, "bucket": "aa"},
-            {"id": "a", "title": "Корпораты A", "share": 0.325, "bucket": "a"},
+            {"id": "aa", "title": "Корпораты AAA/AA", "share": 0.65, "bucket": "aa"},
         ),
     },
     "alfa": {
@@ -48,7 +49,7 @@ BROKERS = {
         "months": (2, 4, 6, 8, 10, 12),
         "slots": (
             {"id": "ofz", "title": "ОФЗ", "share": 0.65, "bucket": "ofz"},
-            {"id": "corp", "title": "Корпорат A и выше", "share": 0.35, "bucket": "corp"},
+            {"id": "aa", "title": "Корпораты AAA/AA", "share": 0.35, "bucket": "aa"},
         ),
     },
 }
