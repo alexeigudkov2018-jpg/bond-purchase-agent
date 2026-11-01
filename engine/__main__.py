@@ -266,7 +266,7 @@ def render_text(report: dict) -> str:
     from engine.rules import BUFFETT_WEEKLY_CHECKS
 
     lines.append("")
-    lines.append("Линза Баффета (вторник, до подтверждения):")
+    lines.append("Мышление Баффета — только рекомендации (наши правила сильнее, пока сами не поменяем):")
     for i, check in enumerate(BUFFETT_WEEKLY_CHECKS, 1):
         lines.append(f"  B{i}. {check}")
     return "\n".join(lines)
