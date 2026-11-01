@@ -94,7 +94,7 @@ export function Desk({ report, inputs }: { report: Dict | null; inputs: Dict }) 
           <p className="text-xs uppercase tracking-[0.22em] text-[#8d4b32]">Каждый вторник, 09:00 МСК</p>
           <h1 className="mt-2 font-serif text-4xl leading-tight sm:text-5xl">Вторничный пакет</h1>
           <p className="mt-3 max-w-xl text-[#5c564e]">
-            {String(tuesday.kind || "Расчёт")} {String(tuesday.date || data.asof)}. Брокер {String(broker.name)}, договор {String(broker.agreement)}. Месяц {String(broker.parity)}: ОФЗ, AAA/AA и группа A с госучастием; корпорат только если выгоднее кривой ОФЗ.
+            {String(tuesday.kind || "Расчёт")} {String(tuesday.date || data.asof)}. Брокер {String(broker.name)}, договор {String(broker.agreement)}. Месяц {String(broker.parity)}: ОФЗ, AAA/AA и группа A с госучастием или крупным конгломератом; корпорат только если выгоднее кривой ОФЗ.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

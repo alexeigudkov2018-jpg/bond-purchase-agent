@@ -29,7 +29,7 @@ from engine.rules import (
     TAX_RATE,
     UNSPENT_ALERT,
     broker_for_month,
-    state_participation,
+    group_a_allowed,
 )
 from engine.scoring import score_corporate
 from engine.select import _curve, _money, _position_dirty, _size, ban_reason
@@ -467,8 +467,8 @@ def build_preview(
             counts[reason] += 1
             rejected.append(_public(item, {"status": "reject", "reason": reason, **common}))
             continue
-        if group == "a" and not state_participation(item.get("issuer") or ""):
-            reason = "группа A без госучастия: в пакет не берём"
+        if group == "a" and not group_a_allowed(item.get("issuer") or ""):
+            reason = "группа A без госучастия и не из списка крупных конгломератов"
             counts[reason] += 1
             rejected.append(_public(item, {"status": "reject", "reason": reason, **common}))
             continue

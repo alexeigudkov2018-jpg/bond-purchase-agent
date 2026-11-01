@@ -30,8 +30,8 @@ OFZ_MIN_YEARS = 6.5
 OFZ_MAX_YEARS = 9.5
 OFZ_MIN_COUPON = 11.0
 
-# С 01.11.2026 группа A допускается только у эмитентов с госучастием.
-# AAA/AA без этого фильтра. На Сбере снова три слота 35 / 32,5 / 32,5.
+# С 01.11.2026 группа A: госучастие или крупный конгломерат.
+# AAA/AA без этого фильтра. На Сбере три слота 35 / 32,5 / 32,5.
 BROKERS = {
     "sber": {
         "id": "sber",
@@ -42,7 +42,7 @@ BROKERS = {
         "slots": (
             {"id": "ofz", "title": "ОФЗ", "share": 0.35, "bucket": "ofz"},
             {"id": "aa", "title": "Корпораты AAA/AA", "share": 0.325, "bucket": "aa"},
-            {"id": "a", "title": "Корпораты A с госучастием", "share": 0.325, "bucket": "a"},
+            {"id": "a", "title": "Корпораты A: госучастие или крупный конгломерат", "share": 0.325, "bucket": "a"},
         ),
     },
     "alfa": {
@@ -53,7 +53,12 @@ BROKERS = {
         "months": (2, 4, 6, 8, 10, 12),
         "slots": (
             {"id": "ofz", "title": "ОФЗ", "share": 0.65, "bucket": "ofz"},
-            {"id": "corp", "title": "Корпорат AAA/AA или A с госучастием", "share": 0.35, "bucket": "corp"},
+            {
+                "id": "corp",
+                "title": "Корпорат AAA/AA или A (госучастие / крупный конгломерат)",
+                "share": 0.35,
+                "bucket": "corp",
+            },
         ),
     },
 }
@@ -98,6 +103,61 @@ STATE_PARTICIPATION = (
     "вэб рф",
     "внешэкономбанк",
 )
+
+# Крупные частные/смешанные конгломераты и холдинги для группы A.
+# Запреты ISSUER_BANS сильнее этого списка.
+LARGE_CONGLOMERATES = (
+    "афк система",
+    "акционерная финансовая корпорация система",
+    "лукойл",
+    "норильский никель",
+    "норникель",
+    "северсталь",
+    "нлмк",
+    "новолипецкий",
+    "ммк",
+    "магнитогорский металлургический",
+    "евраз",
+    "русал",
+    "эн+",
+    "en+",
+    "ен+",
+    "полюс",
+    "новатэк",
+    "татнефть",
+    "сургутнефтегаз",
+    "фосагро",
+    "уралкалий",
+    "уралхим",
+    "еврохим",
+    "магнит",
+    "тандер",
+    "икс 5",
+    "икс5",
+    "x5",
+    "агроторг",
+    "яндекс",
+    "мэйл.ру",
+    "mail.ru",
+    "vk company",
+    "вк ",
+    "мегафон",
+    "сибур",
+    "металлоинвест",
+    "тмк",
+    "трубная металлургическая",
+    "полиметалл",
+    "сегежа",
+    "реновы",
+    "ренова ",
+    "базовый элемент",
+    "интеррос",
+    "онэксим",
+    "усм ",
+    "usm ",
+)
+
+LARGE_CONGLOMERATE_TOKENS = ("нлмк", "ммк", "тмк", "x5")
 
 # Именные запреты. Сопоставление идёт с названием эмитента, не с обрывком тикера.
 ISSUER_BANS = (
@@ -190,3 +250,19 @@ def state_participation(issuer: str) -> bool:
         return True
     words = set(name.replace("-", " ").replace(".", " ").split())
     return any(token in words for token in STATE_PARTICIPATION_TOKENS)
+
+
+def large_conglomerate(issuer: str) -> bool:
+    """True, если эмитент похож на крупный конгломерат / холдинг из списка."""
+    name = _fold_name(issuer)
+    if not name:
+        return False
+    if any(marker in name for marker in LARGE_CONGLOMERATES):
+        return True
+    words = set(name.replace("-", " ").replace(".", " ").split())
+    return any(token in words for token in LARGE_CONGLOMERATE_TOKENS)
+
+
+def group_a_allowed(issuer: str) -> bool:
+    """Группа A: только госучастие или крупный конгломерат."""
+    return state_participation(issuer) or large_conglomerate(issuer)

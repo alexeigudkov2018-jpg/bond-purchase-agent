@@ -47,7 +47,7 @@ from engine.rules import (
     TAX_RATE,
     UNSPENT_ALERT,
     broker_for_month,
-    state_participation,
+    group_a_allowed,
 )
 from engine.scoring import score_corporate
 
@@ -574,12 +574,12 @@ def _assess_corp(
         "rating_confirmed": confirmed,
         "sort_key": (int(agency_group is None), len(flags), -scored["total"], -(base["ytm"] or 0)),
     })
-    if group == "a" and not state_participation(issuer):
+    if group == "a" and not group_a_allowed(issuer):
         base.update({
             "status": "reject",
             "bucket": "a",
-            "reason": "группа A без госучастия: в пакет не берём",
-            "state_participation": False,
+            "reason": "группа A без госучастия и не из списка крупных конгломератов",
+            "group_a_allowed": False,
         })
         return base
     if short_aa:
@@ -596,17 +596,17 @@ def _assess_corp(
             **base,
             "status": "wait",
             "bucket": group,
-            "state_participation": state_participation(issuer) if group == "a" else None,
+            "group_a_allowed": group_a_allowed(issuer) if group == "a" else None,
             "reason": f"балл {scored['total']} ниже порога {SCORE_THRESHOLD}",
         }
     reason = "прошёл жёсткие фильтры и порог баллов"
     if group == "a":
-        reason = "группа A с госучастием: прошёл жёсткие фильтры и порог баллов"
+        reason = "группа A (госучастие или крупный конгломерат): прошёл жёсткие фильтры и порог баллов"
     base.update({
         "status": "eligible",
         "bucket": group,
         "reason": reason,
-        "state_participation": True if group == "a" else None,
+        "group_a_allowed": True if group == "a" else None,
     })
     return base
 

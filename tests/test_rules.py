@@ -3,7 +3,13 @@ from datetime import date
 
 from engine.cashflows import after_tax_ytm, naive_haircut, xirr
 from engine.corpbonds import _normalize_rating, rating_group
-from engine.rules import CORP_MIN_G_SPREAD_BP, broker_for_month, state_participation
+from engine.rules import (
+    CORP_MIN_G_SPREAD_BP,
+    broker_for_month,
+    group_a_allowed,
+    large_conglomerate,
+    state_participation,
+)
 from engine.scoring import (
     coverage_points,
     credit_quality_points,
@@ -107,6 +113,15 @@ class RuleTests(unittest.TestCase):
         self.assertTrue(state_participation("СОПФ ДОМ.РФ"))
         self.assertFalse(state_participation("АО «Авто Финанс Банк»"))
         self.assertFalse(state_participation("ООО Балтийский лизинг"))
+
+    def test_group_a_allows_conglomerates(self):
+        self.assertTrue(large_conglomerate('ПАО "АФК Система"'))
+        self.assertTrue(large_conglomerate("ПАО «ЛУКОЙЛ»"))
+        self.assertTrue(large_conglomerate("ПАО «Магнит»"))
+        self.assertTrue(group_a_allowed("ПАО «Северсталь»"))
+        self.assertTrue(group_a_allowed("АО «Атомэнергопром»"))
+        self.assertFalse(group_a_allowed("АО «Авто Финанс Банк»"))
+        self.assertFalse(large_conglomerate("ООО Балтийский лизинг"))
 
     def test_corp_must_beat_ofz_curve(self):
         self.assertEqual(CORP_MIN_G_SPREAD_BP, 0.0)
