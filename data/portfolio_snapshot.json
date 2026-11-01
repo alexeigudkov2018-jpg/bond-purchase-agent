@@ -1,0 +1,76 @@
+{
+  "asof_decision": "2026-11-01",
+  "decision": "Акции не докупаем. Пауза сохраняется. Вторничный взнос идёт в облигации. Потолок по акциям до 10% не меняется.",
+  "combined": {
+    "value": 12947675.83,
+    "stocks": 3020907.19,
+    "stocks_share": 0.2333,
+    "ofz": 4772618.95,
+    "ofz_share": 0.3686,
+    "other_bonds": 5152275.81,
+    "other_bonds_share": 0.3979,
+    "cash": 1874.68
+  },
+  "alfa": {
+    "agreement": "5737728",
+    "report": "Инвестиционный отчёт.pdf",
+    "asof": "2026-10-29",
+    "value": 6707973.48,
+    "stocks": 1468656.33,
+    "stocks_share": 0.219,
+    "bonds": 5238861.12,
+    "bonds_share": 0.781,
+    "cash": 19.51,
+    "ytd_result": -73358.09,
+    "ytd_return_simple": -0.0108,
+    "deposits_2026": 5156471.88
+  },
+  "sber": {
+    "agreement": "4225FH3",
+    "report": "4225FH3_01012026_28102026.HTML",
+    "asof": "2026-10-28",
+    "value": 6239702.35,
+    "securities_dirty": 6237847.18,
+    "ofz": 2804683.63,
+    "ofz_share": 0.45,
+    "corporate_bonds": 1880912.69,
+    "corporate_bonds_share": 0.302,
+    "stocks": 1552250.86,
+    "stocks_share": 0.249,
+    "cash": 1855.17,
+    "start_2026": 2610616.3,
+    "deposits_2026": 3724450.0,
+    "corporate_actions_2026": 374549.49,
+    "tax_to_withhold": 33201.0
+  },
+  "issuer_limits": {
+    "note": "Лимит 5% на эмитента по двум счетам вместе. На Минфин не применяется.",
+    "over_5pct": [
+      {"issuer": "ПГК", "value": 968000, "share": 0.075},
+      {"issuer": "МТС, акция и облигация", "value": 769000, "share": 0.059},
+      {"issuer": "Авто Финанс Банк", "value": 728000, "share": 0.056}
+    ],
+    "near_5pct": [
+      {"issuer": "Атомэнергопром", "value": 621000, "share": 0.048}
+    ],
+    "no_new_buys": [
+      "ПГК",
+      "МТС",
+      "Авто Финанс Банк",
+      "РЖД",
+      "ГТЛК",
+      "Балтийский лизинг",
+      "Совкомбанк Лизинг",
+      "Новотранс",
+      "КАМАЗ"
+    ]
+  },
+  "next_tuesday": {
+    "date": "2026-11-03",
+    "broker": "SBER 2030",
+    "agreement": "4225FH3",
+    "contribution": 170000,
+    "slots": "ОФЗ 35%, AAA/AA 32,5%, группа A 32,5%",
+    "do_not_repeat": ["RU000A108EG6", "RU000A10D4Y2", "RU000A10EQ34"]
+  }
+}

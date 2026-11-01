@@ -168,18 +168,46 @@ def _cbr_note() -> dict:
     }
 
 
-def stocks_block(asof: date, portfolio_value: float | None) -> dict:
+def stocks_block(asof: date, portfolio_value: float | None, inputs: dict | None = None) -> dict:
     first_tuesday = _is_first_tuesday(asof)
-    share_known = False
-    return {
-        "first_tuesday": first_tuesday,
-        "pause": True,
-        "share_known": share_known,
-        "reason": (
+    inputs = inputs or {}
+    target = float(inputs.get("stocks_target_max") or 0.10)
+    pause = bool(inputs.get("stocks_pause", True))
+    share = inputs.get("stocks_share")
+    stocks_value = inputs.get("stocks_value")
+    share_known = share is not None
+    if share_known:
+        share = float(share)
+        stocks_value = None if stocks_value is None else float(stocks_value)
+        pct = round(share * 100, 1)
+        target_pct = round(target * 100, 1)
+        if pause or share > target:
+            reason = (
+                f"Покупки акций на паузе. Доля акций в объединённом портфеле {pct}% "
+                f"при потолке {target_pct}%. 1 ноября пользователь зафиксировал текущие позиции: "
+                "новые акции не докупаем, снижение доли идёт пополнениями в облигации."
+            )
+            pause = True
+        else:
+            reason = (
+                f"Доля акций {pct}% не выше потолка {target_pct}%. "
+                "Вторничный пакет по-прежнему собирается только из облигаций."
+            )
+    else:
+        reason = (
             "Покупки акций на паузе. Фактическая доля акций в объединённом портфеле не передана, "
             "поэтому пауза не снимается. Долгосрочная цель по акциям — до 10%, снижение доли идёт "
             "пополнениями в облигации."
-        ),
+        )
+        pause = True
+    return {
+        "first_tuesday": first_tuesday,
+        "pause": pause,
+        "share_known": share_known,
+        "share": share,
+        "stocks_value": stocks_value,
+        "target_max": target,
+        "reason": reason,
         "included_in_package": False,
         "portfolio_value": portfolio_value,
         "dividend_block": "Выгрузка акций и дивидендов не приложена." if first_tuesday else None,
@@ -290,7 +318,7 @@ def main() -> None:
     }
     report["schedule"] = "каждый вторник в 09:00 МСК"
     report["market"] = market_block(asof)
-    report["stocks"] = stocks_block(asof, portfolio_value)
+    report["stocks"] = stocks_block(asof, portfolio_value, inputs)
     report["sources"] = screener_note()
     report["execution_log"] = (
         "Журнал исполненных пакетов пуст. Запрет повтора выпусков прошлой недели нечем подтвердить."
