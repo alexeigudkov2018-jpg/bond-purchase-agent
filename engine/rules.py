@@ -27,8 +27,8 @@ OFZ_MIN_YEARS = 6.5
 OFZ_MAX_YEARS = 9.5
 OFZ_MIN_COUPON = 11.0
 
-# С 01.11.2026 корпораты группы A в автоматический пакет не входят.
-# Покупаем только ОФЗ и корпораты AAA/AA. На Сбере слот AAA/AA расширен до 65%.
+# С 01.11.2026 группа A допускается только у эмитентов с госучастием.
+# AAA/AA без этого фильтра. На Сбере снова три слота 35 / 32,5 / 32,5.
 BROKERS = {
     "sber": {
         "id": "sber",
@@ -38,7 +38,8 @@ BROKERS = {
         "months": (1, 3, 5, 7, 9, 11),
         "slots": (
             {"id": "ofz", "title": "ОФЗ", "share": 0.35, "bucket": "ofz"},
-            {"id": "aa", "title": "Корпораты AAA/AA", "share": 0.65, "bucket": "aa"},
+            {"id": "aa", "title": "Корпораты AAA/AA", "share": 0.325, "bucket": "aa"},
+            {"id": "a", "title": "Корпораты A с госучастием", "share": 0.325, "bucket": "a"},
         ),
     },
     "alfa": {
@@ -49,10 +50,51 @@ BROKERS = {
         "months": (2, 4, 6, 8, 10, 12),
         "slots": (
             {"id": "ofz", "title": "ОФЗ", "share": 0.65, "bucket": "ofz"},
-            {"id": "aa", "title": "Корпораты AAA/AA", "share": 0.35, "bucket": "aa"},
+            {"id": "corp", "title": "Корпорат AAA/AA или A с госучастием", "share": 0.35, "bucket": "corp"},
         ),
     },
 }
+
+# Маркеры госучастия по названию эмитента. Запреты ISSUER_BANS сильнее этого списка.
+STATE_PARTICIPATION = (
+    "атомэнергопром",
+    "росатом",
+    "дом.рф",
+    "дом рф",
+    "сопф дом",
+    "русгидро",
+    "россети",
+    "фск еэс",
+    "фск ",
+    "газпром",
+    "роснефть",
+    "транснефть",
+    "сбербанк",
+    "банк втб",
+    " втб",
+    "промсвязьбанк",
+    "банк псб",
+    "«псб»",
+    "\"псб\"",
+    "одк",
+    "объединенная двигателестроительная",
+    "объединённая двигателестроительная",
+    "оак",
+    "объединенная авиастроительная",
+    "объединённая авиастроительная",
+    "оск",
+    "объединенная судостроительная",
+    "объединённая судостроительная",
+    "ростех",
+    "алмаз-антей",
+    "аэрофлот",
+    "алроса",
+    "ростелеком",
+    "почта россии",
+    "вэб.рф",
+    "вэб рф",
+    "внешэкономбанк",
+)
 
 # Именные запреты. Сопоставление идёт с названием эмитента, не с обрывком тикера.
 ISSUER_BANS = (
@@ -119,3 +161,29 @@ def broker_for_month(month: int) -> dict:
         if month in broker["months"]:
             return broker
     raise RuntimeError("брокер не найден")
+
+
+def _fold_name(text: str) -> str:
+    return (
+        (text or "")
+        .casefold()
+        .replace("ё", "е")
+        .replace("«", " ")
+        .replace("»", " ")
+        .replace('"', " ")
+        .replace("'", " ")
+    )
+
+
+STATE_PARTICIPATION_TOKENS = ("втб", "одк", "оак", "оск", "псб")
+
+
+def state_participation(issuer: str) -> bool:
+    """True, если название эмитента совпало с маркером госучастия."""
+    name = _fold_name(issuer)
+    if not name:
+        return False
+    if any(marker in name for marker in STATE_PARTICIPATION):
+        return True
+    words = set(name.replace("-", " ").replace(".", " ").split())
+    return any(token in words for token in STATE_PARTICIPATION_TOKENS)

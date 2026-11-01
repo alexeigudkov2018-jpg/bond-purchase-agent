@@ -46,6 +46,7 @@ from engine.rules import (
     TAX_RATE,
     UNSPENT_ALERT,
     broker_for_month,
+    state_participation,
 )
 from engine.scoring import score_corporate
 
@@ -284,8 +285,8 @@ def build_package(
         elif status == "eligible":
             bucket = verdict["bucket"]
             eligible[bucket].append(verdict)
-            # Слот corp оставлен для старых отчётов; в него идут только AAA/AA.
-            if bucket == "aa":
+            # Слот corp на Альфе: AAA/AA и группа A с госучастием.
+            if bucket == "aa" or bucket == "a":
                 eligible["corp"].append(verdict)
 
     for bucket in eligible.values():
@@ -551,11 +552,12 @@ def _assess_corp(
         "rating_confirmed": confirmed,
         "sort_key": (int(agency_group is None), len(flags), -scored["total"], -(base["ytm"] or 0)),
     })
-    if group == "a":
+    if group == "a" and not state_participation(issuer):
         base.update({
             "status": "reject",
             "bucket": "a",
-            "reason": "группа A с 01.11.2026 вне автоматического пакета: только ОФЗ и AAA/AA",
+            "reason": "группа A без госучастия: в пакет не берём",
+            "state_participation": False,
         })
         return base
     if short_aa:
@@ -572,9 +574,18 @@ def _assess_corp(
             **base,
             "status": "wait",
             "bucket": group,
+            "state_participation": state_participation(issuer) if group == "a" else None,
             "reason": f"балл {scored['total']} ниже порога {SCORE_THRESHOLD}",
         }
-    base.update({"status": "eligible", "bucket": group, "reason": "прошёл жёсткие фильтры и порог баллов"})
+    reason = "прошёл жёсткие фильтры и порог баллов"
+    if group == "a":
+        reason = "группа A с госучастием: прошёл жёсткие фильтры и порог баллов"
+    base.update({
+        "status": "eligible",
+        "bucket": group,
+        "reason": reason,
+        "state_participation": True if group == "a" else None,
+    })
     return base
 
 

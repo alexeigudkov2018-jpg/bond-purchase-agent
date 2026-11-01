@@ -3,7 +3,7 @@ from datetime import date
 
 from engine.cashflows import after_tax_ytm, naive_haircut, xirr
 from engine.corpbonds import _normalize_rating, rating_group
-from engine.rules import broker_for_month
+from engine.rules import broker_for_month, state_participation
 from engine.scoring import (
     coverage_points,
     credit_quality_points,
@@ -92,14 +92,21 @@ class RuleTests(unittest.TestCase):
         self.assertEqual(broker_for_month(10)["agreement"], "5737728")
         self.assertEqual(broker_for_month(11)["agreement"], "4225FH3")
 
-    def test_slots_only_ofz_and_aa(self):
+    def test_slots_restore_state_owned_a(self):
         sber = broker_for_month(11)
         alfa = broker_for_month(12)
-        self.assertEqual([slot["bucket"] for slot in sber["slots"]], ["ofz", "aa"])
-        self.assertEqual([slot["share"] for slot in sber["slots"]], [0.35, 0.65])
-        self.assertEqual([slot["bucket"] for slot in alfa["slots"]], ["ofz", "aa"])
+        self.assertEqual([slot["bucket"] for slot in sber["slots"]], ["ofz", "aa", "a"])
+        self.assertEqual([slot["share"] for slot in sber["slots"]], [0.35, 0.325, 0.325])
+        self.assertEqual([slot["bucket"] for slot in alfa["slots"]], ["ofz", "corp"])
         self.assertEqual([slot["share"] for slot in alfa["slots"]], [0.65, 0.35])
-        self.assertNotIn("a", [slot["bucket"] for slot in sber["slots"] + alfa["slots"]])
+
+    def test_state_participation_markers(self):
+        self.assertTrue(state_participation("АО «Атомэнергопром»"))
+        self.assertTrue(state_participation("ПАО Банк ВТБ"))
+        self.assertTrue(state_participation("ПАО «РусГидро»"))
+        self.assertTrue(state_participation("СОПФ ДОМ.РФ"))
+        self.assertFalse(state_participation("АО «Авто Финанс Банк»"))
+        self.assertFalse(state_participation("ООО Балтийский лизинг"))
 
     def test_bans_and_container_exception(self):
         self.assertIn("РЖД", ban_reason("ОАО «Российские железные дороги»", "Транспорт"))
