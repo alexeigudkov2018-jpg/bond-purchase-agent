@@ -467,6 +467,21 @@ def build_preview(
             counts[reason] += 1
             rejected.append(_public(item, {"status": "reject", "reason": reason, **common}))
             continue
+        if group == "a" and not state_participation(item.get("issuer") or ""):
+            reason = "группа A без госучастия: в пакет не берём"
+            counts[reason] += 1
+            rejected.append(_public(item, {"status": "reject", "reason": reason, **common}))
+            continue
+        spread = scored["g_spread_bp"]
+        if spread is None or spread <= CORP_MIN_G_SPREAD_BP:
+            reason = (
+                f"не выгоднее ОФЗ: G-спред {spread} б.п."
+                if spread is not None
+                else "нет G-спреда к кривой ОФЗ: нельзя проверить выгоду против ОФЗ"
+            )
+            counts[reason] += 1
+            rejected.append(_public(item, {"status": "reject", "reason": reason, **common}))
+            continue
         years = item["years"]
         in_window = (group == "aa" and 4 <= years <= 7) or (group == "a" and 2 <= years <= 5)
         short_aa = group == "aa" and years < 4
