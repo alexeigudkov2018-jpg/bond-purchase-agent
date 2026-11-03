@@ -281,3 +281,67 @@ def large_conglomerate(issuer: str) -> bool:
 def group_a_allowed(issuer: str) -> bool:
     """Группа A: только госучастие или крупный конгломерат."""
     return state_participation(issuer) or large_conglomerate(issuer)
+
+
+# --- Базис драгметаллов: RUGOLD/RUSILVER (₽/г) vs GD/SV фьючерсы ($/унция) ---
+# RUGOLD = индекс МосБиржи аффинированного золота, ₽ за грамм (сделки GLDRUB_TOM).
+# GD* на FORTS = золото в USD за тройскую унцию. Без перевода валюты и единиц базис не считать.
+# То же для RUSILVER (₽/г) и SV* ($/унция).
+TROY_OUNCE_GRAMS = 31.1034768
+
+
+def fut_usd_oz_to_rub_per_gram(fut_usd_per_oz: float, usd_rub: float) -> float:
+    """Перевод фьючерса $/унция → ₽/грамм через USD000UTSTOM (или аналог TOM)."""
+    if fut_usd_per_oz is None or usd_rub is None:
+        raise ValueError("нужны цена фьючерса $/унция и курс USD/RUB")
+    if usd_rub <= 0 or TROY_OUNCE_GRAMS <= 0:
+        raise ValueError("курс и вес унции должны быть > 0")
+    return fut_usd_per_oz * usd_rub / TROY_OUNCE_GRAMS
+
+
+def metal_basis_rub_per_gram(
+    fut_usd_per_oz: float,
+    usd_rub: float,
+    spot_rub_per_gram: float,
+) -> float:
+    """Базис в ₽/г: фьючерс_в_₽/г − спот_индекс_₽/г. >0 = фьючерс дороже спота."""
+    if spot_rub_per_gram is None or spot_rub_per_gram <= 0:
+        raise ValueError("нужен спот в ₽/г (RUGOLD или RUSILVER)")
+    return fut_usd_oz_to_rub_per_gram(fut_usd_per_oz, usd_rub) - spot_rub_per_gram
+
+
+def metal_basis_pct(
+    fut_usd_per_oz: float,
+    usd_rub: float,
+    spot_rub_per_gram: float,
+) -> float:
+    """Базис в % к споту: (фьюч_₽/г / спот_₽/г − 1) × 100."""
+    if spot_rub_per_gram is None or spot_rub_per_gram <= 0:
+        raise ValueError("нужен спот в ₽/г (RUGOLD или RUSILVER)")
+    implied = fut_usd_oz_to_rub_per_gram(fut_usd_per_oz, usd_rub)
+    return (implied / spot_rub_per_gram - 1.0) * 100.0
+
+
+def gold_basis(
+    gd_usd_per_oz: float,
+    usd_rub: float,
+    rugold_rub_per_gram: float,
+) -> dict[str, float]:
+    """Базис золота GD* vs RUGOLD. Контроль: рядом смотреть GLDRUB_TOM (тоже ₽/г)."""
+    implied = fut_usd_oz_to_rub_per_gram(gd_usd_per_oz, usd_rub)
+    basis = implied - rugold_rub_per_gram
+    return {
+        "implied_rub_per_gram": implied,
+        "basis_rub_per_gram": basis,
+        "basis_pct": (implied / rugold_rub_per_gram - 1.0) * 100.0,
+        "troy_ounce_grams": TROY_OUNCE_GRAMS,
+    }
+
+
+def silver_basis(
+    sv_usd_per_oz: float,
+    usd_rub: float,
+    rusilver_rub_per_gram: float,
+) -> dict[str, float]:
+    """Базис серебра SV* vs RUSILVER — та же формула, что у золота."""
+    return gold_basis(sv_usd_per_oz, usd_rub, rusilver_rub_per_gram)

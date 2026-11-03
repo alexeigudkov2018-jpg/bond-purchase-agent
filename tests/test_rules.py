@@ -6,9 +6,15 @@ from engine.corpbonds import _normalize_rating, rating_group
 from engine.rules import (
     BUFFETT_WEEKLY_CHECKS,
     CORP_MIN_G_SPREAD_BP,
+    TROY_OUNCE_GRAMS,
     broker_for_month,
+    fut_usd_oz_to_rub_per_gram,
+    gold_basis,
     group_a_allowed,
     large_conglomerate,
+    metal_basis_pct,
+    metal_basis_rub_per_gram,
+    silver_basis,
     state_participation,
 )
 from engine.scoring import (
@@ -129,6 +135,29 @@ class RuleTests(unittest.TestCase):
         self.assertTrue(25.0 > CORP_MIN_G_SPREAD_BP)
         self.assertFalse(0.0 > CORP_MIN_G_SPREAD_BP)
         self.assertFalse(-5.0 > CORP_MIN_G_SPREAD_BP)
+
+    def test_gold_basis_rugold_vs_gd(self):
+        # Сессия 02.11.2026: GDZ6 3988.7 $/oz, USD 81.81, RUGOLD 10261.38 ₽/г
+        out = gold_basis(3988.7, 81.81, 10261.38)
+        self.assertAlmostEqual(out["troy_ounce_grams"], TROY_OUNCE_GRAMS)
+        self.assertAlmostEqual(out["implied_rub_per_gram"], 10491.29, places=2)
+        self.assertAlmostEqual(out["basis_rub_per_gram"], 229.91, places=2)
+        self.assertAlmostEqual(out["basis_pct"], 2.24, places=2)
+        self.assertAlmostEqual(
+            metal_basis_rub_per_gram(3988.7, 81.81, 10261.38),
+            out["basis_rub_per_gram"],
+        )
+        self.assertAlmostEqual(metal_basis_pct(3988.7, 81.81, 10261.38), out["basis_pct"])
+        self.assertAlmostEqual(
+            fut_usd_oz_to_rub_per_gram(3988.7, 81.81),
+            out["implied_rub_per_gram"],
+        )
+
+    def test_silver_basis_same_formula(self):
+        out = silver_basis(51.35, 81.81, 133.22)
+        implied = 51.35 * 81.81 / TROY_OUNCE_GRAMS
+        self.assertAlmostEqual(out["implied_rub_per_gram"], implied)
+        self.assertAlmostEqual(out["basis_rub_per_gram"], implied - 133.22)
 
     def test_bans_and_container_exception(self):
         self.assertIn("РЖД", ban_reason("ОАО «Российские железные дороги»", "Транспорт"))
