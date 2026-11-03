@@ -148,6 +148,51 @@
           "price_source": "MOEX ISS последняя сделка LAST"
         }
       ]
+    },
+    {
+      "id": "2026-11-03-sber",
+      "trade_date": "2026-11-03",
+      "status": "recorded_by_user",
+      "confirmation": "3 ноября вечером пользователь подтвердил: купил 121 шт ОФЗ 26246 по 80,835%. Номера брокерского поручения нет. НКД взято с ISS на дату сделки (14,14).",
+      "broker_ticket": null,
+      "broker": "SBER 2030",
+      "broker_id": "sber",
+      "agreement": "4225FH3",
+      "account": "обычный",
+      "commission_rate": 0.0031,
+      "contribution": 100000.0,
+      "spent_dirty": 99521.29,
+      "commission": 308.52,
+      "total_debit": 99829.81,
+      "remainder": 170.19,
+      "ytm": 16.66,
+      "ytm_after_tax": 14.49,
+      "duration_years": 5.37,
+      "one_off": "Пользователь: сегодня только 26246 на ~100к; остаток недели (~70к) смотрим 05.11.2026. Слоты AA/A не заполняли.",
+      "slots": "Ноябрь SBER: факт только ОФЗ; AA/A отложены на четверг.",
+      "legs": [
+        {
+          "isin": "RU000A108EE1",
+          "secid": "SU26246RMFS7",
+          "shortname": "ОФЗ 26246",
+          "issuer": "Минфин России",
+          "qty": 121,
+          "price": 80.835,
+          "nkd": 14.14,
+          "dirty": 822.49,
+          "face": 1000.0,
+          "lot": 1,
+          "position_sum": 97810.35,
+          "commission": 308.52,
+          "debit": 99829.81,
+          "ytm": 16.66,
+          "ytm_after_tax": 14.49,
+          "duration": 5.37,
+          "maturity": "2036-03-12",
+          "price_asof": "2026-11-03 user 80.835%",
+          "price_source": "цена пользователя; НКД ISS ACCINT 03.11"
+        }
+      ]
     }
   ]
 }
