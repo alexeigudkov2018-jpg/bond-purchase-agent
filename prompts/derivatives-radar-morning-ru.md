@@ -58,7 +58,7 @@
 `ЯДРО:`
 `1) ЛОНГ: <SECID> | ШОРТ: <SECID> · <класс> · базис% … · цель … · стоп … · overnight: …`
 `2) …`
-Каждую строку ЯДРА запиши в журнал как PLAN (id вида P<ddmm>-k).
+Каждую строку ЯДРА запиши в журнал как PLAN (id вида M<ddmm>-k, slot=morning).
 
 overnight: day-only | ok-overnight
 
