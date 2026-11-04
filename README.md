@@ -15,7 +15,7 @@
 - Порог балла — 5 из 10. Комиссия резервируется как 0,3%, фактическая ставка Альфы 0,291%, Сбера 0,31%.
 - Каждый вторник — разговор с **мышлением Баффета как рекомендациями** (не законом). Наши правила с пользователем остаются жёсткими, пока сами их явно не поменяем. Промпт: `prompts/weekly-purchase-buffett-ru.md`.
 - FINRADAR утро 07:30: полный промпт `prompts/finradar-morning-ru.md` (долг A + деривативы B; B7 — контанго/бэквордация и парные ноги одного актива; B8 — рейтинг; B9 — пересчёт прошлого топа: ДЕРЖАТЬ / ВЫХОДИТЬ / СОКРАТИТЬ). Базис золота/серебра — `GD($/oz)×USD/31,1034768 − RUGOLD(₽/г)`; код в `engine/rules.py` (`gold_basis` / `silver_basis`), текст: `prompts/finradar-metal-basis-ru.md`.
-- Деривативы: утро `prompts/derivatives-radar-morning-ru.md` (07:30, cron `30 4 * * *`), вечер `prompts/derivatives-radar-evening-ru.md` (19:00, cron `0 16 * * *`). Журнал пар: `data/derivatives-journal.md` + лимит ГО в `data/derivatives-account.json`. Агент читает/перезаписывает журнал каждый прогон; одна «рабочая сделка дня».
+- Деривативы: утро `prompts/derivatives-radar-morning-ru.md` (07:30, cron `30 4 * * *`), вечер `prompts/derivatives-radar-evening-ru.md` (19:00, cron `0 16 * * *`). Журнал: `data/derivatives-journal.md`. Агент ГО не считает и сделки из-за маржи не отбрасывает — показывает все проверенные пары и выбирает блок ЯДРО (до `max_core_pairs` в `data/derivatives-account.json`).
 
 Это не индивидуальная инвестиционная рекомендация. Цифры предварительные, пока нет брокерского отчёта.
 
