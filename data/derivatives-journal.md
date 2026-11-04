@@ -11,7 +11,11 @@
 
 | id | status | opened | slot | class | LONG | SHORT | N | basis_in_% | target_% | stop_% | overnight | note |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| — | — | — | — | — | — | — | — | — | — | — | — | пусто |
+| P0411-1 | PLAN | 2026-11-04 | evening | товары | GLDRUB_TOM | GDZ6 | 1 | +3.87 | +2.20 | +5.20 | day-only | GD×USD/31.1; ДСВД preliminary |
+| P0411-2 | PLAN | 2026-11-04 | evening | товары | NGX6 | NGZ6 | 1 | +16.59 | +10.00 | +22.00 | ok-overnight | календарь газ; сезонность |
+| P0411-3 | PLAN | 2026-11-04 | evening | акции | SMLT | SSZ6 | 1 | +2.15 | +1.20 | +3.20 | ok-overnight | scale 1:1 ПРОВЕРЕН |
+| P0411-4 | PLAN | 2026-11-04 | evening | крипта | BTX6 | BTZ6 | 1 | +0.88 | +0.35 | +1.50 | ok-overnight | календарь BTC |
+| P0411-5 | PLAN | 2026-11-04 | evening | товары | GLDRUB_TOM | GLDRUBF | 1 | +2.51 | +1.00 | +4.00 | day-only | tom vs вечный золото |
 
 Статусы:
 - `PLAN` — пара из утреннего/вечернего **ЯДРА**, ещё не подтверждена
