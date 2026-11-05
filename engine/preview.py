@@ -35,13 +35,13 @@ from engine.scoring import score_corporate
 from engine.select import _curve, _money, _position_dirty, _size, ban_reason
 
 ROOT = Path(__file__).resolve().parents[1]
-OFZ_BOOK = ROOT / "data" / "imports" / "2026-10-12-ofz-duration.xlsx"
-CORP_BOOK = ROOT / "data" / "imports" / "2026-10-12-corp-duration.xlsx"
+OFZ_BOOK = ROOT / "data" / "imports" / "2026-10-27-ofz-duration.xlsx"
+CORP_BOOK = ROOT / "data" / "imports" / "2026-11-05-corp-duration.xlsx"
 PRIOR_PATH = ROOT / "data" / "latest_package.json"
 OUT_PATH = ROOT / "data" / "preview_package.json"
 
-ANALYSIS_DATE = date(2026, 10, 12)
-TUESDAY = date(2026, 10, 13)
+ANALYSIS_DATE = date(2026, 11, 5)
+TUESDAY = date(2026, 11, 10)
 
 _RU_MONTH = {
     1: "января", 2: "февраля", 3: "марта", 4: "апреля",
@@ -173,6 +173,12 @@ def _normalize(row: dict, source: str) -> dict:
     if current is None and annual and clean:
         current = annual / clean * 100
     median_mln = _num(row.get("Медиана дневного оборота (млн в валюте торгов)"))
+    frn_index = _text(row.get("Базовый индекс (для FRN)"))
+    coupon_type = _text(row.get("Тип купона")).lower()
+    # Новые выгрузки ДОХОДЪ иногда оставляют «Тип купона» пустым.
+    # Если базового индекса FRN нет — считаем купон фиксированным; иначе плавающий.
+    if not coupon_type:
+        coupon_type = "плавающий" if frn_index else "фиксированный"
     return {
         "isin": _text(row.get("ISIN")).upper(),
         "shortname": _text(row.get("Название")),
@@ -202,11 +208,11 @@ def _normalize(row: dict, source: str) -> dict:
         "coupon_percent": coupon_pct,
         "per_year": per_year,
         "coupon_label": _coupon_label(per_year),
-        "coupon_type": _text(row.get("Тип купона")).lower(),
+        "coupon_type": coupon_type,
         "subordinated": _text(row.get("Субординированная (да/нет)")).lower() == "да",
         "guaranteed": _text(row.get("С гарантией (да/нет)")).lower() == "да",
         "issuer_type": _text(row.get("Тип эмитента")).lower(),
-        "frn_index": _text(row.get("Базовый индекс (для FRN)")),
+        "frn_index": frn_index,
         "annual_coupon": None if annual is None else round(annual, 2),
         "source_file": source,
     }
