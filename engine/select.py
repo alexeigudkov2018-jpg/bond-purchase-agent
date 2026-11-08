@@ -421,9 +421,9 @@ def _assess_ofz(bond: dict, asof: date, sessions: list[str], last_week_isins: se
     if (bond.get("ISIN") or "").upper() in (last_week_isins or set()):
         return {**base, "status": "reject", "reason": "выпуск куплен на прошлой неделе"}
     if years < OFZ_MIN_YEARS:
-        return {**base, "status": "reject", "reason": "ОФЗ короче 6,5 лет: для продажи в 2030–2032 году доходность уже слабее большого купона"}
+        return {**base, "status": "reject", "reason": "ОФЗ короче 5 лет: для продажи в 2030–2032 году доходность уже слабее большого купона"}
     if years > OFZ_MAX_YEARS:
-        return {**base, "status": "reject", "reason": "ОФЗ длиннее 9,5 лет: к продаже в 2032 году бумага остаётся слишком длинной"}
+        return {**base, "status": "reject", "reason": "ОФЗ длиннее 10 лет: к продаже в 2032 году бумага остаётся слишком длинной"}
     coupon = float(bond.get("COUPONPERCENT") or 0)
     if coupon < OFZ_MIN_COUPON:
         return {**base, "status": "reject", "reason": "купон ниже 11%: в этом окне берём большой купон"}

@@ -292,7 +292,7 @@ class LastWeekOfzTests(unittest.TestCase):
         long = _assess_ofz(bond("SU26238RMFS4", "RU000A1038V6", "2041-05-15", 7.1), date(2026, 10, 27), [], set())
         self.assertEqual(short["status"], "eligible")
         self.assertEqual(long["status"], "reject")
-        self.assertIn("9,5", long["reason"])
+        self.assertIn("10 лет", long["reason"])
 
     def test_buffett_weekly_checks(self):
         self.assertEqual(len(BUFFETT_WEEKLY_CHECKS), 8)
