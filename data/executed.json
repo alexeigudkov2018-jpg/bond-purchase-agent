@@ -193,6 +193,48 @@
           "price_source": "цена пользователя; НКД ISS ACCINT 03.11"
         }
       ]
+    },
+    {
+      "id": "2026-11-10-alfa-26252",
+      "trade_date": "2026-11-10",
+      "status": "recorded_by_user",
+      "confirmation": "10.11 вечером пользователь: 184 шт ОФЗ 26252 по 865,1 ₽ (чистогановая = 86,51%). Счёт не назван явно; по контексту перекладка с МТС на Альфе → записано Альфа 5737728. НКД ISS 7,19. Номера поручения нет.",
+      "broker_ticket": null,
+      "broker": "Альфа 2030",
+      "broker_id": "alfa",
+      "agreement": "5737728",
+      "account": "обычный",
+      "commission_rate": 0.00291,
+      "contribution": null,
+      "spent_dirty": 160501.36,
+      "commission": 467.06,
+      "total_debit": 160968.42,
+      "remainder": null,
+      "ytm": 16.3882,
+      "duration_years": 4.619,
+      "one_off": "Перекладка из МТС (floater) в ОФЗ 26252; не вторничный взнос 170к Сбера.",
+      "legs": [
+        {
+          "isin": "RU000A10D4Y2",
+          "secid": "SU26252RMFS5",
+          "shortname": "ОФЗ 26252",
+          "issuer": "Минфин России",
+          "qty": 184,
+          "price": 86.51,
+          "nkd": 7.19,
+          "dirty": 872.29,
+          "face": 1000.0,
+          "lot": 1,
+          "position_sum": 160501.36,
+          "commission": 467.06,
+          "debit": 160968.42,
+          "ytm": 16.3882,
+          "duration": 4.619,
+          "maturity": "2033-10-12",
+          "price_asof": "2026-11-10 user 865.1 RUB clean = 86.51%; NKD ISS",
+          "price_source": "цена пользователя (чистогановая ₽); НКД MOEX ISS ACCRUEDINT; сверка LAST ISS 86.505%"
+        }
+      ]
     }
   ]
 }

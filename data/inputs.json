@@ -7,7 +7,7 @@
   "stocks_value": 3020907.19,
   "stocks_share": 0.2333,
   "stocks_pause": true,
-  "stocks_target_max": 0.10,
+  "stocks_target_max": 0.1,
   "positions": [
     {
       "isin": "RU000A1038V6",
@@ -127,6 +127,23 @@
       "price_asof": "2026-11-05 user fill limit 80.38% + НКД 13.56",
       "status": "recorded_by_user",
       "bucket": "ofz"
+    },
+    {
+      "isin": "RU000A10D4Y2",
+      "secid": "SU26252RMFS5",
+      "shortname": "ОФЗ 26252",
+      "issuer": "Минфин России",
+      "qty": 184,
+      "value": 160501.36,
+      "price": 86.51,
+      "nkd": 7.19,
+      "debit": 160968.42,
+      "broker": "alfa",
+      "agreement": "5737728",
+      "trade_date": "2026-11-10",
+      "price_asof": "2026-11-10 user 865.1 RUB clean = 86.51%",
+      "status": "recorded_by_user",
+      "bucket": "ofz"
     }
   ],
   "last_week_isins": [
@@ -140,5 +157,5 @@
     "sber_asof": "2026-10-28",
     "snapshot": "data/portfolio_snapshot.json"
   },
-  "portfolio_update": "05.11.2026 Сбер 4225FH3: куплено 85 ОФЗ 26244 (RU000A1074G2) лимиткой 80,38% + НКД 13,56, dirty 817,36, дебет с комиссией 0,31% ≈69 691 ₽. 03.11: 121×26246 ≈99 830 ₽. Неделя ~169 521 / 170 000, хвост ≈479 ₽. Слоты AA/A пустые. Акции 23,3%, пауза."
+  "portfolio_update": "10.11.2026 Альфа 5737728: 184×ОФЗ 26252 по 865,1 ₽ чистогановых (=86,51%) + НКД ISS 7,19 → dirty 872,29; сумма 160501.36 ₽, комиссия ≈467.06 ₽, дебет ≈160968.42 ₽ (0,291%). Контекст: перекладка с МТС. ISS LAST ~19:48 МСК 86,505%. Вторничный пакет Сбера 68×26252 отдельно не подтверждён."
 }
