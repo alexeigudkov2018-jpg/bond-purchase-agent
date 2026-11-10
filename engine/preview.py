@@ -24,6 +24,9 @@ from engine.rules import (
     CURVE_TURNOVER_RUB,
     MIN_POSITION_RUB,
     MIN_TURNOVER_RUB,
+    OFZ_MAX_YEARS,
+    OFZ_MIN_COUPON,
+    OFZ_MIN_YEARS,
     SCORE_THRESHOLD,
     TARGET_YTM_PRETAX,
     TAX_RATE,
@@ -35,12 +38,12 @@ from engine.scoring import score_corporate
 from engine.select import _curve, _money, _position_dirty, _size, ban_reason
 
 ROOT = Path(__file__).resolve().parents[1]
-OFZ_BOOK = ROOT / "data" / "imports" / "2026-10-27-ofz-duration.xlsx"
-CORP_BOOK = ROOT / "data" / "imports" / "2026-11-05-corp-duration.xlsx"
+OFZ_BOOK = ROOT / "data" / "imports" / "2026-11-10-ofz-duration.xlsx"
+CORP_BOOK = ROOT / "data" / "imports" / "2026-11-10-corp-duration.xlsx"
 PRIOR_PATH = ROOT / "data" / "latest_package.json"
 OUT_PATH = ROOT / "data" / "preview_package.json"
 
-ANALYSIS_DATE = date(2026, 11, 5)
+ANALYSIS_DATE = date(2026, 11, 10)
 TUESDAY = date(2026, 11, 10)
 
 _RU_MONTH = {
@@ -395,20 +398,30 @@ def build_preview(
     eligible_ofz = []
     for item in ofz_rows:
         reason = _hard_block(item)
-        if reason is None and item["years"] < 8:
-            reason = "ОФЗ короче 8 лет до погашения"
+        if reason is None and (item["years"] or 0) < OFZ_MIN_YEARS:
+            reason = "ОФЗ короче 5 лет: для продажи в 2030–2032 году доходность уже слабее большого купона"
+        if reason is None and (item["years"] or 0) > OFZ_MAX_YEARS:
+            reason = "ОФЗ длиннее 10 лет: к продаже в 2032 году бумага остаётся слишком длинной"
+        if reason is None and (item["coupon_percent"] or 0) < OFZ_MIN_COUPON:
+            reason = "купон ниже 11%: в этом окне берём большой купон"
         if reason is None and item["issuer_type"] != "государственные":
             reason = "в файле ОФЗ тип эмитента не государственный"
         status = "reject" if reason else "eligible"
         row = _public(item, {
             "status": status,
-            "reason": reason or "длинная фиксированная ОФЗ, приоритет по дюрации выгрузки",
+            "reason": reason or "большой купон, погашение в окне 5–10 лет под продажу в 2030–2032",
             "liquidity": f"медиана выгрузки, среднее за 10 сессий {file_day} не пересчитывалось",
         })
         ofz_decisions.append(row)
         if status == "eligible":
             eligible_ofz.append(item)
-    eligible_ofz.sort(key=lambda item: (-(item["duration"] or 0), -(item["years"] or 0), -(item["ytm"] or 0)))
+    eligible_ofz.sort(
+        key=lambda item: (
+            0 if (item["coupon_percent"] or 0) >= 12 else 1,
+            item["years"] or 99,
+            -(item["ytm"] or 0),
+        )
+    )
 
     counts: Counter[str] = Counter()
     exceptions = []
@@ -594,8 +607,8 @@ def build_preview(
             "name": broker["name"],
             "agreement": broker["agreement"],
             "commission_rate": rate,
-            "parity": "чётный месяц",
-            "account": "обычный счёт Альфы. До конца 2026 поток не уходит на ИИС-3. Порог 15 млн не проверен: свежей оценки портфеля нет.",
+            "parity": "нечётный" if tuesday.month % 2 else "чётный",
+            "account": "обычный счёт. До конца 2026 поток не уходит на ИИС-3.",
         },
         "budget": {
             "contribution": budget,
@@ -605,7 +618,7 @@ def build_preview(
             "securities_cap": _money(cap),
             "reserve_amount": _money(budget - cap),
             "slots": slots,
-            "extras_note": "Купоны и погашения сверху взноса не добавлялись: в вводных их нет.",
+            "extras_note": "В preview купоны сверху взноса не добавляются; боевой пакет берёт их из data/inputs.json.",
         },
         "cash": cash,
         "weights": weights,
