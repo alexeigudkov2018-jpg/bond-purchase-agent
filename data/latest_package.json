@@ -1,50 +1,56 @@
 {
-  "asof": "2026-10-06",
+  "asof": "2026-11-10",
   "broker": {
-    "id": "alfa",
-    "name": "Альфа 2030",
-    "agreement": "5737728",
-    "commission_rate": 0.00291,
-    "month": 10,
-    "parity": "чётный"
+    "id": "sber",
+    "name": "SBER 2030",
+    "agreement": "4225FH3",
+    "commission_rate": 0.0031,
+    "month": 11,
+    "parity": "нечётный"
   },
   "budget": {
     "contribution": 170000.0,
-    "extras": 0.0,
-    "extras_note": "Купоны, дивиденды и погашения к взносу не добавлены: по этому счёту они не переданы.",
-    "total": 170000.0,
+    "extras": 1855.17,
+    "extras_note": "К взносу добавлены 1,855.17 ₽ поступлений этого счёта. Деньги Альфы не использовались.",
+    "total": 171855.17,
     "reserve_rate": 0.003,
-    "reserve_amount": 510.0,
-    "broker_rate": 0.00291,
-    "securities_cap": 169490.0,
+    "reserve_amount": 531.1,
+    "broker_rate": 0.0031,
+    "securities_cap": 171324.07,
     "slots": [
       {
         "id": "ofz",
         "title": "ОФЗ",
-        "share": 0.65,
-        "target": 110168.5
+        "share": 0.35,
+        "target": 59963.42
       },
       {
-        "id": "corp",
-        "title": "Корпорат A и выше",
-        "share": 0.35,
-        "target": 59321.5
+        "id": "aa",
+        "title": "Корпораты AAA/AA",
+        "share": 0.325,
+        "target": 55680.32
+      },
+      {
+        "id": "a",
+        "title": "Корпораты A: госучастие или крупный конгломерат",
+        "share": 0.325,
+        "target": 55680.32
       }
     ]
   },
   "turnover": {
     "metric": "среднее дневного оборота VALUE",
     "sessions": [
-      "2026-09-22",
-      "2026-09-23",
-      "2026-09-24",
-      "2026-09-25",
-      "2026-09-28",
-      "2026-09-29",
-      "2026-09-30",
-      "2026-10-01",
-      "2026-10-02",
-      "2026-10-05"
+      "2026-10-26",
+      "2026-10-27",
+      "2026-10-28",
+      "2026-10-29",
+      "2026-10-30",
+      "2026-11-02",
+      "2026-11-03",
+      "2026-11-05",
+      "2026-11-06",
+      "2026-11-09"
     ],
     "session_count": 10,
     "missing_day": "0 ₽, день входит в среднее",
@@ -58,9 +64,9 @@
       "slot_title": "ОФЗ",
       "bucket": "ofz",
       "verdict": "брать",
-      "secid": "SU26238RMFS4",
-      "isin": "RU000A1038V6",
-      "shortname": "ОФЗ 26238",
+      "secid": "SU26252RMFS5",
+      "isin": "RU000A10D4Y2",
+      "shortname": "ОФЗ 26252",
       "issuer": "Минфин России",
       "rating": null,
       "rating_agency": null,
@@ -69,39 +75,39 @@
       "rating_source": null,
       "rating_confirmed": false,
       "sector": null,
-      "qty": 103,
+      "qty": 68,
       "lot": 1,
       "face": 1000.0,
       "initial_face": 1000.0,
-      "price_pct": 50.62,
+      "price_pct": 86.48,
       "price_source": "MOEX ISS последняя сделка LAST",
-      "price_asof": "2026-10-06 15:52:15",
-      "nkd": 24.51,
-      "dirty": 530.71,
-      "position_sum": 54663.13,
-      "commission": 159.07,
-      "debit": 54822.2,
-      "ytm": 16.5069,
+      "price_asof": "2026-11-10 09:00:40",
+      "nkd": 7.19,
+      "dirty": 871.99,
+      "position_sum": 59295.32,
+      "commission": 183.82,
+      "debit": 59479.14,
+      "ytm": 16.3966,
       "ytm_source": "MOEX ISS marketdata_yields.EFFECTIVEYIELD",
-      "ytm_cashflow": 16.4996,
-      "ytm_after_tax": 14.4863,
+      "ytm_cashflow": 16.3861,
+      "ytm_after_tax": 14.2497,
       "ytm_after_tax_method": "IRR фактических дат купонов, НДФЛ 13% с каждого купона и с дисконта к номиналу на погашении; премия к номиналу налогом не компенсируется",
-      "naive_ytm_after_13": 14.361,
-      "duration_days": 2463.0,
-      "duration_years": 6.748,
-      "years": 14.61,
-      "maturity": "2041-05-15",
+      "naive_ytm_after_13": 14.265,
+      "duration_days": 1686.0,
+      "duration_years": 4.619,
+      "years": 6.92,
+      "maturity": "2033-10-12",
       "g_spread_bp": null,
       "moex_g_spread_bp": null,
       "score": null,
-      "coupon_percent": 7.1,
+      "coupon_percent": 12.5,
       "coupon_label": "полугодовой",
-      "annual_coupon": 71.0,
-      "current_yield": 14.03,
-      "annual_coupon_position": 7313.0,
-      "avg_turnover": 1270256622.51,
-      "median_turnover": 1260004842.52,
-      "dohod_median_turnover": 1157770000.0,
+      "annual_coupon": 125.0,
+      "current_yield": 14.45,
+      "annual_coupon_position": 8500.0,
+      "avg_turnover": 1124485533.73,
+      "median_turnover": 868732158.44,
+      "dohod_median_turnover": 1286950000.0,
       "screener_rating": null,
       "screener_quality": null,
       "screener_credit_quality": null,
@@ -109,423 +115,98 @@
       "turnover_sessions": 10,
       "flags": [],
       "notes": [],
-      "reason": "длинная фиксированная ОФЗ без оферты",
+      "reason": "большой купон, погашение в 2033–2036, под продажу в 2030–2032",
       "bondization_note": "амортизация и оферта в графике MOEX bondization не найдены, номинал равен начальному",
       "coupon_schedule": [
         {
-          "date": "2021-12-08",
-          "amount": 34.04
+          "date": "2026-04-22",
+          "amount": 62.33
         },
         {
-          "date": "2022-06-08",
-          "amount": 35.4
+          "date": "2026-10-21",
+          "amount": 62.33
         },
         {
-          "date": "2022-12-07",
-          "amount": 35.4
+          "date": "2027-04-21",
+          "amount": 62.33
         },
         {
-          "date": "2023-06-07",
-          "amount": 35.4
+          "date": "2027-10-20",
+          "amount": 62.33
         },
         {
-          "date": "2023-12-06",
-          "amount": 35.4
+          "date": "2028-04-19",
+          "amount": 62.33
         },
         {
-          "date": "2024-06-05",
-          "amount": 35.4
+          "date": "2028-10-18",
+          "amount": 62.33
         },
         {
-          "date": "2024-12-04",
-          "amount": 35.4
+          "date": "2029-04-18",
+          "amount": 62.33
         },
         {
-          "date": "2025-06-04",
-          "amount": 35.4
+          "date": "2029-10-17",
+          "amount": 62.33
         },
         {
-          "date": "2025-12-03",
-          "amount": 35.4
+          "date": "2030-04-17",
+          "amount": 62.33
         },
         {
-          "date": "2026-06-03",
-          "amount": 35.4
+          "date": "2030-10-16",
+          "amount": 62.33
         },
         {
-          "date": "2026-12-02",
-          "amount": 35.4
+          "date": "2031-04-16",
+          "amount": 62.33
         },
         {
-          "date": "2027-06-02",
-          "amount": 35.4
+          "date": "2031-10-15",
+          "amount": 62.33
         },
         {
-          "date": "2027-12-01",
-          "amount": 35.4
+          "date": "2032-04-14",
+          "amount": 62.33
         },
         {
-          "date": "2028-05-31",
-          "amount": 35.4
+          "date": "2032-10-13",
+          "amount": 62.33
         },
         {
-          "date": "2028-11-29",
-          "amount": 35.4
+          "date": "2033-04-13",
+          "amount": 62.33
         },
         {
-          "date": "2029-05-30",
-          "amount": 35.4
-        },
-        {
-          "date": "2029-11-28",
-          "amount": 35.4
-        },
-        {
-          "date": "2030-05-29",
-          "amount": 35.4
-        },
-        {
-          "date": "2030-11-27",
-          "amount": 35.4
-        },
-        {
-          "date": "2031-05-28",
-          "amount": 35.4
-        },
-        {
-          "date": "2031-11-26",
-          "amount": 35.4
-        },
-        {
-          "date": "2032-05-26",
-          "amount": 35.4
-        },
-        {
-          "date": "2032-11-24",
-          "amount": 35.4
-        },
-        {
-          "date": "2033-05-25",
-          "amount": 35.4
-        },
-        {
-          "date": "2033-11-23",
-          "amount": 35.4
-        },
-        {
-          "date": "2034-05-24",
-          "amount": 35.4
-        },
-        {
-          "date": "2034-11-22",
-          "amount": 35.4
-        },
-        {
-          "date": "2035-05-23",
-          "amount": 35.4
-        },
-        {
-          "date": "2035-11-21",
-          "amount": 35.4
-        },
-        {
-          "date": "2036-05-21",
-          "amount": 35.4
-        },
-        {
-          "date": "2036-11-19",
-          "amount": 35.4
-        },
-        {
-          "date": "2037-05-20",
-          "amount": 35.4
-        },
-        {
-          "date": "2037-11-18",
-          "amount": 35.4
-        },
-        {
-          "date": "2038-05-19",
-          "amount": 35.4
-        },
-        {
-          "date": "2038-11-17",
-          "amount": 35.4
-        },
-        {
-          "date": "2039-05-18",
-          "amount": 35.4
-        },
-        {
-          "date": "2039-11-16",
-          "amount": 35.4
-        },
-        {
-          "date": "2040-05-16",
-          "amount": 35.4
-        },
-        {
-          "date": "2040-11-14",
-          "amount": 35.4
-        },
-        {
-          "date": "2041-05-15",
-          "amount": 35.4
+          "date": "2033-10-12",
+          "amount": 62.33
         }
       ],
-      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26238RMFS4",
-      "card_url": null
-    },
-    {
-      "slot_id": "ofz",
-      "slot_title": "ОФЗ",
-      "bucket": "ofz",
-      "verdict": "брать",
-      "secid": "SU26230RMFS1",
-      "isin": "RU000A100EF5",
-      "shortname": "ОФЗ 26230",
-      "issuer": "Минфин России",
-      "rating": null,
-      "rating_agency": null,
-      "rating_date": null,
-      "rating_outlook": null,
-      "rating_source": null,
-      "rating_confirmed": false,
-      "sector": null,
-      "qty": 98,
-      "lot": 1,
-      "face": 1000.0,
-      "initial_face": 1000.0,
-      "price_pct": 55.803,
-      "price_source": "MOEX ISS последняя сделка LAST",
-      "price_asof": "2026-10-06 15:52:11",
-      "nkd": 1.48,
-      "dirty": 559.51,
-      "position_sum": 54831.98,
-      "commission": 159.56,
-      "debit": 54991.54,
-      "ytm": 16.6109,
-      "ytm_source": "MOEX ISS marketdata_yields.EFFECTIVEYIELD",
-      "ytm_cashflow": 16.6179,
-      "ytm_after_tax": 14.6649,
-      "ytm_after_tax_method": "IRR фактических дат купонов, НДФЛ 13% с каждого купона и с дисконта к номиналу на погашении; премия к номиналу налогом не компенсируется",
-      "naive_ytm_after_13": 14.4515,
-      "duration_days": 2431.0,
-      "duration_years": 6.66,
-      "years": 12.44,
-      "maturity": "2039-03-16",
-      "g_spread_bp": null,
-      "moex_g_spread_bp": null,
-      "score": null,
-      "coupon_percent": 7.7,
-      "coupon_label": "полугодовой",
-      "annual_coupon": 77.0,
-      "current_yield": 13.8,
-      "annual_coupon_position": 7546.0,
-      "avg_turnover": 192387851.06,
-      "median_turnover": 164330561.57,
-      "dohod_median_turnover": 330910000.0,
-      "screener_rating": null,
-      "screener_quality": null,
-      "screener_credit_quality": null,
-      "traded_days": 10,
-      "turnover_sessions": 10,
-      "flags": [],
-      "notes": [],
-      "reason": "длинная фиксированная ОФЗ без оферты",
-      "bondization_note": "амортизация и оферта в графике MOEX bondization не найдены, номинал равен начальному",
-      "coupon_schedule": [
-        {
-          "date": "2019-10-09",
-          "amount": 26.58
-        },
-        {
-          "date": "2020-04-08",
-          "amount": 38.39
-        },
-        {
-          "date": "2020-10-07",
-          "amount": 38.39
-        },
-        {
-          "date": "2021-04-07",
-          "amount": 38.39
-        },
-        {
-          "date": "2021-10-06",
-          "amount": 38.39
-        },
-        {
-          "date": "2022-04-06",
-          "amount": 38.39
-        },
-        {
-          "date": "2022-10-05",
-          "amount": 38.39
-        },
-        {
-          "date": "2023-04-05",
-          "amount": 38.39
-        },
-        {
-          "date": "2023-10-04",
-          "amount": 38.39
-        },
-        {
-          "date": "2024-04-03",
-          "amount": 38.39
-        },
-        {
-          "date": "2024-10-02",
-          "amount": 38.39
-        },
-        {
-          "date": "2025-04-02",
-          "amount": 38.39
-        },
-        {
-          "date": "2025-10-01",
-          "amount": 38.39
-        },
-        {
-          "date": "2026-04-01",
-          "amount": 38.39
-        },
-        {
-          "date": "2026-09-30",
-          "amount": 38.39
-        },
-        {
-          "date": "2027-03-31",
-          "amount": 38.39
-        },
-        {
-          "date": "2027-09-29",
-          "amount": 38.39
-        },
-        {
-          "date": "2028-03-29",
-          "amount": 38.39
-        },
-        {
-          "date": "2028-09-27",
-          "amount": 38.39
-        },
-        {
-          "date": "2029-03-28",
-          "amount": 38.39
-        },
-        {
-          "date": "2029-09-26",
-          "amount": 38.39
-        },
-        {
-          "date": "2030-03-27",
-          "amount": 38.39
-        },
-        {
-          "date": "2030-09-25",
-          "amount": 38.39
-        },
-        {
-          "date": "2031-03-26",
-          "amount": 38.39
-        },
-        {
-          "date": "2031-09-24",
-          "amount": 38.39
-        },
-        {
-          "date": "2032-03-24",
-          "amount": 38.39
-        },
-        {
-          "date": "2032-09-22",
-          "amount": 38.39
-        },
-        {
-          "date": "2033-03-23",
-          "amount": 38.39
-        },
-        {
-          "date": "2033-09-21",
-          "amount": 38.39
-        },
-        {
-          "date": "2034-03-22",
-          "amount": 38.39
-        },
-        {
-          "date": "2034-09-20",
-          "amount": 38.39
-        },
-        {
-          "date": "2035-03-21",
-          "amount": 38.39
-        },
-        {
-          "date": "2035-09-19",
-          "amount": 38.39
-        },
-        {
-          "date": "2036-03-19",
-          "amount": 38.39
-        },
-        {
-          "date": "2036-09-17",
-          "amount": 38.39
-        },
-        {
-          "date": "2037-03-18",
-          "amount": 38.39
-        },
-        {
-          "date": "2037-09-16",
-          "amount": 38.39
-        },
-        {
-          "date": "2038-03-17",
-          "amount": 38.39
-        },
-        {
-          "date": "2038-09-15",
-          "amount": 38.39
-        },
-        {
-          "date": "2039-03-16",
-          "amount": 38.39
-        }
-      ],
-      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26230RMFS1",
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26252RMFS5",
       "card_url": null
     }
   ],
   "weights": {
-    "ytm": 16.559,
-    "ytm_after_tax": 14.5757,
-    "duration_years": 6.704,
+    "ytm": 16.3966,
+    "ytm_after_tax": 14.2497,
+    "duration_years": 4.619,
     "meets_target": true,
     "target": 16.0,
     "weight_base": "сумма позиций с НКД, без комиссии"
   },
   "target_ytm": 16.0,
   "cash": {
-    "spent_dirty": 109495.11,
-    "commission": 318.63,
-    "total_debit": 109813.74,
-    "remainder": 60186.26,
-    "remainder_pct": 0.354,
+    "spent_dirty": 59295.32,
+    "commission": 183.82,
+    "total_debit": 59479.14,
+    "remainder": 112376.03,
+    "remainder_pct": 0.6539,
     "unspent_alert": true,
-    "positions": 2,
-    "positions_short": false
+    "positions": 1,
+    "positions_short": true
   },
   "calendar": [
-    {
-      "month": "2026-10",
-      "ofz": 0.0,
-      "corporate": 0.0,
-      "total": 0.0
-    },
     {
       "month": "2026-11",
       "ofz": 0.0,
@@ -534,9 +215,9 @@
     },
     {
       "month": "2026-12",
-      "ofz": 3646.2,
+      "ofz": 0.0,
       "corporate": 0.0,
-      "total": 3646.2
+      "total": 0.0
     },
     {
       "month": "2027-01",
@@ -552,15 +233,15 @@
     },
     {
       "month": "2027-03",
-      "ofz": 3762.22,
-      "corporate": 0.0,
-      "total": 3762.22
-    },
-    {
-      "month": "2027-04",
       "ofz": 0.0,
       "corporate": 0.0,
       "total": 0.0
+    },
+    {
+      "month": "2027-04",
+      "ofz": 4238.44,
+      "corporate": 0.0,
+      "total": 4238.44
     },
     {
       "month": "2027-05",
@@ -570,9 +251,9 @@
     },
     {
       "month": "2027-06",
-      "ofz": 3646.2,
+      "ofz": 0.0,
       "corporate": 0.0,
-      "total": 3646.2
+      "total": 0.0
     },
     {
       "month": "2027-07",
@@ -588,146 +269,18 @@
     },
     {
       "month": "2027-09",
-      "ofz": 3762.22,
+      "ofz": 0.0,
       "corporate": 0.0,
-      "total": 3762.22
+      "total": 0.0
+    },
+    {
+      "month": "2027-10",
+      "ofz": 4238.44,
+      "corporate": 0.0,
+      "total": 4238.44
     }
   ],
   "exceptions": [
-    {
-      "secid": "RU000A10FGX6",
-      "isin": "RU000A10FGX6",
-      "shortname": "АФБАНК1Р19",
-      "issuer": "АО \"Авто Финанс Банк\"",
-      "rating": "AA",
-      "rating_agency": "АКРА",
-      "rating_date": "2026-09-28",
-      "rating_outlook": "Позитивный",
-      "rating_source": "https://corpbonds.ru/org/303",
-      "sector": "кредитная организация",
-      "years": 2.67,
-      "maturity": "2029-06-07",
-      "ytm": 17.2322,
-      "duration_years": 2.211,
-      "g_spread_bp": 238.1,
-      "moex_g_spread_bp": 189.0,
-      "score": 9.0,
-      "score_parts": [
-        {
-          "criterion": "G-спред",
-          "points": 3.0,
-          "note": "G-спред от 200 до 600 б.п. включительно",
-          "substituted": false
-        },
-        {
-          "criterion": "Долг / кредитное качество",
-          "points": 3.0,
-          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
-          "substituted": true
-        },
-        {
-          "criterion": "Покрытие / качество эмитента",
-          "points": 1.0,
-          "note": "качество эмитента от 5 до менее 7 → 1",
-          "substituted": true
-        },
-        {
-          "criterion": "Частота купона",
-          "points": 1.0,
-          "note": "ежемесячный купон",
-          "substituted": false
-        },
-        {
-          "criterion": "Свежесть рейтинга",
-          "points": 1.0,
-          "note": "рейтинг подтверждён или повышен за последние 12 месяцев",
-          "substituted": false
-        }
-      ],
-      "coupon_percent": 14.2,
-      "coupon_label": "ежемесячный",
-      "avg_turnover": 5410024.07,
-      "median_turnover": 3716003.7,
-      "dohod_median_turnover": 4920000.0,
-      "screener_rating": "A",
-      "screener_quality": 5.74,
-      "price": 96.1,
-      "flags": [],
-      "notes": [
-        "скринер ДОХОДЪ показывает A, карточка агентства — AA. Для окна срока взято агентство."
-      ],
-      "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
-      "status": "exception",
-      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10FGX6",
-      "card_url": "https://corpbonds.ru/bond/RU000A10FGX6"
-    },
-    {
-      "secid": "RU000A10EQ34",
-      "isin": "RU000A10EQ34",
-      "shortname": "АФБАНК1Р18",
-      "issuer": "АО \"Авто Финанс Банк\"",
-      "rating": "AA",
-      "rating_agency": "АКРА",
-      "rating_date": "2026-09-28",
-      "rating_outlook": "Позитивный",
-      "rating_source": "https://corpbonds.ru/org/303",
-      "sector": "кредитная организация",
-      "years": 2.44,
-      "maturity": "2029-03-14",
-      "ytm": 17.142,
-      "duration_years": 2.044,
-      "g_spread_bp": 233.1,
-      "moex_g_spread_bp": 196.0,
-      "score": 9.0,
-      "score_parts": [
-        {
-          "criterion": "G-спред",
-          "points": 3.0,
-          "note": "G-спред от 200 до 600 б.п. включительно",
-          "substituted": false
-        },
-        {
-          "criterion": "Долг / кредитное качество",
-          "points": 3.0,
-          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
-          "substituted": true
-        },
-        {
-          "criterion": "Покрытие / качество эмитента",
-          "points": 1.0,
-          "note": "качество эмитента от 5 до менее 7 → 1",
-          "substituted": true
-        },
-        {
-          "criterion": "Частота купона",
-          "points": 1.0,
-          "note": "ежемесячный купон",
-          "substituted": false
-        },
-        {
-          "criterion": "Свежесть рейтинга",
-          "points": 1.0,
-          "note": "рейтинг подтверждён или повышен за последние 12 месяцев",
-          "substituted": false
-        }
-      ],
-      "coupon_percent": 14.75,
-      "coupon_label": "ежемесячный",
-      "avg_turnover": 26718375.28,
-      "median_turnover": 16970879.45,
-      "dohod_median_turnover": 7970000.0,
-      "screener_rating": "A",
-      "screener_quality": 5.74,
-      "price": 97.63,
-      "flags": [],
-      "notes": [
-        "скринер ДОХОДЪ показывает A, карточка агентства — AA. Для окна срока взято агентство."
-      ],
-      "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
-      "status": "exception",
-      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10EQ34",
-      "card_url": "https://corpbonds.ru/bond/RU000A10EQ34"
-    },
     {
       "secid": "RU000A10ETQ6",
       "isin": "RU000A10ETQ6",
@@ -739,18 +292,18 @@
       "rating_outlook": "Стабильный",
       "rating_source": "https://corpbonds.ru/org/94",
       "sector": "кредитная организация",
-      "years": 2.48,
+      "years": 2.38,
       "maturity": "2029-03-29",
-      "ytm": 16.2798,
-      "duration_years": 2.077,
-      "g_spread_bp": 146.1,
-      "moex_g_spread_bp": 106.0,
-      "score": 9.0,
+      "ytm": 15.7715,
+      "duration_years": 2.033,
+      "g_spread_bp": 90.2,
+      "moex_g_spread_bp": 79.0,
+      "score": 8.0,
       "score_parts": [
         {
           "criterion": "G-спред",
-          "points": 2.0,
-          "note": "G-спред от 130 до менее 200 б.п.",
+          "points": 1.0,
+          "note": "G-спред от 80 до менее 130 б.п.",
           "substituted": false
         },
         {
@@ -780,414 +333,18 @@
       ],
       "coupon_percent": 14.05,
       "coupon_label": "ежемесячный",
-      "avg_turnover": 14234421.06,
-      "median_turnover": 9632639.3,
-      "dohod_median_turnover": 15420000.0,
+      "avg_turnover": 27944897.6,
+      "median_turnover": 22926845.95,
+      "dohod_median_turnover": 18000000.0,
       "screener_rating": "AA",
-      "screener_quality": 7.62,
-      "price": 97.69,
+      "screener_quality": 7.67,
+      "price": 98.64,
       "flags": [],
       "notes": [],
       "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
       "status": "exception",
       "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10ETQ6",
       "card_url": "https://corpbonds.ru/bond/RU000A10ETQ6"
-    },
-    {
-      "secid": "RU000A10DJH8",
-      "isin": "RU000A10DJH8",
-      "shortname": "ПКТ 2P1",
-      "issuer": "АО \"ПКТ\"",
-      "rating": "AA-",
-      "rating_agency": "Эксперт РА",
-      "rating_date": null,
-      "rating_outlook": null,
-      "rating_source": "https://corpbonds.ru/org/97",
-      "sector": "Транспортная обработка грузов",
-      "years": 3.11,
-      "maturity": "2029-11-15",
-      "ytm": 17.2964,
-      "duration_years": 2.455,
-      "g_spread_bp": 237.2,
-      "moex_g_spread_bp": 176.0,
-      "score": 8.5,
-      "score_parts": [
-        {
-          "criterion": "G-спред",
-          "points": 3.0,
-          "note": "G-спред от 200 до 600 б.п. включительно",
-          "substituted": false
-        },
-        {
-          "criterion": "Долг / кредитное качество",
-          "points": 3.0,
-          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
-          "substituted": true
-        },
-        {
-          "criterion": "Покрытие / качество эмитента",
-          "points": 2.0,
-          "note": "качество эмитента от 7 → 2 вместо покрытия процентов",
-          "substituted": true
-        },
-        {
-          "criterion": "Частота купона",
-          "points": 0.5,
-          "note": "квартальный купон",
-          "substituted": false
-        },
-        {
-          "criterion": "Свежесть рейтинга",
-          "points": 0.0,
-          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
-          "substituted": false
-        }
-      ],
-      "coupon_percent": 15.99,
-      "coupon_label": "квартальный",
-      "avg_turnover": 12046723.32,
-      "median_turnover": 8643830.75,
-      "dohod_median_turnover": 5040000.0,
-      "screener_rating": "A",
-      "screener_quality": 8.15,
-      "price": 99.3,
-      "flags": [],
-      "notes": [
-        "скринер ДОХОДЪ показывает A, карточка агентства — AA-. Для окна срока взято агентство."
-      ],
-      "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
-      "status": "exception",
-      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10DJH8",
-      "card_url": "https://corpbonds.ru/bond/RU000A10DJH8"
-    },
-    {
-      "secid": "RU000A106P06",
-      "isin": "RU000A106P06",
-      "shortname": "ВСК 1P-04R",
-      "issuer": "ООО \"ВСК\"",
-      "rating": "AA-",
-      "rating_agency": "Эксперт РА",
-      "rating_date": null,
-      "rating_outlook": null,
-      "rating_source": "https://corpbonds.ru/org/199",
-      "sector": "Торговля автотранспортными средствами",
-      "years": 1.81,
-      "maturity": "2028-07-28",
-      "ytm": 17.2933,
-      "duration_years": 1.636,
-      "g_spread_bp": 257.9,
-      "moex_g_spread_bp": 256.0,
-      "score": 8.0,
-      "score_parts": [
-        {
-          "criterion": "G-спред",
-          "points": 3.0,
-          "note": "G-спред от 200 до 600 б.п. включительно",
-          "substituted": false
-        },
-        {
-          "criterion": "Долг / кредитное качество",
-          "points": 3.0,
-          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
-          "substituted": true
-        },
-        {
-          "criterion": "Покрытие / качество эмитента",
-          "points": 2.0,
-          "note": "качество эмитента от 7 → 2 вместо покрытия процентов",
-          "substituted": true
-        },
-        {
-          "criterion": "Частота купона",
-          "points": 0.0,
-          "note": "купон реже квартала, балл за частоту 0",
-          "substituted": false
-        },
-        {
-          "criterion": "Свежесть рейтинга",
-          "points": 0.0,
-          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
-          "substituted": false
-        }
-      ],
-      "coupon_percent": 12.0,
-      "coupon_label": "полугодовой",
-      "avg_turnover": 5298374.72,
-      "median_turnover": 1594028.35,
-      "dohod_median_turnover": 1780000.0,
-      "screener_rating": "A",
-      "screener_quality": 7.13,
-      "price": 93.0,
-      "flags": [],
-      "notes": [
-        "скринер ДОХОДЪ показывает A, карточка агентства — AA-. Для окна срока взято агентство."
-      ],
-      "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
-      "status": "exception",
-      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A106P06",
-      "card_url": "https://corpbonds.ru/bond/RU000A106P06"
-    },
-    {
-      "secid": "RU000A10CMT9",
-      "isin": "RU000A10CMT9",
-      "shortname": "ЯНДЕКС1Р2",
-      "issuer": "МКПАО \"ЯНДЕКС\"",
-      "rating": "AAA",
-      "rating_agency": "АКРА",
-      "rating_date": "2025-12-11",
-      "rating_outlook": "Стабильный",
-      "rating_source": "https://corpbonds.ru/org/565",
-      "sector": "Деятельность холдинговых компаний",
-      "years": 1.39,
-      "maturity": "2028-02-26",
-      "ytm": 15.0153,
-      "duration_years": 1.271,
-      "g_spread_bp": 84.2,
-      "moex_g_spread_bp": 80.0,
-      "score": 8.0,
-      "score_parts": [
-        {
-          "criterion": "G-спред",
-          "points": 1.0,
-          "note": "G-спред от 80 до менее 130 б.п.",
-          "substituted": false
-        },
-        {
-          "criterion": "Долг / кредитное качество",
-          "points": 3.0,
-          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
-          "substituted": true
-        },
-        {
-          "criterion": "Покрытие / качество эмитента",
-          "points": 2.0,
-          "note": "качество эмитента от 7 → 2 вместо покрытия процентов",
-          "substituted": true
-        },
-        {
-          "criterion": "Частота купона",
-          "points": 1.0,
-          "note": "ежемесячный купон",
-          "substituted": false
-        },
-        {
-          "criterion": "Свежесть рейтинга",
-          "points": 1.0,
-          "note": "рейтинг подтверждён или повышен за последние 12 месяцев",
-          "substituted": false
-        }
-      ],
-      "coupon_percent": 13.5,
-      "coupon_label": "ежемесячный",
-      "avg_turnover": 12473745.86,
-      "median_turnover": 9061090.8,
-      "dohod_median_turnover": 10450000.0,
-      "screener_rating": "AA",
-      "screener_quality": 7.37,
-      "price": 99.29,
-      "flags": [],
-      "notes": [],
-      "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
-      "status": "exception",
-      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10CMT9",
-      "card_url": "https://corpbonds.ru/bond/RU000A10CMT9"
-    },
-    {
-      "secid": "RU000A10FZ16",
-      "isin": "RU000A10FZ16",
-      "shortname": "ДелПорт1P5",
-      "issuer": "ООО \"ДелоПортс\"",
-      "rating": "AA-",
-      "rating_agency": "Эксперт РА",
-      "rating_date": "2026-09-16",
-      "rating_outlook": "Стабильный",
-      "rating_source": "https://corpbonds.ru/org/96",
-      "sector": "Капиталовложения в ценные бумаги",
-      "years": 2.85,
-      "maturity": "2029-08-12",
-      "ytm": 18.8515,
-      "duration_years": 2.263,
-      "g_spread_bp": 398.8,
-      "moex_g_spread_bp": 347.0,
-      "score": 7.0,
-      "score_parts": [
-        {
-          "criterion": "G-спред",
-          "points": 3.0,
-          "note": "G-спред от 200 до 600 б.п. включительно",
-          "substituted": false
-        },
-        {
-          "criterion": "Долг / кредитное качество",
-          "points": 3.0,
-          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
-          "substituted": true
-        },
-        {
-          "criterion": "Покрытие / качество эмитента",
-          "points": 0.0,
-          "note": "качество эмитента ниже 5 → 0",
-          "substituted": true
-        },
-        {
-          "criterion": "Частота купона",
-          "points": 1.0,
-          "note": "ежемесячный купон",
-          "substituted": false
-        },
-        {
-          "criterion": "Свежесть рейтинга",
-          "points": 0.0,
-          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
-          "substituted": false
-        }
-      ],
-      "coupon_percent": 17.05,
-      "coupon_label": "ежемесячный",
-      "avg_turnover": 67880646.58,
-      "median_turnover": 56189065.65,
-      "dohod_median_turnover": 0.0,
-      "screener_rating": "A",
-      "screener_quality": 4.0,
-      "price": 99.22,
-      "flags": [],
-      "notes": [
-        "скринер ДОХОДЪ показывает A, карточка агентства — AA-. Для окна срока взято агентство."
-      ],
-      "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
-      "status": "exception",
-      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10FZ16",
-      "card_url": "https://corpbonds.ru/bond/RU000A10FZ16"
-    },
-    {
-      "secid": "RU000A10C8T4",
-      "isin": "RU000A10C8T4",
-      "shortname": "СибурХ1Р07",
-      "issuer": "ПАО \"СИБУР Холдинг\"",
-      "rating": "AAA",
-      "rating_agency": "АКРА",
-      "rating_date": "2026-08-18",
-      "rating_outlook": "Стабильный",
-      "rating_source": "https://corpbonds.ru/org/219",
-      "sector": "Производство нефтепродуктов",
-      "years": 2.35,
-      "maturity": "2029-02-11",
-      "ytm": 15.9529,
-      "duration_years": 2.003,
-      "g_spread_bp": 115.1,
-      "moex_g_spread_bp": 80.0,
-      "score": 7.0,
-      "score_parts": [
-        {
-          "criterion": "G-спред",
-          "points": 1.0,
-          "note": "G-спред от 80 до менее 130 б.п.",
-          "substituted": false
-        },
-        {
-          "criterion": "Долг / кредитное качество",
-          "points": 3.0,
-          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
-          "substituted": true
-        },
-        {
-          "criterion": "Покрытие / качество эмитента",
-          "points": 1.0,
-          "note": "качество эмитента от 5 до менее 7 → 1",
-          "substituted": true
-        },
-        {
-          "criterion": "Частота купона",
-          "points": 1.0,
-          "note": "ежемесячный купон",
-          "substituted": false
-        },
-        {
-          "criterion": "Свежесть рейтинга",
-          "points": 1.0,
-          "note": "рейтинг подтверждён или повышен за последние 12 месяцев",
-          "substituted": false
-        }
-      ],
-      "coupon_percent": 13.95,
-      "coupon_label": "ежемесячный",
-      "avg_turnover": 165503532.51,
-      "median_turnover": 76308008.8,
-      "dohod_median_turnover": 26920000.0,
-      "screener_rating": "AA",
-      "screener_quality": 6.85,
-      "price": 98.15,
-      "flags": [],
-      "notes": [],
-      "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
-      "status": "exception",
-      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10C8T4",
-      "card_url": "https://corpbonds.ru/bond/RU000A10C8T4"
-    },
-    {
-      "secid": "RU000A10ER66",
-      "isin": "RU000A10ER66",
-      "shortname": "ФосАгро2П6",
-      "issuer": "ПАО \"ФосАгро\"",
-      "rating": "AAA",
-      "rating_agency": "АКРА",
-      "rating_date": "2026-03-10",
-      "rating_outlook": "Стабильный",
-      "rating_source": "https://corpbonds.ru/org/323",
-      "sector": "Деятельность холдинговых компаний",
-      "years": 2.53,
-      "maturity": "2029-04-16",
-      "ytm": 15.6513,
-      "duration_years": 2.137,
-      "g_spread_bp": 81.8,
-      "moex_g_spread_bp": 37.0,
-      "score": 7.0,
-      "score_parts": [
-        {
-          "criterion": "G-спред",
-          "points": 1.0,
-          "note": "G-спред от 80 до менее 130 б.п.",
-          "substituted": false
-        },
-        {
-          "criterion": "Долг / кредитное качество",
-          "points": 3.0,
-          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
-          "substituted": true
-        },
-        {
-          "criterion": "Покрытие / качество эмитента",
-          "points": 1.0,
-          "note": "качество эмитента от 5 до менее 7 → 1",
-          "substituted": true
-        },
-        {
-          "criterion": "Частота купона",
-          "points": 1.0,
-          "note": "ежемесячный купон",
-          "substituted": false
-        },
-        {
-          "criterion": "Свежесть рейтинга",
-          "points": 1.0,
-          "note": "рейтинг подтверждён или повышен за последние 12 месяцев",
-          "substituted": false
-        }
-      ],
-      "coupon_percent": 13.75,
-      "coupon_label": "ежемесячный",
-      "avg_turnover": 79573716.03,
-      "median_turnover": 59506505.9,
-      "dohod_median_turnover": 59290000.0,
-      "screener_rating": "AA",
-      "screener_quality": 6.66,
-      "price": 98.1,
-      "flags": [],
-      "notes": [],
-      "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
-      "status": "exception",
-      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10ER66",
-      "card_url": "https://corpbonds.ru/bond/RU000A10ER66"
     },
     {
       "secid": "RU000A10FJR2",
@@ -1200,12 +357,12 @@
       "rating_outlook": "Стабильный",
       "rating_source": "https://corpbonds.ru/org/94",
       "sector": "кредитная организация",
-      "years": 2.2,
+      "years": 2.1,
       "maturity": "2028-12-16",
-      "ytm": 15.4772,
-      "duration_years": 1.89,
-      "g_spread_bp": 70.3,
-      "moex_g_spread_bp": 47.0,
+      "ytm": 15.2609,
+      "duration_years": 1.816,
+      "g_spread_bp": 48.4,
+      "moex_g_spread_bp": 44.0,
       "score": 7.0,
       "score_parts": [
         {
@@ -1241,12 +398,12 @@
       ],
       "coupon_percent": 14.2,
       "coupon_label": "ежемесячный",
-      "avg_turnover": 11052850.75,
-      "median_turnover": 5250272.35,
+      "avg_turnover": 30743038.83,
+      "median_turnover": 9100180.85,
       "dohod_median_turnover": 3860000.0,
       "screener_rating": "AA",
-      "screener_quality": 7.62,
-      "price": 99.48,
+      "screener_quality": 7.67,
+      "price": 99.84,
       "flags": [],
       "notes": [],
       "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
@@ -1255,28 +412,28 @@
       "card_url": "https://corpbonds.ru/bond/RU000A10FJR2"
     },
     {
-      "secid": "RU000A10EJQ7",
-      "isin": "RU000A10EJQ7",
-      "shortname": "Атомэнпр11",
-      "issuer": "АО \"Атомэнергопром\"",
+      "secid": "RU000A10CMT9",
+      "isin": "RU000A10CMT9",
+      "shortname": "ЯНДЕКС1Р2",
+      "issuer": "МКПАО \"ЯНДЕКС\"",
       "rating": "AAA",
       "rating_agency": "АКРА",
-      "rating_date": "2025-11-05",
+      "rating_date": "2025-12-11",
       "rating_outlook": "Стабильный",
-      "rating_source": "https://corpbonds.ru/org/218",
-      "sector": "Деятельность, связанная с использованием вычислительной техники и информационных технологий, прочая",
-      "years": 3.17,
-      "maturity": "2029-12-07",
-      "ytm": 16.5001,
-      "duration_years": 2.556,
-      "g_spread_bp": 154.9,
-      "moex_g_spread_bp": 92.0,
-      "score": 6.5,
+      "rating_source": "https://corpbonds.ru/org/565",
+      "sector": "Деятельность холдинговых компаний",
+      "years": 1.3,
+      "maturity": "2028-02-26",
+      "ytm": 14.8738,
+      "duration_years": 1.189,
+      "g_spread_bp": 59.9,
+      "moex_g_spread_bp": 60.0,
+      "score": 7.0,
       "score_parts": [
         {
           "criterion": "G-спред",
-          "points": 2.0,
-          "note": "G-спред от 130 до менее 200 б.п.",
+          "points": 0.0,
+          "note": "G-спред менее 80 б.п.",
           "substituted": false
         },
         {
@@ -1287,14 +444,14 @@
         },
         {
           "criterion": "Покрытие / качество эмитента",
-          "points": 0.0,
-          "note": "качество эмитента ниже 5 → 0",
+          "points": 2.0,
+          "note": "качество эмитента от 7 → 2 вместо покрытия процентов",
           "substituted": true
         },
         {
           "criterion": "Частота купона",
-          "points": 0.5,
-          "note": "квартальный купон",
+          "points": 1.0,
+          "note": "ежемесячный купон",
           "substituted": false
         },
         {
@@ -1304,20 +461,20 @@
           "substituted": false
         }
       ],
-      "coupon_percent": 14.7,
-      "coupon_label": "квартальный",
-      "avg_turnover": 88459242.85,
-      "median_turnover": 62146784.95,
-      "dohod_median_turnover": 43700000.0,
+      "coupon_percent": 13.5,
+      "coupon_label": "ежемесячный",
+      "avg_turnover": 17436993.94,
+      "median_turnover": 14268143.7,
+      "dohod_median_turnover": 10450000.0,
       "screener_rating": "AA",
-      "screener_quality": 4.8,
-      "price": 97.85,
+      "screener_quality": 7.33,
+      "price": 99.48,
       "flags": [],
       "notes": [],
       "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
       "status": "exception",
-      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10EJQ7",
-      "card_url": "https://corpbonds.ru/bond/RU000A10EJQ7"
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10CMT9",
+      "card_url": "https://corpbonds.ru/bond/RU000A10CMT9"
     },
     {
       "secid": "RU000A10BK17",
@@ -1330,12 +487,12 @@
       "rating_outlook": "Стабильный",
       "rating_source": "https://corpbonds.ru/org/125",
       "sector": "Торговля оптовая твердым, жидким и газообразным топливом и подобными продуктами",
-      "years": 3.51,
+      "years": 3.42,
       "maturity": "2030-04-11",
-      "ytm": 16.6222,
-      "duration_years": 3.351,
-      "g_spread_bp": 97.5,
-      "moex_g_spread_bp": 64.0,
+      "ytm": 16.4698,
+      "duration_years": 3.263,
+      "g_spread_bp": 100.0,
+      "moex_g_spread_bp": 78.0,
       "score": 6.0,
       "score_parts": [
         {
@@ -1371,18 +528,83 @@
       ],
       "coupon_percent": 2.0,
       "coupon_label": "ежемесячный",
-      "avg_turnover": 57417320.26,
-      "median_turnover": 26427963.85,
-      "dohod_median_turnover": 24190000.0,
+      "avg_turnover": 47189802.97,
+      "median_turnover": 35187830.05,
+      "dohod_median_turnover": 22230000.0,
       "screener_rating": "AA",
       "screener_quality": 4.0,
-      "price": 63.65,
+      "price": 64.68,
       "flags": [],
       "notes": [],
       "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
       "status": "exception",
       "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10BK17",
       "card_url": "https://corpbonds.ru/bond/RU000A10BK17"
+    },
+    {
+      "secid": "RU000A10ER66",
+      "isin": "RU000A10ER66",
+      "shortname": "ФосАгро2П6",
+      "issuer": "ПАО \"ФосАгро\"",
+      "rating": "AAA",
+      "rating_agency": "АКРА",
+      "rating_date": "2026-03-10",
+      "rating_outlook": "Стабильный",
+      "rating_source": "https://corpbonds.ru/org/323",
+      "sector": "Деятельность холдинговых компаний",
+      "years": 2.43,
+      "maturity": "2029-04-16",
+      "ytm": 15.5197,
+      "duration_years": 2.066,
+      "g_spread_bp": 63.6,
+      "moex_g_spread_bp": 51.0,
+      "score": 6.0,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 0.0,
+          "note": "G-спред менее 80 б.п.",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 1.0,
+          "note": "качество эмитента от 5 до менее 7 → 1",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 1.0,
+          "note": "ежемесячный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 1.0,
+          "note": "рейтинг подтверждён или повышен за последние 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "coupon_percent": 13.75,
+      "coupon_label": "ежемесячный",
+      "avg_turnover": 48459102.62,
+      "median_turnover": 46783863.55,
+      "dohod_median_turnover": 60730000.0,
+      "screener_rating": "AA",
+      "screener_quality": 6.63,
+      "price": 98.44,
+      "flags": [],
+      "notes": [],
+      "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
+      "status": "exception",
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10ER66",
+      "card_url": "https://corpbonds.ru/bond/RU000A10ER66"
     },
     {
       "secid": "RU000A10EF52",
@@ -1395,12 +617,12 @@
       "rating_outlook": "Стабильный",
       "rating_source": "https://corpbonds.ru/org/507",
       "sector": "кредитная организация",
-      "years": 1.9,
+      "years": 1.8,
       "maturity": "2028-08-29",
-      "ytm": 15.1611,
-      "duration_years": 1.655,
-      "g_spread_bp": 44.3,
-      "moex_g_spread_bp": 37.0,
+      "ytm": 15.103,
+      "duration_years": 1.595,
+      "g_spread_bp": 42.1,
+      "moex_g_spread_bp": 46.0,
       "score": 6.0,
       "score_parts": [
         {
@@ -1436,12 +658,12 @@
       ],
       "coupon_percent": 14.2,
       "coupon_label": "ежемесячный",
-      "avg_turnover": 130163711.66,
-      "median_turnover": 75433424.9,
-      "dohod_median_turnover": 81460000.0,
+      "avg_turnover": 222849124.03,
+      "median_turnover": 81515172.35,
+      "dohod_median_turnover": 93960000.0,
       "screener_rating": "AA",
-      "screener_quality": 5.03,
-      "price": 100.0,
+      "screener_quality": 5.05,
+      "price": 100.08,
       "flags": [],
       "notes": [],
       "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
@@ -1460,12 +682,12 @@
       "rating_outlook": "Стабильный",
       "rating_source": "https://corpbonds.ru/org/507",
       "sector": "кредитная организация",
-      "years": 2.69,
+      "years": 2.6,
       "maturity": "2029-06-16",
-      "ytm": 14.9862,
-      "duration_years": 2.266,
-      "g_spread_bp": 12.2,
-      "moex_g_spread_bp": -39.0,
+      "ytm": 14.9343,
+      "duration_years": 2.195,
+      "g_spread_bp": 4.1,
+      "moex_g_spread_bp": -16.0,
       "score": 6.0,
       "score_parts": [
         {
@@ -1501,12 +723,12 @@
       ],
       "coupon_percent": 13.4,
       "coupon_label": "ежемесячный",
-      "avg_turnover": 39003789.94,
-      "median_turnover": 34859952.05,
-      "dohod_median_turnover": 36750000.0,
+      "avg_turnover": 58092189.38,
+      "median_turnover": 52207793.7,
+      "dohod_median_turnover": 37890000.0,
       "screener_rating": "AA",
-      "screener_quality": 5.03,
-      "price": 98.55,
+      "screener_quality": 5.05,
+      "price": 98.69,
       "flags": [],
       "notes": [],
       "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
@@ -1515,87 +737,22 @@
       "card_url": "https://corpbonds.ru/bond/RU000A10F7R7"
     },
     {
-      "secid": "RU000A10C6L5",
-      "isin": "RU000A10C6L5",
-      "shortname": "Атомэнпр07",
-      "issuer": "АО \"Атомэнергопром\"",
-      "rating": "AAA",
-      "rating_agency": "АКРА",
-      "rating_date": "2025-11-05",
-      "rating_outlook": "Стабильный",
-      "rating_source": "https://corpbonds.ru/org/218",
-      "sector": "Деятельность, связанная с использованием вычислительной техники и информационных технологий, прочая",
-      "years": 3.78,
-      "maturity": "2030-07-19",
-      "ytm": 16.4812,
-      "duration_years": 2.879,
-      "g_spread_bp": 115.3,
-      "moex_g_spread_bp": 73.0,
-      "score": 5.5,
-      "score_parts": [
-        {
-          "criterion": "G-спред",
-          "points": 1.0,
-          "note": "G-спред от 80 до менее 130 б.п.",
-          "substituted": false
-        },
-        {
-          "criterion": "Долг / кредитное качество",
-          "points": 3.0,
-          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
-          "substituted": true
-        },
-        {
-          "criterion": "Покрытие / качество эмитента",
-          "points": 0.0,
-          "note": "качество эмитента ниже 5 → 0",
-          "substituted": true
-        },
-        {
-          "criterion": "Частота купона",
-          "points": 0.5,
-          "note": "квартальный купон",
-          "substituted": false
-        },
-        {
-          "criterion": "Свежесть рейтинга",
-          "points": 1.0,
-          "note": "рейтинг подтверждён или повышен за последние 12 месяцев",
-          "substituted": false
-        }
-      ],
-      "coupon_percent": 14.35,
-      "coupon_label": "квартальный",
-      "avg_turnover": 352621294.71,
-      "median_turnover": 161254697.65,
-      "dohod_median_turnover": 51680000.0,
-      "screener_rating": "AA",
-      "screener_quality": 4.8,
-      "price": 96.61,
-      "flags": [],
-      "notes": [],
-      "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
-      "status": "exception",
-      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10C6L5",
-      "card_url": "https://corpbonds.ru/bond/RU000A10C6L5"
-    },
-    {
       "secid": "RU000A10F7L0",
       "isin": "RU000A10F7L0",
       "shortname": "Атомэнпр12",
       "issuer": "АО \"Атомэнергопром\"",
       "rating": "AAA",
       "rating_agency": "АКРА",
-      "rating_date": "2025-11-05",
+      "rating_date": "2026-10-28",
       "rating_outlook": "Стабильный",
       "rating_source": "https://corpbonds.ru/org/218",
       "sector": "Деятельность, связанная с использованием вычислительной техники и информационных технологий, прочая",
-      "years": 2.61,
+      "years": 2.52,
       "maturity": "2029-05-18",
-      "ytm": 16.1277,
-      "duration_years": 2.192,
-      "g_spread_bp": 128.1,
-      "moex_g_spread_bp": 77.0,
+      "ytm": 15.972,
+      "duration_years": 2.099,
+      "g_spread_bp": 107.5,
+      "moex_g_spread_bp": 94.0,
       "score": 5.5,
       "score_parts": [
         {
@@ -1631,12 +788,12 @@
       ],
       "coupon_percent": 13.7,
       "coupon_label": "квартальный",
-      "avg_turnover": 26275059.39,
-      "median_turnover": 21608504.35,
-      "dohod_median_turnover": 18940000.0,
+      "avg_turnover": 34948055.24,
+      "median_turnover": 14402684.05,
+      "dohod_median_turnover": 19380000.0,
       "screener_rating": "AA",
       "screener_quality": 4.8,
-      "price": 96.71,
+      "price": 97.12,
       "flags": [],
       "notes": [],
       "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
@@ -1645,93 +802,28 @@
       "card_url": "https://corpbonds.ru/bond/RU000A10F7L0"
     },
     {
-      "secid": "RU000A10CC24",
-      "isin": "RU000A10CC24",
-      "shortname": "РусГид2Р07",
-      "issuer": "ПАО \"РусГидро\"",
-      "rating": "AAA",
-      "rating_agency": "АКРА",
-      "rating_date": "2026-09-09",
-      "rating_outlook": "Стабильный",
-      "rating_source": "https://corpbonds.ru/org/83",
-      "sector": "Производство электроэнергии гидроэлектростанциями, в том числе деятельность по обеспечению работоспо",
-      "years": 1.8,
-      "maturity": "2028-07-26",
-      "ytm": 15.4953,
-      "duration_years": 1.603,
-      "g_spread_bp": 78.9,
-      "moex_g_spread_bp": 80.0,
-      "score": 5.0,
-      "score_parts": [
-        {
-          "criterion": "G-спред",
-          "points": 0.0,
-          "note": "G-спред менее 80 б.п.",
-          "substituted": false
-        },
-        {
-          "criterion": "Долг / кредитное качество",
-          "points": 3.0,
-          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
-          "substituted": true
-        },
-        {
-          "criterion": "Покрытие / качество эмитента",
-          "points": 0.0,
-          "note": "качество эмитента ниже 5 → 0",
-          "substituted": true
-        },
-        {
-          "criterion": "Частота купона",
-          "points": 1.0,
-          "note": "ежемесячный купон",
-          "substituted": false
-        },
-        {
-          "criterion": "Свежесть рейтинга",
-          "points": 1.0,
-          "note": "рейтинг подтверждён или повышен за последние 12 месяцев",
-          "substituted": false
-        }
-      ],
-      "coupon_percent": 13.85,
-      "coupon_label": "ежемесячный",
-      "avg_turnover": 10359553.88,
-      "median_turnover": 7967773.85,
-      "dohod_median_turnover": 10940000.0,
-      "screener_rating": "AA",
-      "screener_quality": 4.55,
-      "price": 98.98,
-      "flags": [],
-      "notes": [],
-      "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
-      "status": "exception",
-      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10CC24",
-      "card_url": "https://corpbonds.ru/bond/RU000A10CC24"
-    },
-    {
-      "secid": "RU000A10CT33",
-      "isin": "RU000A10CT33",
-      "shortname": "Атомэнпр08",
+      "secid": "RU000A10EJQ7",
+      "isin": "RU000A10EJQ7",
+      "shortname": "Атомэнпр11",
       "issuer": "АО \"Атомэнергопром\"",
       "rating": "AAA",
       "rating_agency": "АКРА",
-      "rating_date": "2025-11-05",
+      "rating_date": "2026-10-28",
       "rating_outlook": "Стабильный",
       "rating_source": "https://corpbonds.ru/org/218",
       "sector": "Деятельность, связанная с использованием вычислительной техники и информационных технологий, прочая",
-      "years": 3.95,
-      "maturity": "2030-09-17",
-      "ytm": 16.1386,
-      "duration_years": 3.036,
-      "g_spread_bp": 65.6,
-      "moex_g_spread_bp": 33.0,
-      "score": 4.5,
+      "years": 3.07,
+      "maturity": "2029-12-07",
+      "ytm": 15.8462,
+      "duration_years": 2.463,
+      "g_spread_bp": 94.3,
+      "moex_g_spread_bp": 58.0,
+      "score": 5.5,
       "score_parts": [
         {
           "criterion": "G-спред",
-          "points": 0.0,
-          "note": "G-спред менее 80 б.п.",
+          "points": 1.0,
+          "note": "G-спред от 80 до менее 130 б.п.",
           "substituted": false
         },
         {
@@ -1761,36 +853,103 @@
       ],
       "coupon_percent": 14.7,
       "coupon_label": "квартальный",
-      "avg_turnover": 8410050.86,
-      "median_turnover": 6675100.25,
-      "dohod_median_turnover": 4650000.0,
+      "avg_turnover": 34592283.25,
+      "median_turnover": 37648718.2,
+      "dohod_median_turnover": 43700000.0,
       "screener_rating": "AA",
       "screener_quality": 4.8,
-      "price": 98.4,
+      "price": 99.3,
       "flags": [],
       "notes": [],
       "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
       "status": "exception",
-      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10CT33",
-      "card_url": "https://corpbonds.ru/bond/RU000A10CT33"
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10EJQ7",
+      "card_url": "https://corpbonds.ru/bond/RU000A10EJQ7"
     },
     {
-      "secid": "RU000A10F504",
-      "isin": "RU000A10F504",
-      "shortname": "ВЭБ2Р-58",
-      "issuer": "ВЭБ.РФ",
-      "rating": "AAA",
-      "rating_agency": "АКРА",
-      "rating_date": "2026-03-25",
-      "rating_outlook": "Стабильный",
-      "rating_source": "https://corpbonds.ru/org/69",
-      "sector": "Денежное посредничество прочее",
-      "years": 2.69,
-      "maturity": "2029-06-16",
-      "ytm": 1.9413,
-      "duration_years": 2.619,
-      "g_spread_bp": -1307.5,
-      "moex_g_spread_bp": -1367.0,
+      "secid": "RU000A10CP78",
+      "isin": "RU000A10CP78",
+      "shortname": "ПСБ 4P-01",
+      "issuer": "ПАО \"Банк ПСБ\"",
+      "rating": "AA",
+      "rating_agency": "скринер ДОХОДЪ",
+      "rating_date": null,
+      "rating_outlook": null,
+      "rating_source": "https://www.dohod.ru/analytic/bonds",
+      "sector": "кредитная организация",
+      "years": 1.82,
+      "maturity": "2028-09-05",
+      "ytm": 15.2737,
+      "duration_years": 1.605,
+      "g_spread_bp": 58.7,
+      "moex_g_spread_bp": 62.0,
+      "score": 6.0,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 0.0,
+          "note": "G-спред менее 80 б.п.",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 2.0,
+          "note": "качество эмитента от 7 → 2 вместо покрытия процентов",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 1.0,
+          "note": "ежемесячный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "coupon_percent": 14.25,
+      "coupon_label": "ежемесячный",
+      "avg_turnover": 11958729.88,
+      "median_turnover": 8421513.8,
+      "dohod_median_turnover": 5180000.0,
+      "screener_rating": "AA",
+      "screener_quality": 7.67,
+      "price": 99.92,
+      "flags": [],
+      "notes": [
+        "буква рейтинга взята из скринера ДОХОДЪ, карточка агентства не сопоставлена"
+      ],
+      "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
+      "status": "exception",
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10CP78",
+      "card_url": "https://corpbonds.ru/bond/RU000A10CP78"
+    },
+    {
+      "secid": "RU000A10CC24",
+      "isin": "RU000A10CC24",
+      "shortname": "РусГид2Р07",
+      "issuer": "ПАО \"РусГидро\"",
+      "rating": "AA",
+      "rating_agency": "скринер ДОХОДЪ",
+      "rating_date": null,
+      "rating_outlook": null,
+      "rating_source": "https://www.dohod.ru/analytic/bonds",
+      "sector": "Производство электроэнергии гидроэлектростанциями, в том числе деятельность по обеспечению работоспо",
+      "years": 1.71,
+      "maturity": "2028-07-26",
+      "ytm": 15.4089,
+      "duration_years": 1.523,
+      "g_spread_bp": 75.7,
+      "moex_g_spread_bp": 83.0,
       "score": 4.0,
       "score_parts": [
         {
@@ -1813,117 +972,52 @@
         },
         {
           "criterion": "Частота купона",
-          "points": 0.0,
-          "note": "купон реже квартала, балл за частоту 0",
+          "points": 1.0,
+          "note": "ежемесячный купон",
           "substituted": false
         },
         {
           "criterion": "Свежесть рейтинга",
-          "points": 1.0,
-          "note": "рейтинг подтверждён или повышен за последние 12 месяцев",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
           "substituted": false
         }
       ],
-      "coupon_percent": 1.85,
-      "coupon_label": "полугодовой",
-      "avg_turnover": 202928278.23,
-      "median_turnover": 152128363.8,
-      "dohod_median_turnover": 241480000.0,
+      "coupon_percent": 13.85,
+      "coupon_label": "ежемесячный",
+      "avg_turnover": 96716728.28,
+      "median_turnover": 17185945.85,
+      "dohod_median_turnover": 10940000.0,
       "screener_rating": "AA",
-      "screener_quality": 4.96,
-      "price": 99.8,
+      "screener_quality": 4.57,
+      "price": 99.14,
       "flags": [],
-      "notes": [],
+      "notes": [
+        "буква рейтинга взята из скринера ДОХОДЪ, карточка агентства не сопоставлена"
+      ],
       "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
       "status": "exception",
-      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10F504",
-      "card_url": "https://corpbonds.ru/bond/RU000A10F504"
-    }
-  ],
-  "waitlist": [
-    {
-      "secid": "RU000A10DPS2",
-      "isin": "RU000A10DPS2",
-      "shortname": "Атомэнпр09",
-      "issuer": "АО \"Атомэнергопром\"",
-      "rating": "AAA",
-      "rating_agency": "АКРА",
-      "rating_date": "2025-11-05",
-      "rating_outlook": "Стабильный",
-      "rating_source": "https://corpbonds.ru/org/218",
-      "sector": "Деятельность, связанная с использованием вычислительной техники и информационных технологий, прочая",
-      "years": 4.64,
-      "maturity": "2031-05-29",
-      "ytm": 16.0551,
-      "duration_years": 3.37,
-      "g_spread_bp": 40.8,
-      "moex_g_spread_bp": 7.0,
-      "score": 4.5,
-      "score_parts": [
-        {
-          "criterion": "G-спред",
-          "points": 0.0,
-          "note": "G-спред менее 80 б.п.",
-          "substituted": false
-        },
-        {
-          "criterion": "Долг / кредитное качество",
-          "points": 3.0,
-          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
-          "substituted": true
-        },
-        {
-          "criterion": "Покрытие / качество эмитента",
-          "points": 0.0,
-          "note": "качество эмитента ниже 5 → 0",
-          "substituted": true
-        },
-        {
-          "criterion": "Частота купона",
-          "points": 0.5,
-          "note": "квартальный купон",
-          "substituted": false
-        },
-        {
-          "criterion": "Свежесть рейтинга",
-          "points": 1.0,
-          "note": "рейтинг подтверждён или повышен за последние 12 месяцев",
-          "substituted": false
-        }
-      ],
-      "coupon_percent": 15.1,
-      "coupon_label": "квартальный",
-      "avg_turnover": 62181689.23,
-      "median_turnover": 30109337.7,
-      "dohod_median_turnover": 15820000.0,
-      "screener_rating": "AA",
-      "screener_quality": 4.8,
-      "price": 99.76,
-      "flags": [],
-      "notes": [],
-      "reason": "балл 4.5 ниже порога 5.0",
-      "status": "wait",
-      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10DPS2",
-      "card_url": "https://corpbonds.ru/bond/RU000A10DPS2"
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10CC24",
+      "card_url": "https://corpbonds.ru/bond/RU000A10CC24"
     },
     {
-      "secid": "RU000A10DYG9",
-      "isin": "RU000A10DYG9",
-      "shortname": "Атомэнпр10",
+      "secid": "RU000A10C6L5",
+      "isin": "RU000A10C6L5",
+      "shortname": "Атомэнпр07",
       "issuer": "АО \"Атомэнергопром\"",
-      "rating": "AAA",
-      "rating_agency": "АКРА",
-      "rating_date": "2025-11-05",
-      "rating_outlook": "Стабильный",
-      "rating_source": "https://corpbonds.ru/org/218",
+      "rating": "AA",
+      "rating_agency": "скринер ДОХОДЪ",
+      "rating_date": null,
+      "rating_outlook": null,
+      "rating_source": "https://www.dohod.ru/analytic/bonds",
       "sector": "Деятельность, связанная с использованием вычислительной техники и информационных технологий, прочая",
-      "years": 4.7,
-      "maturity": "2031-06-18",
-      "ytm": 16.0636,
-      "duration_years": 3.422,
-      "g_spread_bp": 41.8,
-      "moex_g_spread_bp": 7.0,
-      "score": 4.5,
+      "years": 3.69,
+      "maturity": "2030-07-19",
+      "ytm": 15.966,
+      "duration_years": 2.896,
+      "g_spread_bp": 72.6,
+      "moex_g_spread_bp": 45.0,
+      "score": 3.5,
       "score_parts": [
         {
           "criterion": "G-спред",
@@ -1951,40 +1045,110 @@
         },
         {
           "criterion": "Свежесть рейтинга",
-          "points": 1.0,
-          "note": "рейтинг подтверждён или повышен за последние 12 месяцев",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
           "substituted": false
         }
       ],
-      "coupon_percent": 15.15,
+      "coupon_percent": 14.35,
       "coupon_label": "квартальный",
-      "avg_turnover": 52510875.85,
-      "median_turnover": 47507793.7,
-      "dohod_median_turnover": 17460000.0,
+      "avg_turnover": 36700381.17,
+      "median_turnover": 35555157.6,
+      "dohod_median_turnover": 51680000.0,
       "screener_rating": "AA",
       "screener_quality": 4.8,
-      "price": 99.9,
+      "price": 97.93,
       "flags": [],
-      "notes": [],
-      "reason": "балл 4.5 ниже порога 5.0",
-      "status": "wait",
-      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10DYG9",
-      "card_url": "https://corpbonds.ru/bond/RU000A10DYG9"
+      "notes": [
+        "буква рейтинга взята из скринера ДОХОДЪ, карточка агентства не сопоставлена"
+      ],
+      "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
+      "status": "exception",
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10C6L5",
+      "card_url": "https://corpbonds.ru/bond/RU000A10C6L5"
+    },
+    {
+      "secid": "RU000A10CT33",
+      "isin": "RU000A10CT33",
+      "shortname": "Атомэнпр08",
+      "issuer": "АО \"Атомэнергопром\"",
+      "rating": "AA",
+      "rating_agency": "скринер ДОХОДЪ",
+      "rating_date": null,
+      "rating_outlook": null,
+      "rating_source": "https://www.dohod.ru/analytic/bonds",
+      "sector": "Деятельность, связанная с использованием вычислительной техники и информационных технологий, прочая",
+      "years": 3.85,
+      "maturity": "2030-09-17",
+      "ytm": 15.7294,
+      "duration_years": 2.945,
+      "g_spread_bp": 45.0,
+      "moex_g_spread_bp": 19.0,
+      "score": 3.5,
+      "score_parts": [
+        {
+          "criterion": "G-спред",
+          "points": 0.0,
+          "note": "G-спред менее 80 б.п.",
+          "substituted": false
+        },
+        {
+          "criterion": "Долг / кредитное качество",
+          "points": 3.0,
+          "note": "кредитное качество от 7 до 10 → 3 вместо долга/EBITDA",
+          "substituted": true
+        },
+        {
+          "criterion": "Покрытие / качество эмитента",
+          "points": 0.0,
+          "note": "качество эмитента ниже 5 → 0",
+          "substituted": true
+        },
+        {
+          "criterion": "Частота купона",
+          "points": 0.5,
+          "note": "квартальный купон",
+          "substituted": false
+        },
+        {
+          "criterion": "Свежесть рейтинга",
+          "points": 0.0,
+          "note": "балл за рейтинг не начислен: нет подтверждения агентства за 12 месяцев",
+          "substituted": false
+        }
+      ],
+      "coupon_percent": 14.7,
+      "coupon_label": "квартальный",
+      "avg_turnover": 5502225.79,
+      "median_turnover": 4150133.9,
+      "dohod_median_turnover": 4870000.0,
+      "screener_rating": "AA",
+      "screener_quality": 4.8,
+      "price": 99.47,
+      "flags": [],
+      "notes": [
+        "буква рейтинга взята из скринера ДОХОДЪ, карточка агентства не сопоставлена"
+      ],
+      "reason": "AAA/AA короче 4 лет: кандидат на согласованное исключение, не автоматическая покупка",
+      "status": "exception",
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQCB&code=RU000A10CT33",
+      "card_url": "https://corpbonds.ru/bond/RU000A10CT33"
     }
   ],
+  "waitlist": [],
   "rejected_counts": {
-    "выпуска нет в скринере ДОХОДЪ": 104,
-    "средний оборот ниже 5 млн ₽": 92,
-    "событие в дату: «вероятность выкупа (call)», допускается только «погашение»": 50,
-    "ОФЗ короче 8 лет до погашения": 19,
-    "рейтинг BBB ниже A−": 11,
+    "выпуска нет в скринере ДОХОДЪ": 118,
+    "средний оборот ниже 5 млн ₽": 67,
+    "нет данных об обороте": 38,
+    "событие в дату: «вероятность выкупа (call)», допускается только «погашение»": 27,
+    "ОФЗ короче 5 лет: для продажи в 2030–2032 году доходность уже слабее большого купона": 12,
+    "событие в дату: «досрочное погашение», допускается только «погашение»": 11,
     "сектор жилищного строительства": 10,
-    "событие в дату: «досрочное погашение», допускается только «погашение»": 8,
-    "рейтинг BB ниже A−": 8,
+    "рейтинг BBB ниже A−": 9,
+    "ОФЗ длиннее 10 лет: к продаже в 2032 году бумага остаётся слишком длинной": 8,
     "РЖД: запрет из-за связки с ПГК": 7,
     "в скринере купон не фиксированный": 7,
-    "рейтинг B ниже A−": 4,
-    "рейтинг BB- ниже A−": 4
+    "рейтинг BB ниже A−": 7
   },
   "rejected_examples": [
     {
@@ -1998,25 +1162,25 @@
       "rating_outlook": null,
       "rating_source": null,
       "sector": null,
-      "years": 0.33,
+      "years": 0.23,
       "maturity": "2027-02-03",
-      "ytm": 11.939,
-      "duration_years": 0.323,
+      "ytm": 13.9993,
+      "duration_years": 0.227,
       "g_spread_bp": null,
       "moex_g_spread_bp": null,
       "score": null,
       "score_parts": null,
       "coupon_percent": 8.15,
       "coupon_label": "полугодовой",
-      "avg_turnover": 964470837.46,
-      "median_turnover": 640126431.21,
-      "dohod_median_turnover": 143650000.0,
+      "avg_turnover": 361323560.89,
+      "median_turnover": 305230960.3,
+      "dohod_median_turnover": 185100000.0,
       "screener_rating": null,
       "screener_quality": null,
-      "price": 98.95,
+      "price": 98.785,
       "flags": [],
       "notes": [],
-      "reason": "ОФЗ короче 8 лет до погашения",
+      "reason": "ОФЗ короче 5 лет: для продажи в 2030–2032 году доходность уже слабее большого купона",
       "status": "reject",
       "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26207RMFS9",
       "card_url": "https://corpbonds.ru/bond/RU000A0JS3W6"
@@ -2032,25 +1196,25 @@
       "rating_outlook": null,
       "rating_source": null,
       "sector": null,
-      "years": 1.29,
+      "years": 1.19,
       "maturity": "2028-01-19",
-      "ytm": 14.0896,
-      "duration_years": 1.23,
+      "ytm": 14.1972,
+      "duration_years": 1.134,
       "g_spread_bp": null,
       "moex_g_spread_bp": null,
       "score": null,
       "score_parts": null,
       "coupon_percent": 7.05,
       "coupon_label": "полугодовой",
-      "avg_turnover": 124410350.3,
-      "median_turnover": 58989832.75,
-      "dohod_median_turnover": 38250000.0,
+      "avg_turnover": 47769981.81,
+      "median_turnover": 28716810.34,
+      "dohod_median_turnover": 46940000.0,
       "screener_rating": null,
       "screener_quality": null,
-      "price": 92.453,
+      "price": 92.87,
       "flags": [],
       "notes": [],
-      "reason": "ОФЗ короче 8 лет до погашения",
+      "reason": "ОФЗ короче 5 лет: для продажи в 2030–2032 году доходность уже слабее большого купона",
       "status": "reject",
       "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26212RMFS9",
       "card_url": "https://corpbonds.ru/bond/RU000A0JTK38"
@@ -2066,25 +1230,25 @@
       "rating_outlook": null,
       "rating_source": null,
       "sector": null,
-      "years": 4.95,
+      "years": 4.85,
       "maturity": "2031-09-17",
-      "ytm": 15.8292,
-      "duration_years": 3.992,
+      "ytm": 15.5468,
+      "duration_years": 3.901,
       "g_spread_bp": null,
       "moex_g_spread_bp": null,
       "score": null,
       "score_parts": null,
       "coupon_percent": 8.5,
       "coupon_label": "полугодовой",
-      "avg_turnover": 640228958.04,
-      "median_turnover": 712430078.06,
-      "dohod_median_turnover": 471740000.0,
+      "avg_turnover": null,
+      "median_turnover": null,
+      "dohod_median_turnover": 442540000.0,
       "screener_rating": null,
       "screener_quality": null,
-      "price": 77.124,
+      "price": 78.159,
       "flags": [],
       "notes": [],
-      "reason": "ОФЗ короче 8 лет до погашения",
+      "reason": "ОФЗ короче 5 лет: для продажи в 2030–2032 году доходность уже слабее большого купона",
       "status": "reject",
       "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26218RMFS6",
       "card_url": "https://corpbonds.ru/bond/RU000A0JVW48"
@@ -2100,25 +1264,25 @@
       "rating_outlook": null,
       "rating_source": null,
       "sector": null,
-      "years": 6.46,
+      "years": 6.37,
       "maturity": "2033-03-23",
-      "ytm": 16.1583,
-      "duration_years": 4.89,
+      "ytm": 15.9332,
+      "duration_years": 4.803,
       "g_spread_bp": null,
       "moex_g_spread_bp": null,
       "score": null,
       "score_parts": null,
       "coupon_percent": 7.7,
       "coupon_label": "полугодовой",
-      "avg_turnover": 48888221.99,
-      "median_turnover": 37874680.67,
-      "dohod_median_turnover": 70710000.0,
+      "avg_turnover": 22841694.93,
+      "median_turnover": 18393432.15,
+      "dohod_median_turnover": 47870000.0,
       "screener_rating": null,
       "screener_quality": null,
-      "price": 68.679,
+      "price": 69.59,
       "flags": [],
       "notes": [],
-      "reason": "ОФЗ короче 8 лет до погашения",
+      "reason": "купон ниже 11%: в этом окне берём большой купон",
       "status": "reject",
       "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26221RMFS0",
       "card_url": "https://corpbonds.ru/bond/RU000A0JXFM1"
@@ -2134,25 +1298,25 @@
       "rating_outlook": null,
       "rating_source": null,
       "sector": null,
-      "years": 2.63,
+      "years": 2.53,
       "maturity": "2029-05-23",
-      "ytm": 14.899,
-      "duration_years": 2.359,
+      "ytm": 14.8118,
+      "duration_years": 2.263,
       "g_spread_bp": null,
       "moex_g_spread_bp": null,
       "score": null,
       "score_parts": null,
       "coupon_percent": 6.9,
       "coupon_label": "полугодовой",
-      "avg_turnover": 183778185.79,
-      "median_turnover": 34719502.79,
-      "dohod_median_turnover": 34760000.0,
+      "avg_turnover": 73285477.1,
+      "median_turnover": 32369949.45,
+      "dohod_median_turnover": 35350000.0,
       "screener_rating": null,
       "screener_quality": null,
-      "price": 84.074,
+      "price": 84.725,
       "flags": [],
       "notes": [],
-      "reason": "ОФЗ короче 8 лет до погашения",
+      "reason": "ОФЗ короче 5 лет: для продажи в 2030–2032 году доходность уже слабее большого купона",
       "status": "reject",
       "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26224RMFS4",
       "card_url": "https://corpbonds.ru/bond/RU000A0ZYUA9"
@@ -2168,62 +1332,28 @@
       "rating_outlook": null,
       "rating_source": null,
       "sector": null,
-      "years": 7.59,
+      "years": 7.5,
       "maturity": "2034-05-10",
-      "ytm": 16.562,
-      "duration_years": 5.23,
+      "ytm": 16.2754,
+      "duration_years": 5.153,
       "g_spread_bp": null,
       "moex_g_spread_bp": null,
       "score": null,
       "score_parts": null,
       "coupon_percent": 7.25,
       "coupon_label": "полугодовой",
-      "avg_turnover": 101006300.47,
-      "median_turnover": 56715210.1,
-      "dohod_median_turnover": 69270000.0,
+      "avg_turnover": 48653562.63,
+      "median_turnover": 37459434.5,
+      "dohod_median_turnover": 49560000.0,
       "screener_rating": null,
       "screener_quality": null,
-      "price": 62.509,
+      "price": 63.625,
       "flags": [],
       "notes": [],
-      "reason": "ОФЗ короче 8 лет до погашения",
+      "reason": "купон ниже 11%: в этом окне берём большой купон",
       "status": "reject",
       "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26225RMFS1",
       "card_url": "https://corpbonds.ru/bond/RU000A0ZYUB7"
-    },
-    {
-      "secid": "SU26226RMFS9",
-      "isin": "RU000A0ZZYW2",
-      "shortname": "ОФЗ 26226",
-      "issuer": "Минфин России",
-      "rating": null,
-      "rating_agency": null,
-      "rating_date": null,
-      "rating_outlook": null,
-      "rating_source": null,
-      "sector": null,
-      "years": 0.0,
-      "maturity": "2026-10-07",
-      "ytm": null,
-      "duration_years": null,
-      "g_spread_bp": null,
-      "moex_g_spread_bp": null,
-      "score": null,
-      "score_parts": null,
-      "coupon_percent": 7.95,
-      "coupon_label": "полугодовой",
-      "avg_turnover": 1220837437.33,
-      "median_turnover": 765251998.31,
-      "dohod_median_turnover": 83680000.0,
-      "screener_rating": null,
-      "screener_quality": null,
-      "price": 99.976,
-      "flags": [],
-      "notes": [],
-      "reason": "ОФЗ короче 8 лет до погашения",
-      "status": "reject",
-      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26226RMFS9",
-      "card_url": "https://corpbonds.ru/bond/RU000A0ZZYW2"
     },
     {
       "secid": "SU26228RMFS5",
@@ -2236,28 +1366,62 @@
       "rating_outlook": null,
       "rating_source": null,
       "sector": null,
-      "years": 3.51,
+      "years": 3.41,
       "maturity": "2030-04-10",
-      "ytm": 15.4235,
-      "duration_years": 2.959,
+      "ytm": 15.3829,
+      "duration_years": 3.003,
       "g_spread_bp": null,
       "moex_g_spread_bp": null,
       "score": null,
       "score_parts": null,
       "coupon_percent": 7.65,
       "coupon_label": "полугодовой",
-      "avg_turnover": 224406161.41,
-      "median_turnover": 50272607.78,
-      "dohod_median_turnover": 37700000.0,
+      "avg_turnover": null,
+      "median_turnover": null,
+      "dohod_median_turnover": 60520000.0,
       "screener_rating": null,
       "screener_quality": null,
-      "price": 80.794,
+      "price": 81.274,
       "flags": [],
       "notes": [],
-      "reason": "ОФЗ короче 8 лет до погашения",
+      "reason": "ОФЗ короче 5 лет: для продажи в 2030–2032 году доходность уже слабее большого купона",
       "status": "reject",
       "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26228RMFS5",
       "card_url": "https://corpbonds.ru/bond/RU000A100A82"
+    },
+    {
+      "secid": "SU26230RMFS1",
+      "isin": "RU000A100EF5",
+      "shortname": "ОФЗ 26230",
+      "issuer": "Минфин России",
+      "rating": null,
+      "rating_agency": null,
+      "rating_date": null,
+      "rating_outlook": null,
+      "rating_source": null,
+      "sector": null,
+      "years": 12.34,
+      "maturity": "2039-03-16",
+      "ytm": 16.3436,
+      "duration_years": 6.608,
+      "g_spread_bp": null,
+      "moex_g_spread_bp": null,
+      "score": null,
+      "score_parts": null,
+      "coupon_percent": 7.7,
+      "coupon_label": "полугодовой",
+      "avg_turnover": 199415934.19,
+      "median_turnover": 153265861.16,
+      "dohod_median_turnover": 215260000.0,
+      "screener_rating": null,
+      "screener_quality": null,
+      "price": 56.808,
+      "flags": [],
+      "notes": [],
+      "reason": "ОФЗ длиннее 10 лет: к продаже в 2032 году бумага остаётся слишком длинной",
+      "status": "reject",
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26230RMFS1",
+      "card_url": "https://corpbonds.ru/bond/RU000A100EF5"
     },
     {
       "secid": "SU26231RMFS9",
@@ -2270,7 +1434,7 @@
       "rating_outlook": null,
       "rating_source": null,
       "sector": null,
-      "years": 17.79,
+      "years": 17.69,
       "maturity": "2044-07-20",
       "ytm": null,
       "duration_years": null,
@@ -2304,28 +1468,62 @@
       "rating_outlook": null,
       "rating_source": null,
       "sector": null,
-      "years": 1.0,
+      "years": 0.9,
       "maturity": "2027-10-06",
-      "ytm": 13.3425,
-      "duration_years": 0.981,
+      "ytm": 13.6049,
+      "duration_years": 0.885,
       "g_spread_bp": null,
       "moex_g_spread_bp": null,
       "score": null,
       "score_parts": null,
       "coupon_percent": 6.0,
       "coupon_label": "полугодовой",
-      "avg_turnover": 120553988.39,
-      "median_turnover": 74250596.36,
-      "dohod_median_turnover": 39710000.0,
+      "avg_turnover": 32624610.66,
+      "median_turnover": 23172670.66,
+      "dohod_median_turnover": 48820000.0,
       "screener_rating": null,
       "screener_quality": null,
-      "price": 93.711,
+      "price": 94.073,
       "flags": [],
       "notes": [],
-      "reason": "ОФЗ короче 8 лет до погашения",
+      "reason": "ОФЗ короче 5 лет: для продажи в 2030–2032 году доходность уже слабее большого купона",
       "status": "reject",
       "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26232RMFS7",
       "card_url": "https://corpbonds.ru/bond/RU000A1014N4"
+    },
+    {
+      "secid": "SU26233RMFS5",
+      "isin": "RU000A101F94",
+      "shortname": "ОФЗ 26233",
+      "issuer": "Минфин России",
+      "rating": null,
+      "rating_agency": null,
+      "rating_date": null,
+      "rating_outlook": null,
+      "rating_source": null,
+      "sector": null,
+      "years": 8.68,
+      "maturity": "2035-07-18",
+      "ytm": 16.1347,
+      "duration_years": 5.942,
+      "g_spread_bp": null,
+      "moex_g_spread_bp": null,
+      "score": null,
+      "score_parts": null,
+      "coupon_percent": 6.1,
+      "coupon_label": "полугодовой",
+      "avg_turnover": 416859517.95,
+      "median_turnover": 154969350.39,
+      "dohod_median_turnover": 197770000.0,
+      "screener_rating": null,
+      "screener_quality": null,
+      "price": 55.762,
+      "flags": [],
+      "notes": [],
+      "reason": "купон ниже 11%: в этом окне берём большой купон",
+      "status": "reject",
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26233RMFS5",
+      "card_url": "https://corpbonds.ru/bond/RU000A101F94"
     },
     {
       "secid": "SU26235RMFS0",
@@ -2338,25 +1536,25 @@
       "rating_outlook": null,
       "rating_source": null,
       "sector": null,
-      "years": 4.43,
+      "years": 4.33,
       "maturity": "2031-03-12",
-      "ytm": 15.6364,
-      "duration_years": 3.838,
+      "ytm": 15.5735,
+      "duration_years": 3.742,
       "g_spread_bp": null,
       "moex_g_spread_bp": null,
       "score": null,
       "score_parts": null,
       "coupon_percent": 5.9,
       "coupon_label": "полугодовой",
-      "avg_turnover": 298812544.85,
-      "median_turnover": 85894677.29,
-      "dohod_median_turnover": 119320000.0,
+      "avg_turnover": 561093045.77,
+      "median_turnover": 400783836.44,
+      "dohod_median_turnover": 127960000.0,
       "screener_rating": null,
       "screener_quality": null,
-      "price": 71.114,
+      "price": 71.698,
       "flags": [],
       "notes": [],
-      "reason": "ОФЗ короче 8 лет до погашения",
+      "reason": "ОФЗ короче 5 лет: для продажи в 2030–2032 году доходность уже слабее большого купона",
       "status": "reject",
       "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26235RMFS0",
       "card_url": "https://corpbonds.ru/bond/RU000A1028E3"
@@ -2372,25 +1570,25 @@
       "rating_outlook": null,
       "rating_source": null,
       "sector": null,
-      "years": 1.61,
+      "years": 1.52,
       "maturity": "2028-05-17",
-      "ytm": 14.6865,
-      "duration_years": 1.521,
+      "ytm": 14.6098,
+      "duration_years": 1.425,
       "g_spread_bp": null,
       "moex_g_spread_bp": null,
       "score": null,
       "score_parts": null,
       "coupon_percent": 5.7,
       "coupon_label": "полугодовой",
-      "avg_turnover": 191072147.31,
-      "median_turnover": 219831928.71,
-      "dohod_median_turnover": 87760000.0,
+      "avg_turnover": 119195687.64,
+      "median_turnover": 83235580.97,
+      "dohod_median_turnover": 162030000.0,
       "screener_rating": null,
       "screener_quality": null,
-      "price": 88.135,
+      "price": 88.87,
       "flags": [],
       "notes": [],
-      "reason": "ОФЗ короче 8 лет до погашения",
+      "reason": "ОФЗ короче 5 лет: для продажи в 2030–2032 году доходность уже слабее большого купона",
       "status": "reject",
       "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26236RMFS8",
       "card_url": "https://corpbonds.ru/bond/RU000A102BT8"
@@ -2406,33 +1604,33 @@
       "rating_outlook": null,
       "rating_source": null,
       "sector": null,
-      "years": 2.44,
+      "years": 2.34,
       "maturity": "2029-03-14",
-      "ytm": 14.8634,
-      "duration_years": 2.263,
+      "ytm": 14.9264,
+      "duration_years": 2.167,
       "g_spread_bp": null,
       "moex_g_spread_bp": null,
       "score": null,
       "score_parts": null,
       "coupon_percent": 6.7,
       "coupon_label": "полугодовой",
-      "avg_turnover": 168273522.75,
-      "median_turnover": 55388137.43,
-      "dohod_median_turnover": 67310000.0,
+      "avg_turnover": 60626558.45,
+      "median_turnover": 37297598.72,
+      "dohod_median_turnover": 62460000.0,
       "screener_rating": null,
       "screener_quality": null,
-      "price": 84.72,
+      "price": 85.114,
       "flags": [],
       "notes": [],
-      "reason": "ОФЗ короче 8 лет до погашения",
+      "reason": "ОФЗ короче 5 лет: для продажи в 2030–2032 году доходность уже слабее большого купона",
       "status": "reject",
       "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26237RMFS6",
       "card_url": "https://corpbonds.ru/bond/RU000A1038Z7"
     },
     {
-      "secid": "SU26239RMFS2",
-      "isin": "RU000A103901",
-      "shortname": "ОФЗ 26239",
+      "secid": "SU26238RMFS4",
+      "isin": "RU000A1038V6",
+      "shortname": "ОФЗ 26238",
       "issuer": "Минфин России",
       "rating": null,
       "rating_agency": null,
@@ -2440,95 +1638,61 @@
       "rating_outlook": null,
       "rating_source": null,
       "sector": null,
-      "years": 4.79,
-      "maturity": "2031-07-23",
-      "ytm": 15.4781,
-      "duration_years": 3.964,
+      "years": 14.51,
+      "maturity": "2041-05-15",
+      "ytm": 16.187,
+      "duration_years": 6.729,
       "g_spread_bp": null,
       "moex_g_spread_bp": null,
       "score": null,
       "score_parts": null,
-      "coupon_percent": 6.9,
+      "coupon_percent": 7.1,
       "coupon_label": "полугодовой",
-      "avg_turnover": 109693018.88,
-      "median_turnover": 31913076.26,
-      "dohod_median_turnover": 68340000.0,
+      "avg_turnover": 1348915494.65,
+      "median_turnover": 916971930.36,
+      "dohod_median_turnover": 947310000.0,
       "screener_rating": null,
       "screener_quality": null,
-      "price": 73.183,
+      "price": 51.722,
       "flags": [],
       "notes": [],
-      "reason": "ОФЗ короче 8 лет до погашения",
+      "reason": "ОФЗ длиннее 10 лет: к продаже в 2032 году бумага остаётся слишком длинной",
       "status": "reject",
-      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26239RMFS2",
-      "card_url": "https://corpbonds.ru/bond/RU000A103901"
-    },
-    {
-      "secid": "SU26241RMFS8",
-      "isin": "RU000A105FZ9",
-      "shortname": "ОФЗ 26241",
-      "issuer": "Минфин России",
-      "rating": null,
-      "rating_agency": null,
-      "rating_date": null,
-      "rating_outlook": null,
-      "rating_source": null,
-      "sector": null,
-      "years": 6.12,
-      "maturity": "2032-11-17",
-      "ytm": 16.1963,
-      "duration_years": 4.362,
-      "g_spread_bp": null,
-      "moex_g_spread_bp": null,
-      "score": null,
-      "score_parts": null,
-      "coupon_percent": 9.5,
-      "coupon_label": "полугодовой",
-      "avg_turnover": 225571352.11,
-      "median_turnover": 116509755.72,
-      "dohod_median_turnover": 115770000.0,
-      "screener_rating": null,
-      "screener_quality": null,
-      "price": 76.501,
-      "flags": [],
-      "notes": [],
-      "reason": "ОФЗ короче 8 лет до погашения",
-      "status": "reject",
-      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26241RMFS8",
-      "card_url": "https://corpbonds.ru/bond/RU000A105FZ9"
+      "moex_url": "https://www.moex.com/ru/issue.aspx?board=TQOB&code=SU26238RMFS4",
+      "card_url": "https://corpbonds.ru/bond/RU000A1038V6"
     }
   ],
   "limits": {
     "account": "обычный",
-    "threshold": "порог 15 млн ₽ не проверен: нет свежей оценки портфеля, по умолчанию обычный счёт",
+    "threshold": "оценка 12,947,676 ₽ ниже 15 млн, обычный счёт",
     "issuer_limit": 0.05,
     "issuer_notes": [
-      "лимит 5% на эмитента не проверен: нет текущей стоимости объединённого портфеля"
+      "ОФЗ 26252: лимит 5% на Минфин не применяется"
     ],
-    "portfolio_value": null,
-    "positions_received": 0
+    "portfolio_value": 12947675.83,
+    "positions_received": 7
   },
   "market_curve": {
     "g_spread_axis": "дюрация, лет",
-    "g_spread_points": 30,
+    "g_spread_points": 26,
     "tenor_ytm": {
       "2": {
-        "ytm": 14.77,
+        "ytm": 14.795,
         "clamped": false,
         "axis": "срок до погашения, лет"
       },
       "5": {
-        "ytm": 15.857,
+        "ytm": 15.615,
         "clamped": false,
         "axis": "срок до погашения, лет"
       },
       "10": {
-        "ytm": 16.55,
+        "ytm": 16.214,
         "clamped": false,
         "axis": "срок до погашения, лет"
       },
       "15": {
-        "ytm": 16.507,
+        "ytm": 16.187,
         "clamped": true,
         "axis": "срок до погашения, лет"
       }
@@ -2536,7 +1700,11 @@
   },
   "variants": [
     {
-      "title": "Слот «Корпорат A и выше» не заполнен",
+      "title": "Слот «Корпораты AAA/AA» не заполнен",
+      "detail": "Фильтр не ослаблялся. Деньги слота остаются в остатке, а не переносятся в другой класс."
+    },
+    {
+      "title": "Слот «Корпораты A: госучастие или крупный конгломерат» не заполнен",
       "detail": "Фильтр не ослаблялся. Деньги слота остаются в остатке, а не переносятся в другой класс."
     },
     {
@@ -2544,33 +1712,29 @@
       "detail": "Норма распределения не сдвигалась. Ниже вариант, который нужно согласовать отдельно."
     },
     {
-      "title": "Вариант на согласование: третья ОФЗ вместо пустого корпоративного слота",
-      "detail": "ОФЗ 26240 (SU26240RMFS0), дюрация 6.173 лет, YTM 16.4853%. Это меняет норму 65/35 и в пакет само не входит."
-    },
-    {
       "title": "Кандидаты на согласованное исключение по сроку AAA/AA",
-      "detail": "Ближайший по сортировке: АФБАНК1Р19 (RU000A10FGX6), рейтинг AA, срок 2.67 лет, YTM 17.2322, G-спред 238.1 б.п., балл 9.0. Короткий AAA/AA не покупается автоматически. ФосАгро и прочие короткие AAA/AA сравниваются в одном списке."
+      "detail": "Ближайший по сортировке: ПСБ 4P-02 (RU000A10ETQ6), рейтинг AAA, срок 2.38 лет, YTM 15.7715, G-спред 90.2 б.п., балл 8.0. Короткий AAA/AA не покупается автоматически. ФосАгро и прочие короткие AAA/AA сравниваются в одном списке."
     },
     {
-      "title": "В пакете 2 из 3 позиций",
+      "title": "В пакете 1 из 3 позиций",
       "detail": "Две позиции допустимы, когда третьей подходящей нет. Одной позиции правила не просят."
     }
   ],
   "bondization_rejections": [],
-  "curve_bonds": 30,
+  "curve_bonds": 26,
   "score_threshold": 5.0,
   "max_positions": 3,
-  "generated_at": "2026-10-06T15:55:02.321951+03:00",
-  "quotes_fetched_at": "2026-10-06T12:53:11.957802+00:00",
+  "generated_at": "2026-11-10T09:00:35.692793+03:00",
+  "quotes_fetched_at": "2026-11-10T06:05:57.688246+00:00",
   "dohod": {
     "url": "https://www.dohod.ru/analytic/bonds",
-    "fetched_at": "2026-10-06T12:52:20.358775+00:00",
-    "rows": 1420,
+    "fetched_at": "2026-11-10T06:00:45.369394+00:00",
+    "rows": 1427,
     "turnover_metric": "vol_median — медиана дневного оборота, млн ₽; в порог 5 млн не подставляется",
     "scores": "кредитное качество и качество эмитента из скринера заменяют долг/EBITDA и покрытие процентов"
   },
   "tuesday": {
-    "date": "2026-10-06",
+    "date": "2026-11-10",
     "kind": "текущий вторник",
     "preliminary": false
   },
@@ -2578,11 +1742,11 @@
   "market": {
     "rgbi": {
       "status": "загружен",
-      "last": 111.29,
-      "last_date": "2026-10-05",
-      "week_ago": 111.53,
-      "week_ago_date": "2026-09-28",
-      "change_pct": -0.22,
+      "last": 112.03,
+      "last_date": "2026-11-09",
+      "week_ago": 112.41,
+      "week_ago_date": "2026-10-30",
+      "change_pct": -0.34,
       "source": "MOEX ISS индекс RGBI, режим SNDX"
     },
     "cbr": {
@@ -2604,13 +1768,16 @@
     }
   },
   "stocks": {
-    "first_tuesday": true,
+    "first_tuesday": false,
     "pause": true,
-    "share_known": false,
-    "reason": "Покупки акций на паузе. Фактическая доля акций в объединённом портфеле не передана, поэтому пауза не снимается. Долгосрочная цель по акциям — до 10%, снижение доли идёт пополнениями в облигации.",
+    "share_known": true,
+    "share": 0.2333,
+    "stocks_value": 3020907.19,
+    "target_max": 0.1,
+    "reason": "Покупки акций на паузе. Доля акций в объединённом портфеле 23.3% при потолке 10.0%. 1 ноября пользователь зафиксировал текущие позиции: новые акции не докупаем, снижение доли идёт пополнениями в облигации.",
     "included_in_package": false,
-    "portfolio_value": null,
-    "dividend_block": "Выгрузка акций и дивидендов не приложена."
+    "portfolio_value": 12947675.83,
+    "dividend_block": null
   },
   "sources": {
     "uploads": [
@@ -2619,6 +1786,6 @@
     "screener_files": [],
     "note": "Проверены папка data/screener, вложения uploads и живой скринер ДОХОДЪ. Локального CSV нет. Чистый долг/EBITDA и покрытие процентов в скринере не публикуются, NetDebt/Equity в баллы не берётся."
   },
-  "execution_log": "Журнал исполненных пакетов пуст. Запрет повтора выпусков прошлой недели нечем подтвердить.",
+  "execution_log": "Повтор выпусков из переданного списка прошлой недели запрещён.",
   "disclaimer": "Это не индивидуальная инвестиционная рекомендация. Цены, количества, НКД и комиссии предварительные и не заменяют брокерский отчёт. Цель 16% — ориентир отбора, не гарантия доходности."
 }
