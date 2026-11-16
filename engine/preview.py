@@ -39,7 +39,7 @@ from engine.select import _curve, _money, _position_dirty, _size, ban_reason
 
 ROOT = Path(__file__).resolve().parents[1]
 OFZ_BOOK = ROOT / "data" / "imports" / "2026-11-16-ofz-duration.xlsx"
-CORP_BOOK = ROOT / "data" / "imports" / "2026-11-10-corp-duration.xlsx"
+CORP_BOOK = ROOT / "data" / "imports" / "2026-11-16-corp-duration.xlsx"
 PRIOR_PATH = ROOT / "data" / "latest_package.json"
 OUT_PATH = ROOT / "data" / "preview_package.json"
 
