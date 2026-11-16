@@ -43,8 +43,8 @@ CORP_BOOK = ROOT / "data" / "imports" / "2026-11-16-corp-duration.xlsx"
 PRIOR_PATH = ROOT / "data" / "latest_package.json"
 OUT_PATH = ROOT / "data" / "preview_package.json"
 
-ANALYSIS_DATE = date(2026, 11, 10)
-TUESDAY = date(2026, 11, 10)
+ANALYSIS_DATE = date(2026, 11, 16)
+TUESDAY = date(2026, 11, 17)
 
 _RU_MONTH = {
     1: "января", 2: "февраля", 3: "марта", 4: "апреля",
