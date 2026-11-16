@@ -42,51 +42,51 @@
     "extras_note": "В preview купоны сверху взноса не добавляются; боевой пакет берёт их из data/inputs.json."
   },
   "cash": {
-    "spent_dirty": 58594.85,
-    "commission": 181.64,
-    "total_debit": 58776.49,
-    "remainder": 111223.51,
-    "remainder_pct": 0.6543,
+    "spent_dirty": 59218.56,
+    "commission": 183.58,
+    "total_debit": 59402.14,
+    "remainder": 110597.86,
+    "remainder_pct": 0.6506,
     "unspent_alert": true,
     "positions": 1
   },
   "weights": {
-    "ytm": 16.4,
-    "duration_years": 4.25,
+    "ytm": 16.8,
+    "duration_years": 4.83,
     "meets_target": true,
     "target": 16.0,
     "weight_base": "сумма позиций с НКД, без комиссии",
     "ytm_after_tax": null,
-    "naive_ytm_after_13": 14.268
+    "naive_ytm_after_13": 14.616
   },
   "package": [
     {
-      "isin": "RU000A10D4Y2",
-      "shortname": "ОФЗ 26252",
+      "isin": "RU000A108EG6",
+      "shortname": "ОФЗ 26245",
       "issuer": "Минфин России",
-      "years": 6.9,
-      "duration": 4.25,
-      "ytm": 16.4,
-      "price": 86.53,
-      "nkd": 9.25,
+      "years": 8.9,
+      "duration": 4.83,
+      "ytm": 16.8,
+      "price": 80.9,
+      "nkd": 13.48,
       "face": 1000.0,
       "lot": 1,
-      "coupon_percent": 12.5,
+      "coupon_percent": 12.0,
       "coupon_label": "раз в полгода",
-      "current_yield": 14.45,
-      "annual_coupon": 124.66,
-      "maturity": "12.10.2033",
-      "median_mln": 1264.23,
+      "current_yield": 14.83,
+      "annual_coupon": 119.68,
+      "maturity": "26.09.2035",
+      "median_mln": 1610.71,
       "slot_id": "ofz",
       "slot_title": "ОФЗ",
       "verdict": "предварительно брать",
-      "qty": 67,
-      "dirty": 874.55,
-      "position_sum": 58594.85,
-      "commission": 181.64,
-      "debit": 58776.49,
-      "annual_coupon_position": 8352.22,
-      "naive_ytm_after_13": 14.268,
+      "qty": 72,
+      "dirty": 822.48,
+      "position_sum": 59218.56,
+      "commission": 183.58,
+      "debit": 59402.14,
+      "annual_coupon_position": 8616.96,
+      "naive_ytm_after_13": 14.616,
       "ytm_after_tax": null,
       "price_source": "выгрузка ДОХОДЪ, дата доходности в файле не заполнена"
     }
@@ -3283,77 +3283,17 @@
   },
   "variants": [
     {
-      "title": "Оставить корпоративный слот пустым",
-      "detail": "Так и собран пакет. Деньги слота в ОФЗ молча не перенесены. Остаток больше 10% взноса."
+      "title": "Только ОФЗ, слоты AA/A пустые",
+      "detail": "Согласовано 16.11. Остаток взноса не перекладываем в корп без отдельного согласия на короткое AA-исключение."
     },
     {
-      "title": "Третья ОФЗ меняет норму 65/35",
-      "detail": "Это вариант, не пакет.",
-      "position": {
-        "isin": "RU000A108EG6",
-        "shortname": "ОФЗ 26245",
-        "issuer": "Минфин России",
-        "years": 8.9,
-        "duration": 4.83,
-        "ytm": 16.8,
-        "price": 80.9,
-        "nkd": 13.48,
-        "face": 1000.0,
-        "lot": 1,
-        "coupon_percent": 12.0,
-        "coupon_label": "раз в полгода",
-        "current_yield": 14.83,
-        "annual_coupon": 119.68,
-        "maturity": "26.09.2035",
-        "median_mln": 1610.71,
-        "slot_id": "ofz-extra",
-        "slot_title": "Третья ОФЗ вместо корпоративного слота",
-        "verdict": "предварительно брать",
-        "qty": 72,
-        "dirty": 822.48,
-        "position_sum": 59218.56,
-        "commission": 183.58,
-        "debit": 59402.14,
-        "annual_coupon_position": 8616.96,
-        "naive_ytm_after_13": 14.616,
-        "ytm_after_tax": null,
-        "price_source": "выгрузка ДОХОДЪ, дата доходности в файле не заполнена"
-      }
-    },
-    {
-      "title": "Короткий AAA/AA только отдельным согласием",
-      "detail": "Все короткие AAA/AA с заполненной медианой лежат в одной таблице, включая ФосАгро. Первая строка варианта — максимальный балл без красных флагов. Срок сам по себе никого из этого списка не выкидывает.",
-      "position": {
-        "isin": "RU000A10FJS0",
-        "shortname": "ОТ001P-01",
-        "issuer": "ООО \"Облачные технологии\"",
-        "years": 1.6,
-        "duration": 1.41,
-        "ytm": 15.6,
-        "price": 99.5,
-        "nkd": 6.61,
-        "face": 1000.0,
-        "lot": 1,
-        "coupon_percent": 14.2,
-        "coupon_label": "ежемесячный",
-        "current_yield": 14.27,
-        "annual_coupon": 140.04,
-        "maturity": "22.06.2028",
-        "median_mln": 2.64,
-        "slot_id": "corp",
-        "slot_title": "Корпорат, только как согласованное исключение",
-        "verdict": "предварительно брать",
-        "qty": 59,
-        "dirty": 1001.61,
-        "position_sum": 59094.99,
-        "commission": 183.19,
-        "debit": 59278.18,
-        "annual_coupon_position": 8262.36,
-        "naive_ytm_after_13": 13.572,
-        "ytm_after_tax": null,
-        "price_source": "выгрузка ДОХОДЪ, дата доходности в файле не заполнена"
-      },
-      "name": "ОТ001P-01"
+      "title": "Запасные ОФЗ",
+      "detail": "Если 26245 уже есть в портфеле или нет объёма.",
+      "names": [
+        "ОФЗ 26246 (RU000A108EE1, 9.3г, купон 12.0%, YTM 16.8%)",
+        "ОФЗ 26249 (RU000A10BVC8, 5.6г, купон 11.0%, YTM 16.0%)",
+        "ОФЗ 26244 (RU000A1074G2, 7.3г, купон 11.25%, YTM 16.5%)"
+      ]
     }
   ],
   "sources": [
@@ -3377,5 +3317,18 @@
     "Лимит 5% и порог 15 млн не проверены: оценки портфеля нет. Акции не покупаются.",
     "Это не инвестиционная рекомендация и не поручение брокеру."
   ],
-  "disclaimer": "Предварительный расчёт по выгрузке. Это не индивидуальная инвестиционная рекомендация и не поручение на сделку."
+  "disclaimer": "Предварительный расчёт по выгрузке. Это не индивидуальная инвестиционная рекомендация и не поручение на сделку.",
+  "decision": {
+    "mode": "ofz_only",
+    "note": "Корп слоты AA/A оставляем пустыми по решению 16.11. Повтор ISIN прошлой недели исключён.",
+    "excluded_last_week": [
+      "RU000A10D4Y2"
+    ],
+    "chosen": "RU000A108EG6",
+    "runner_up": [
+      "RU000A108EE1",
+      "RU000A10BVC8",
+      "RU000A1074G2"
+    ]
+  }
 }
