@@ -3330,5 +3330,23 @@
       "RU000A10BVC8",
       "RU000A1074G2"
     ]
+  },
+  "live_check": {
+    "asof_msk": "2026-11-17 15:31 MSK",
+    "secid": "SU26245RMFS9",
+    "isin": "RU000A108EG6",
+    "last": 80.799,
+    "offer": 80.799,
+    "bid": 80.762,
+    "ytm": 16.79,
+    "nkd": 13.81,
+    "dirty": 821.8,
+    "qty_slot": 72,
+    "position_sum": 59169.6,
+    "commission": 183.43,
+    "debit": 59353.03,
+    "remainder": 110646.97,
+    "valtoday": 370813625,
+    "verdict": "брать 26245, ofz_only"
   }
 }
