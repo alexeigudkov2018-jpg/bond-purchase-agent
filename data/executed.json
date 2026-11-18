@@ -235,6 +235,49 @@
           "price_source": "цена пользователя (чистогановая ₽); НКД MOEX ISS ACCRUEDINT; сверка LAST ISS 86.505%"
         }
       ]
+    },
+    {
+      "id": "2026-11-17-sber-26245",
+      "trade_date": "2026-11-17",
+      "status": "recorded_by_user",
+      "confirmation": "18.11 пользователь: вчера взял на 170 000 ₽ ОФЗ 26245. Номера поручения и точной цены исполнения нет — сумма и выпуск подтверждены; цена/кол-во оценены по WAPRICE и ACCINT ISS за 17.11.",
+      "broker_ticket": null,
+      "broker": "SBER 2030",
+      "broker_id": "sber",
+      "agreement": "4225FH3",
+      "account": "обычный",
+      "commission_rate": 0.0031,
+      "contribution": 170000.0,
+      "spent_dirty": 169154.84,
+      "commission": 524.38,
+      "total_debit": 169679.22,
+      "remainder": 320.78,
+      "ytm": 16.81,
+      "duration_years": 5.224,
+      "one_off": "Весь взнос 170к в одной ОФЗ 26245. Слоты AA/A пустые по решению «пока только ОФЗ». Норма 35/32.5/32.5 на следующие вторники не отменена.",
+      "slots": "Ноябрь SBER: факт только ОФЗ на полный взнос.",
+      "legs": [
+        {
+          "isin": "RU000A108EG6",
+          "secid": "SU26245RMFS9",
+          "shortname": "ОФЗ 26245",
+          "issuer": "Минфин России",
+          "qty": 206,
+          "price": 80.766,
+          "nkd": 13.48,
+          "dirty": 821.14,
+          "face": 1000.0,
+          "lot": 1,
+          "position_sum": 169154.84,
+          "commission": 524.38,
+          "debit": 169679.22,
+          "ytm": 16.81,
+          "duration": 5.224,
+          "maturity": "2035-09-26",
+          "price_asof": "2026-11-17 ISS WAPRICE + ACCINT",
+          "price_source": "оценка: MOEX ISS history WAPRICE 80.766%, ACCINT 13.48; точный fill пользователь не прислал"
+        }
+      ]
     }
   ]
 }
