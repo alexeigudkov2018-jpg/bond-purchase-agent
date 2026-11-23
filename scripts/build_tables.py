@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gzip
 import json
 from datetime import date
 
@@ -39,12 +40,19 @@ from scripts.formulas import (
     rai_streak_above,
 )
 from scripts.parse_sources import (
+    gfz_monthly,
     key_rate_events,
     parse_cbr_fx_xml,
     parse_cbr_keyrate_html,
+    parse_cbr_metals,
     parse_fred_brent,
+    parse_gfz_daily,
     parse_iss_history,
+    parse_meteostat_daily,
     parse_noaa_solar,
+    parse_silso_csv,
+    parse_smartlab_html,
+    weather_monthly,
 )
 
 SECTORS = [
@@ -128,6 +136,40 @@ def _load_solar():
         rows.extend(parse_noaa_solar(json.loads(path.read_text(encoding="utf-8"))))
         stamps.append(fetched_at_for(path))
     dedup = {row["month"]: row for row in rows}
+    for path in _latest_files(RAW / "solar", "silso_m_*.csv"):
+        for row in parse_silso_csv(path.read_text(encoding="utf-8", errors="replace"), "ssn"):
+            if row["ssn"] is None:
+                continue
+            dedup.setdefault(row["month"], {"month": row["month"]})["ssn"] = row["ssn"]
+        stamps.append(fetched_at_for(path))
+    for path in _latest_files(RAW / "solar", "silso_ms_*.csv"):
+        for row in parse_silso_csv(path.read_text(encoding="utf-8", errors="replace"), "ssn_smooth13"):
+            if row["ssn_smooth13"] is None:
+                continue
+            dedup.setdefault(row["month"], {"month": row["month"]})["ssn_smooth13"] = row["ssn_smooth13"]
+        stamps.append(fetched_at_for(path))
+    return [dedup[key] for key in sorted(dedup)], _latest(stamps)
+
+
+def _load_metals():
+    rows = []
+    stamps = []
+    for path in _latest_files(RAW / "cbr", "metals_*.xml"):
+        rows.extend(parse_cbr_metals(path.read_bytes()))
+        stamps.append(fetched_at_for(path))
+    dedup = {}
+    for row in rows:
+        dedup.setdefault(row["date"], {}).update(row)
+    return [dedup[key] for key in sorted(dedup)], _latest(stamps)
+
+
+def _load_gfz():
+    rows = []
+    stamps = []
+    for path in _latest_files(RAW / "solar", "gfz_*.txt"):
+        rows.extend(gfz_monthly(parse_gfz_daily(path.read_text(encoding="utf-8", errors="replace"))))
+        stamps.append(fetched_at_for(path))
+    dedup = {row["month"]: row for row in rows}
     return [dedup[key] for key in sorted(dedup)], _latest(stamps)
 
 
@@ -164,6 +206,8 @@ def build_macro(today: date):
     usd, usd_stamp = _load_usd()
     brent, brent_stamp = _load_brent()
     solar, solar_stamp = _load_solar()
+    metals, metal_stamp = _load_metals()
+    gfz, gfz_stamp = _load_gfz()
     by_month: dict[str, dict] = {}
 
     def bucket(month):
@@ -180,6 +224,18 @@ def build_macro(today: date):
         cell["brent_avg"] = sum(values) / len(values)
     for row in rates:
         bucket(_month_of(row["date"]))["key_rate"] = row["rate"]
+    for row in metals:
+        cell = bucket(_month_of(row["date"]))
+        for field in ("gold", "silver", "platinum", "palladium"):
+            if row.get(field) is not None:
+                cell[field] = row[field]
+    for row in gfz:
+        cell = bucket(row["month"])
+        for field in ("ap", "kpmax", "sn_gfz"):
+            if row.get(field) is not None:
+                cell[field] = row[field]
+        if cell.get("f107") is None and row.get("f107") is not None:
+            cell["f107"] = row["f107"]
     ssn_series = [row for row in solar if row["month"] >= "2015-01"]
     smooth_input = [row["ssn"] for row in ssn_series]
     smoothed = ssn_smooth_v1(smooth_input)
@@ -214,11 +270,11 @@ def build_macro(today: date):
     for month in sorted(by_month):
         cell = by_month[month]
         sources = []
-        if any(cell.get(key) is not None for key in ("usdrub", "key_rate")):
+        if any(cell.get(key) is not None for key in ("usdrub", "key_rate", "gold", "silver", "platinum", "palladium")):
             sources.append("S2")
         if cell.get("brent_last") is not None:
             sources.append("S3")
-        if cell.get("ssn") is not None or cell.get("f107") is not None:
+        if any(cell.get(key) is not None for key in ("ssn", "f107", "ap", "kpmax", "sn_gfz")):
             sources.append("S5")
         filled = sum(1 for key in columns if key not in ("month", "source", "fetched_at", "n_obs") and cell.get(key) is not None)
         rows.append(
@@ -226,7 +282,7 @@ def build_macro(today: date):
                 "month": month,
                 **cell,
                 "source": "+".join(sources),
-                "fetched_at": _latest([rate_stamp, usd_stamp, brent_stamp, solar_stamp]),
+                "fetched_at": _latest([rate_stamp, usd_stamp, brent_stamp, solar_stamp, metal_stamp, gfz_stamp]),
                 "n_obs": filled,
             }
         )
@@ -238,6 +294,90 @@ def build_macro(today: date):
         events,
     )
     return {"rates": rates, "macro": rows, "events": events, "solar_weight_sum": solar_weight_sum()}
+
+
+def build_weather():
+    rows = []
+    for path in sorted((RAW / "weather").glob("meteostat_*.csv.gz")):
+        station = path.name.split("_")[1]
+        text = gzip.decompress(path.read_bytes()).decode("utf-8", "replace")
+        fetched = fetched_at_for(path)
+        for row in weather_monthly(parse_meteostat_daily(text)):
+            rows.append(
+                {
+                    "month": row["month"],
+                    "city_id": station,
+                    "tmean": row["tmean"],
+                    "anomaly_vs_1991_2020": "",
+                    "source": "S6",
+                    "fetched_at": fetched,
+                    "n_obs": row["n_obs"],
+                }
+            )
+    write_csv(
+        CLEAN / "weather_monthly.csv",
+        ["month", "city_id", "tmean", "anomaly_vs_1991_2020", "source", "fetched_at", "n_obs"],
+        rows,
+    )
+    return rows
+
+
+def build_fundamentals():
+    parsed = []
+    for path in sorted((RAW / "fundamentals").glob("smartlab_*.html")):
+        if path.name.startswith("smartlab_table"):
+            continue
+        bits = path.name[:-5].split("_")
+        if len(bits) < 5:
+            continue
+        ticker, label, kind = bits[1], bits[2], bits[3]
+        for row in parse_smartlab_html(path.read_text(encoding="utf-8", errors="replace"), label):
+            if row["period_end"] < "2019-01-01":
+                continue
+            filled = sum(1 for key in ("revenue", "ebitda", "net_income", "net_debt", "equity") if is_num(row.get(key)))
+            parsed.append(
+                {
+                    "ticker": ticker,
+                    "period_end": row["period_end"],
+                    "report_type": row["report_type"],
+                    "revenue": row["revenue"],
+                    "net_income": row["net_income"],
+                    "ebitda": row["ebitda"],
+                    "net_debt": row["net_debt"],
+                    "equity": row["equity"],
+                    "shares_out": "",
+                    "reported_at": row["reported_at"],
+                    "source": "S7",
+                    "fetched_at": fetched_at_for(path),
+                    "ltm": "annual" if kind == "y" else "",
+                    "_filled": filled,
+                    "_kind": kind,
+                }
+            )
+    best = {}
+    for row in parsed:
+        key = (row["ticker"], row["period_end"], row["report_type"])
+        current = best.get(key)
+        if current is None or (row["_kind"] == "q" and current["_kind"] != "q") or row["_filled"] > current["_filled"]:
+            best[key] = row
+    columns = [
+        "ticker",
+        "period_end",
+        "report_type",
+        "revenue",
+        "ebitda",
+        "net_income",
+        "net_debt",
+        "equity",
+        "shares_out",
+        "reported_at",
+        "source",
+        "fetched_at",
+        "ltm",
+    ]
+    rows = [{key: row.get(key) for key in columns} for row in sorted(best.values(), key=lambda item: (item["ticker"], item["period_end"]))]
+    write_csv(CLEAN / "fundamentals_quarterly.csv", columns, rows)
+    return rows
 
 
 def _active_universe():

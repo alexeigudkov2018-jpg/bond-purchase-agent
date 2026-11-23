@@ -5,7 +5,8 @@ from __future__ import annotations
 import json
 from datetime import date, datetime
 
-from scripts.build_tables import build_derived, build_macro, build_prices
+from scripts.build_tables import build_derived, build_fundamentals, build_macro, build_prices, build_weather
+from scripts.collect import collect_jobs, jobs_for
 from scripts.common import (
     CLEAN,
     DATA,
@@ -159,6 +160,22 @@ def quality(run_day: date, errors: list[dict]) -> dict:
                         }
                     )
             previous = close
+    weather = read_csv(CLEAN / "weather_monthly.csv")
+    if weather:
+        last_weather = max(row["month"] for row in weather if row.get("month"))
+        year, month = run_day.year, run_day.month - 1
+        if month == 0:
+            year, month = year - 1, 12
+        last_full = f"{year:04d}-{month:02d}"
+        if last_weather < last_full:
+            gaps.append(
+                {
+                    "date": run_day.isoformat(),
+                    "series": "weather",
+                    "source": "S6",
+                    "reason": f"в файлах Meteostat последний месяц {last_weather}, полный месяц {last_full} в сырье не закрыт",
+                }
+            )
     legacy = REFERENCE / "legacy_vol1" / "Raw_Stocks.tsv"
     if not legacy.exists():
         gaps.append(
@@ -211,15 +228,16 @@ def write_manifest(run_stamp: str) -> dict:
     return payload
 
 
-def render_log(run_day: date, started: datetime, added: dict, errors: list, gaps: list, anomalies: list) -> str:
+def render_log(run_day: date, started: datetime, added: dict, errors: list, gaps: list, anomalies: list, mode: str, note: str) -> str:
     elapsed = (now_msk() - started).total_seconds()
     lines = [
-        f"# Сбор {run_day.isoformat()}",
+        f"# Сбор {run_day.isoformat()} mode={mode}",
         "",
         f"Длительность, с: {elapsed:.1f}",
-        "",
-        "## Сырые файлы",
     ]
+    if note:
+        lines.extend(["", note])
+    lines.extend(["", "## Сырые файлы"])
     if added:
         for name, flag in sorted(added.items()):
             lines.append(f"- {name}: {'создан' if flag else 'уже был, не перезаписан'}")
@@ -256,8 +274,8 @@ def render_weekly(run_day: date, dashboard: dict, gaps: list, anomalies: list) -
         f"# Неделя {iso.year}-W{iso.week:02d}",
         "",
         f"Срез: {run_day.isoformat()}.",
-        "IMOEX за неделю: нет дневного ряда. ISS закрыт robots.txt (Disallow: /), свечи не скачивались.",
-        "IMOEX с начала года: нет дневного ряда.",
+        _imoex_line("за неделю"),
+        _imoex_line("с начала года"),
         f"Ключевая ставка на последнюю дату таблицы ЦБ: {rate_text}. Направление к предыдущему наблюдению: {dashboard.get('key_rate_trend')}.",
         f"Последняя дата изменения ставки в таблице ЦБ: {dashboard.get('last_cb_meeting') or 'нет'}. Календарь заседаний отдельно не разбирался.",
         f"RAI IMOEX, месяц: {shown(dashboard.get('rai_imoex_monthly'))}. Месяцев подряд выше 1: {shown(dashboard.get('rai_imoex_months_above_1_in_row'))}.",
@@ -270,6 +288,57 @@ def render_weekly(run_day: date, dashboard: dict, gaps: list, anomalies: list) -
         f"Слабые окна этой даты: {', '.join(dashboard.get('weak_windows_today') or []) or 'нет'}.",
         f"Пропусков в журнале: {len(gaps)}. Требует решения автора: допуск к ISS, список 1-го эшелона, 22 акции матрицы, 13 погодных событий, дни сплитов.",
         "Кривая ОФЗ: нет ряда, признак инверсии пуст.",
+        "",
+        "Материал не является индивидуальной инвестиционной рекомендацией.",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def _imoex_line(label: str) -> str:
+    prices = [row for row in read_csv(CLEAN / "prices_daily.csv") if row.get("ticker") == "IMOEX" or row.get("index") == "IMOEX"]
+    if not prices:
+        return f"IMOEX {label}: нет дневного ряда."
+    closes = []
+    for row in sorted(prices, key=lambda item: item["date"]):
+        try:
+            closes.append((row["date"], float(row.get("close_adj") or row["close"])))
+        except (TypeError, ValueError, KeyError):
+            continue
+    if len(closes) < 2:
+        return f"IMOEX {label}: в ряде меньше двух закрытий."
+    if label == "за неделю" and len(closes) > 5:
+        first, last = closes[-6], closes[-1]
+    else:
+        year = closes[-1][0][:4]
+        prior = [item for item in closes if item[0] < f"{year}-01-01"]
+        first = prior[-1] if prior else closes[0]
+        last = closes[-1]
+    change = (last[1] / first[1] - 1) * 100
+    return f"IMOEX {label}: {change:.2f}% ({first[0]} → {last[0]})."
+
+
+def render_monthly(run_day: date, dashboard: dict) -> str:
+    year, month = run_day.year, run_day.month - 1
+    if month == 0:
+        year, month = year - 1, 12
+    stamp = f"{year:04d}-{month:02d}"
+    macro = [row for row in read_csv(CLEAN / "macro_monthly.csv") if row.get("month") == stamp]
+    rate = macro[0].get("key_rate") if macro else ""
+    brent = macro[0].get("brent_last") if macro else ""
+    ssn = macro[0].get("ssn") if macro else ""
+    lines = [
+        f"# Месяц {stamp}",
+        "",
+        f"Заморозка предыдущего месяца на срез {run_day.isoformat()}.",
+        f"Ключевая ставка в {stamp}: {rate or 'нет'}.",
+        f"Brent, последнее значение месяца: {brent or 'нет'}.",
+        f"SSN: {ssn or 'нет'}.",
+        f"Ступень табло на дату запуска: {dashboard.get('step')}. RAI месяца: {dashboard.get('rai_imoex_monthly') or 'нет'}.",
+        f"NSI confirmed: {dashboard.get('nsi_last_month') or 'нет'}.",
+        "Полный пересчёт derived выполнен из текущего raw.",
+        "Регрессия к Тому 1 выполняется только если в data/reference/legacy_vol1 лежит Raw_Stocks.tsv.",
+        "Черновики NSI не создавались: архив новостей в этом запуске не собран.",
         "",
         "Материал не является индивидуальной инвестиционной рекомендацией.",
         "",
@@ -317,6 +386,12 @@ def touch_sources(run_stamp: str, added: dict) -> None:
             ok.add("S5")
         elif "/moex_iss/" in name:
             ok.add("S1")
+        elif "/weather/" in name:
+            ok.add("S6")
+        elif "/fundamentals/" in name:
+            ok.add("S7")
+        elif "/news/" in name:
+            ok.add("S8")
     for row in rows:
         if row["code"] in ok:
             row["last_ok_at"] = run_stamp
@@ -328,11 +403,17 @@ def run(mode: str = "test") -> dict:
     started = now_msk()
     run_day = started.date()
     client = HttpClient()
-    if mode != "test":
-        raise SystemExit("полный режим не запускался: сначала тестовый сбор разрешённых источников")
-    collected = collect_allowed(client, run_day)
+    note = ""
+    if mode == "test":
+        collected = collect_allowed(client, run_day)
+    else:
+        plan = jobs_for(mode, run_day)
+        note = plan.get("note", "")
+        collected = collect_jobs(client, plan, run_day)
     macro = build_macro(run_day)
     build_prices(run_day)
+    build_weather()
+    build_fundamentals()
     dashboard = build_derived(run_day, macro["macro"], macro["events"])
     report = quality(run_day, collected["errors"])
     gaps = collected["gaps"] + report["gaps"]
@@ -361,10 +442,17 @@ def run(mode: str = "test") -> dict:
     added = {key: value for key, value in collected["added"].items() if key.startswith("data/")}
     touch_sources(run_stamp, added)
     manifest = write_manifest(run_stamp)
-    log = render_log(run_day, started, added, collected["errors"], dedup_gaps, anomalies)
+    log = render_log(run_day, started, added, collected["errors"], dedup_gaps, anomalies, mode, note)
     (LOGS / f"{run_day.isoformat()}.md").write_text(log, encoding="utf-8")
-    iso = run_day.isocalendar()
-    weekly = DIGEST / "weekly" / f"{iso.year}-W{iso.week:02d}.md"
-    weekly.write_text(render_weekly(run_day, dashboard, dedup_gaps, anomalies), encoding="utf-8")
+    if mode in {"test", "weekly", "backfill"}:
+        iso = run_day.isocalendar()
+        weekly = DIGEST / "weekly" / f"{iso.year}-W{iso.week:02d}.md"
+        weekly.write_text(render_weekly(run_day, dashboard, dedup_gaps, anomalies), encoding="utf-8")
+    if mode in {"monthly", "backfill"}:
+        year, month = run_day.year, run_day.month - 1
+        if month == 0:
+            year, month = year - 1, 12
+        monthly = DIGEST / "monthly" / f"{year:04d}-{month:02d}.md"
+        monthly.write_text(render_monthly(run_day, dashboard), encoding="utf-8")
     (DIGEST / "quality.md").write_text(render_quality(manifest, collected["errors"], dedup_gaps, anomalies), encoding="utf-8")
-    return {"dashboard": dashboard, "gaps": len(dedup_gaps), "anomalies": len(anomalies), "added": added}
+    return {"dashboard": dashboard, "gaps": len(dedup_gaps), "anomalies": len(anomalies), "added": added, "mode": mode}

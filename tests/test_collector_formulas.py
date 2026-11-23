@@ -2,6 +2,7 @@ import unittest
 from datetime import date
 from urllib.robotparser import RobotFileParser
 
+from scripts.collect import jobs_for, previous_trading_day
 from scripts.formulas import (
     SOLAR_V1_DIVISOR,
     adj_factor_on,
@@ -25,7 +26,19 @@ from scripts.formulas import (
     weekday_stats,
     zigzag_episodes,
 )
-from scripts.parse_sources import key_rate_events, parse_cbr_keyrate_html, parse_fred_brent, parse_noaa_solar
+from scripts.parse_sources import (
+    gfz_monthly,
+    key_rate_events,
+    parse_cbr_keyrate_html,
+    parse_cbr_metals,
+    parse_fred_brent,
+    parse_gfz_daily,
+    parse_noaa_solar,
+    parse_silso_csv,
+    parse_smartlab_html,
+    weather_monthly,
+    parse_meteostat_daily,
+)
 
 
 class FormulaTests(unittest.TestCase):
@@ -133,6 +146,57 @@ class FormulaTests(unittest.TestCase):
         parser = RobotFileParser()
         parser.parse(["User-agent: *", "Disallow: /"])
         self.assertFalse(parser.can_fetch("*", "https://iss.moex.com/iss/securities/SMLT.json"))
+
+    def test_modes_follow_section_42(self):
+        today = date(2026, 11, 23)
+        self.assertEqual(previous_trading_day(today), date(2026, 11, 20))
+        daily = jobs_for("daily", today)
+        self.assertEqual(daily["market_from"], date(2026, 11, 20))
+        self.assertTrue(daily["iss_market"] and daily["metals"] and not daily["fundamentals"])
+        weekly = jobs_for("weekly", today)
+        self.assertTrue(weekly["solar"] and weekly["weather"] and weekly["iss_reference"] and weekly["weekly_digest"])
+        self.assertEqual(weekly["note"], "")
+        self.assertIn("не в понедельник", jobs_for("weekly", date(2026, 11, 24))["note"])
+        monthly = jobs_for("monthly", today)
+        self.assertTrue(monthly["monthly_digest"])
+        self.assertIn("не 1-го", monthly["note"])
+        quarterly = jobs_for("quarterly", date(2026, 1, 15))
+        self.assertTrue(quarterly["fundamentals"])
+        self.assertEqual(quarterly["note"], "")
+        backfill = jobs_for("backfill", today)
+        self.assertEqual(backfill["market_from"], date(2021, 1, 4))
+        self.assertTrue(backfill["weather"] and backfill["solar"] and backfill["fundamentals"])
+
+    def test_macro_parsers(self):
+        xml = (
+            '<?xml version="1.0" encoding="windows-1251"?>'
+            '<Metall><Record Date="20.11.2026" Code="1"><Sell>9902,42</Sell></Record></Metall>'
+        )
+        metals = parse_cbr_metals(xml.encode("cp1251"))
+        self.assertEqual(metals[0]["date"], "2026-11-20")
+        self.assertAlmostEqual(metals[0]["gold"], 9902.42)
+        silso = parse_silso_csv("1749;01;1749.042;  96.7; -1.0;   -1;1\n", "ssn")
+        self.assertEqual(silso[0]["month"], "1749-01")
+        self.assertAlmostEqual(silso[0]["ssn"], 96.7)
+        line = "1932 01 01 0 0.5 1352 10 3.333 2.667 2.333 2.667 3.333 2.667 3.333 3.333 18 12 9 12 18 12 18 18 15 22 -1.0 -1.0 2"
+        monthly = gfz_monthly(parse_gfz_daily(line), "1932-01")
+        self.assertAlmostEqual(monthly[0]["ap"], 15)
+        self.assertAlmostEqual(monthly[0]["kpmax"], 3.333)
+        self.assertAlmostEqual(monthly[0]["sn_gfz"], 22)
+        daily = [{"date": f"1991-01-{day:02d}", "tmean": 1.0} for day in range(1, 25)]
+        daily.append({"date": "1991-01-25", "tmean": 1.0})
+        short = [{"date": f"1991-02-{day:02d}", "tmean": 1.0} for day in range(1, 11)]
+        months = weather_monthly(parse_meteostat_daily("\n".join(f"{row['date']},{row['tmean']}" for row in daily + short)))
+        self.assertEqual([row["month"] for row in months], ["1991-01"])
+        html = (
+            "<tr><td>Name</td><td>&nbsp;</td><td><strong>2024</strong></td></tr>"
+            "<tr><td>Выручка , млрд руб</td><td>?</td><td></td><td>10</td></tr>"
+            "<tr><td>Дата отчета</td><td></td><td></td><td>02.03.2025</td></tr>"
+        )
+        report = parse_smartlab_html(html, "IFRS")
+        self.assertEqual(report[0]["period_end"], "2024-12-31")
+        self.assertAlmostEqual(report[0]["revenue"], 10_000_000_000)
+        self.assertEqual(report[0]["reported_at"], "2025-03-02")
 
 
 if __name__ == "__main__":

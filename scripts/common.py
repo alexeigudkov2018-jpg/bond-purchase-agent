@@ -159,15 +159,15 @@ class HttpClient:
                     delay = 0.0
         return parser, delay, "ok"
 
-    def get(self, url: str) -> bytes:
+    def get(self, url: str, pause: float | None = None) -> bytes:
         allowed, reason = self.check_robots(url)
         if not allowed:
             raise PermissionError(reason)
         last_error = None
         for attempt in range(3):
-            self._pause()
+            self._pause(pause)
             try:
-                response = requests.get(url, headers={"User-Agent": UA}, timeout=60)
+                response = requests.get(url, headers={"User-Agent": UA}, timeout=90)
                 response.raise_for_status()
                 return response.content
             except Exception as error:  # noqa: BLE001 — повтор по правилу 0.6
@@ -175,10 +175,11 @@ class HttpClient:
                 time.sleep(2**attempt)
         raise RuntimeError(f"не удалось скачать {url}: {last_error}")
 
-    def _pause(self) -> None:
+    def _pause(self, pause: float | None = None) -> None:
+        wait = self.pause_seconds if pause is None else pause
         elapsed = time.monotonic() - self._last
-        if self._last and elapsed < self.pause_seconds:
-            time.sleep(self.pause_seconds - elapsed)
+        if self._last and elapsed < wait:
+            time.sleep(wait - elapsed)
         self._last = time.monotonic()
 
 
