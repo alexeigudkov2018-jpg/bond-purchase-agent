@@ -10,11 +10,11 @@
     },
     {
       "file": "data/clean/fundamentals_quarterly.csv",
-      "rows": 0,
+      "rows": 429,
       "min_date": "",
       "max_date": "",
-      "sha256": "f1c325b8083672cc0b743bbf484aba88b44fddb353b49f6957d9f7867a48f992",
-      "updated_at": "2026-11-23T16:02:26+03:00"
+      "sha256": "e8132c0de10db5993b14a947bbdb4aedb547c85cc1d2aa6d00cb6d45aa3035ed",
+      "updated_at": "2026-11-23T18:24:33+03:00"
     },
     {
       "file": "data/clean/indices_daily.csv",
@@ -45,8 +45,8 @@
       "rows": 475,
       "min_date": "1987-05",
       "max_date": "2026-11",
-      "sha256": "bb8189f0d7d95fbcc492ab9bbd8cc02bc1287bd238e04e46aced90415d0c6c77",
-      "updated_at": "2026-11-23T16:02:26+03:00"
+      "sha256": "133cf72d035ffcdde0edc62b0ae1b4681a60ec49f044cbfe732db65bcbdfa9b3",
+      "updated_at": "2026-11-23T18:24:33+03:00"
     },
     {
       "file": "data/clean/news_events.csv",
@@ -90,11 +90,11 @@
     },
     {
       "file": "data/clean/weather_monthly.csv",
-      "rows": 0,
-      "min_date": "",
-      "max_date": "",
-      "sha256": "740621ec5035011e0180e54b68f230b19ac1175d054e48ee5625d7f227aee8da",
-      "updated_at": "2026-11-23T16:02:26+03:00"
+      "rows": 2251,
+      "min_date": "1991-01",
+      "max_date": "2026-02",
+      "sha256": "4e6020f7f5b8fc1bb7a81cc480f9f5a83ab0dffb64a19137a5293e5ea7f9d8f2",
+      "updated_at": "2026-11-23T18:24:33+03:00"
     },
     {
       "file": "data/derived/betas_corr.csv",
@@ -258,11 +258,11 @@
     },
     {
       "file": "data/derived/weather_composite.csv",
-      "rows": 0,
-      "min_date": "",
-      "max_date": "",
-      "sha256": "b06bd342dfef9c759cf4281abb6765761c879816f5ede867bb8511458101f16a",
-      "updated_at": "2026-11-23T16:02:26+03:00"
+      "rows": 422,
+      "min_date": "1991-01",
+      "max_date": "2026-02",
+      "sha256": "740d6105021ce4777aa2a671c2ab5164415c9bccf174b169a8845db7849daf4e",
+      "updated_at": "2026-11-23T18:24:33+03:00"
     },
     {
       "file": "data/derived/weather_events.csv",
