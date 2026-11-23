@@ -32,7 +32,7 @@ ANOMALY_COLUMNS = ["date", "series", "kind", "detail", "value_a", "value_b"]
 
 
 def collect_allowed(client: HttpClient, run_day: date) -> dict:
-    """Качает только то, что не запрещено robots.txt. ISS при Disallow: / не трогаем."""
+    """Короткий прогон. Историю ISS и Stooq качают режимы daily и backfill."""
     added = {}
     errors = []
     gaps = []
@@ -50,7 +50,14 @@ def collect_allowed(client: HttpClient, run_day: date) -> dict:
             }
         )
     else:
-        errors.append({"source": "S1", "error": "robots разрешил ISS, но тестовый сбор свечей ещё не включён отдельным флагом"})
+        gaps.append(
+            {
+                "date": stamp,
+                "series": "moex_iss",
+                "source": "S1",
+                "reason": "тестовый режим не грузит историю ISS; для неё нужен --mode backfill или --mode daily",
+            }
+        )
 
     key_url = (
         "https://www.cbr.ru/hd_base/keyrate/"

@@ -464,11 +464,10 @@ def build_prices(today: date):
             }
         )
     write_csv(CLEAN / "prices_monthly.csv", ["month", "ticker", "close_adj", "source", "mtd"], monthly)
-    _empty(CLEAN / "indices_daily.csv", ["date", "index", "close", "source", "fetched_at"])
-    _empty(CLEAN / "indices_monthly.csv", ["month", "index", "close", "mtd", "source", "fetched_at"])
-    _empty(CLEAN / "ofz_daily.csv", ["date", "secid", "isin", "price_pct", "ytm", "duration_days", "coupon_rate", "maturity", "source", "fetched_at"])
-    _empty(CLEAN / "ofz_curve_daily.csv", ["date", "t_1y", "t_2y", "t_3y", "t_5y", "t_7y", "t_10y", "t_15y", "t_20y", "source", "fetched_at"])
-    _empty(CLEAN / "dividends.csv", ["ticker", "record_date", "amount_rub", "currency", "source", "fetched_at"])
+    _write_indices(today)
+    _write_ofz()
+    _write_curve()
+    _write_dividends()
     _empty(
         CLEAN / "fundamentals_quarterly.csv",
         ["ticker", "period_end", "report_type", "revenue", "ebitda", "net_income", "net_debt", "equity", "shares_out", "reported_at", "source", "fetched_at", "ltm"],
@@ -478,12 +477,143 @@ def build_prices(today: date):
     return rows, monthly
 
 
+def _num_cell(value):
+    if value in (None, ""):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not is_num(number):
+        return None
+    return number
+
+
+def _write_indices(today: date):
+    chosen = {}
+    for path in sorted((RAW / "moex_iss" / "indices").glob("*_*.json")):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        fetched = fetched_at_for(path)
+        for row in parse_iss_history(payload):
+            close = _num_cell(row.get("CLOSE"))
+            stamp = row.get("TRADEDATE") or ""
+            code = row.get("SECID") or ""
+            if not stamp or not code or close is None or stamp < "2021-01-04":
+                continue
+            key = (code, stamp)
+            current = chosen.get(key)
+            session = row.get("TRADINGSESSION") or 0
+            try:
+                session = int(session)
+            except (TypeError, ValueError):
+                session = 0
+            if current is None or session >= current["session"]:
+                chosen[key] = {"date": stamp, "index": code, "close": close, "source": "S1", "fetched_at": fetched, "session": session}
+    rows = [{key: value[key] for key in ("date", "index", "close", "source", "fetched_at")} for value in sorted(chosen.values(), key=lambda item: (item["index"], item["date"]))]
+    write_csv(CLEAN / "indices_daily.csv", ["date", "index", "close", "source", "fetched_at"], rows)
+    current = today.strftime("%Y-%m")
+    monthly = []
+    last = {}
+    for row in rows:
+        last[(row["index"], row["date"][:7])] = row
+    for (code, month), row in sorted(last.items()):
+        monthly.append({"month": month, "index": code, "close": row["close"], "mtd": 1 if month == current else 0, "source": "S1", "fetched_at": row["fetched_at"]})
+    write_csv(CLEAN / "indices_monthly.csv", ["month", "index", "close", "mtd", "source", "fetched_at"], monthly)
+
+
+def _write_ofz():
+    chosen = {}
+    for path in sorted((RAW / "moex_iss" / "bonds").glob("ofz_*.json")):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        fetched = fetched_at_for(path)
+        for row in parse_iss_history(payload):
+            stamp = row.get("TRADEDATE") or ""
+            secid = row.get("SECID") or ""
+            if not stamp or not secid or stamp < "2021-01-04":
+                continue
+            key = (secid, stamp)
+            session = row.get("TRADINGSESSION") or 0
+            try:
+                session = int(session)
+            except (TypeError, ValueError):
+                session = 0
+            current = chosen.get(key)
+            if current is not None and session < current["_session"]:
+                continue
+            chosen[key] = {
+                "date": stamp,
+                "secid": secid,
+                "isin": row.get("ISIN") or "",
+                "price_pct": _num_cell(row.get("CLOSE")),
+                "ytm": _num_cell(row.get("YIELDCLOSE")),
+                "duration_days": _num_cell(row.get("DURATION")),
+                "coupon_rate": _num_cell(row.get("COUPONPERCENT")),
+                "maturity": row.get("MATDATE") or "",
+                "source": "S1",
+                "fetched_at": fetched,
+                "_session": session,
+            }
+    columns = ["date", "secid", "isin", "price_pct", "ytm", "duration_days", "coupon_rate", "maturity", "source", "fetched_at"]
+    rows = [{key: value.get(key) for key in columns} for value in sorted(chosen.values(), key=lambda item: (item["date"], item["secid"]))]
+    write_csv(CLEAN / "ofz_daily.csv", columns, rows)
+
+
+def _write_curve():
+    tenors = {0.25: None, 1.0: "t_1y", 2.0: "t_2y", 3.0: "t_3y", 5.0: "t_5y", 7.0: "t_7y", 10.0: "t_10y", 15.0: "t_15y", 20.0: "t_20y"}
+    columns = ["date", "t_1y", "t_2y", "t_3y", "t_5y", "t_7y", "t_10y", "t_15y", "t_20y", "source", "fetched_at"]
+    rows = []
+    for path in sorted((RAW / "moex_iss" / "bonds").glob("zcyc_*.json")):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        block = payload.get("yearyields") or {}
+        cols = block.get("columns") or []
+        record = {name: None for name in columns}
+        record["source"] = "S1"
+        record["fetched_at"] = fetched_at_for(path)
+        for raw in block.get("data") or []:
+            row = dict(zip(cols, raw))
+            period = _num_cell(row.get("period"))
+            value = _num_cell(row.get("value"))
+            field = tenors.get(period)
+            if field:
+                record[field] = value
+            if row.get("tradedate"):
+                record["date"] = row["tradedate"]
+        if record.get("date"):
+            rows.append(record)
+    write_csv(CLEAN / "ofz_curve_daily.csv", columns, rows)
+
+
+def _write_dividends():
+    rows = []
+    for path in sorted((RAW / "moex_iss" / "dividends").glob("*_*.json")):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        fetched = fetched_at_for(path)
+        ticker = path.name.split("_")[0]
+        for row in parse_iss_history(payload):
+            record_date = row.get("registryclosedate") or row.get("REGISTRYCLOSEDATE") or ""
+            amount = _num_cell(row.get("value") if row.get("value") is not None else row.get("VALUE"))
+            if not record_date or amount is None:
+                continue
+            rows.append(
+                {
+                    "ticker": row.get("secid") or row.get("SECID") or ticker,
+                    "record_date": record_date,
+                    "amount_rub": amount,
+                    "currency": row.get("currencyid") or row.get("CURRENCYID") or "",
+                    "source": "S1",
+                    "fetched_at": fetched,
+                }
+            )
+    write_csv(CLEAN / "dividends.csv", ["ticker", "record_date", "amount_rub", "currency", "source", "fetched_at"], rows)
+
+
 def _empty(path, columns):
     if not path.exists():
         write_csv(path, columns, [])
 
 
 def _returns(monthly_rows):
+    dividends = _dividend_amounts()
     by_ticker: dict[str, list[dict]] = {}
     for row in monthly_rows:
         if str(row.get("mtd")) == "1":
@@ -499,7 +629,7 @@ def _returns(monthly_rows):
             except (TypeError, ValueError):
                 continue
             ret = monthly_return_pct(previous, current)
-            tr = total_return_pct(previous, current, 0.0)
+            tr = total_return_pct(previous, current, dividends.get((ticker, row["month"]), 0.0))
             out.append({"month": row["month"], "ticker": ticker, "ret_pct": ret, "ret_tr_pct": tr, "n_obs": 2})
     return out
 
@@ -515,7 +645,7 @@ def build_derived(today: date, macro_rows, events):
     _write_betas(returns, macro_rows, sectors, echelons, today)
     _write_seasonality(returns)
     _write_calendar()
-    _write_rai_placeholders()
+    _write_rai()
     _write_nsi()
     _write_valuation()
     _write_regimes(returns)
@@ -530,7 +660,33 @@ def build_derived(today: date, macro_rows, events):
 
 
 def _read_prices():
-    return read_csv(CLEAN / "prices_daily.csv"), read_csv(CLEAN / "prices_monthly.csv")
+    daily = read_csv(CLEAN / "prices_daily.csv")
+    monthly = read_csv(CLEAN / "prices_monthly.csv")
+    for row in read_csv(CLEAN / "indices_monthly.csv"):
+        if row.get("index") == "IMOEX":
+            monthly.append({"month": row["month"], "ticker": "IMOEX", "close_adj": row["close"], "source": row.get("source"), "mtd": row.get("mtd")})
+    return daily, monthly
+
+
+def _dividend_amounts():
+    found: dict[tuple[str, str], float] = {}
+    for row in read_csv(CLEAN / "dividends.csv"):
+        currency = (row.get("currency") or "").upper()
+        if currency not in ("", "RUB", "SUR"):
+            continue
+        try:
+            amount = float(row["amount_rub"])
+        except (TypeError, ValueError):
+            continue
+        stamp = row.get("record_date") or ""
+        if len(stamp) < 7:
+            continue
+        factor = adj_factor_on(stamp, _actions_for(row.get("ticker") or ""))
+        if factor:
+            amount = amount / factor
+        key = (row.get("ticker") or "", stamp[:7])
+        found[key] = found.get(key, 0.0) + amount
+    return found
 
 
 def _write_sector_returns(returns, sectors):
@@ -613,18 +769,16 @@ def _write_betas(returns, macro_rows, sectors, echelons, today):
         rows,
     )
     _empty(DERIVED / "corr_matrix_22.csv", ["ticker", "n_obs"])
-    _write_corr_sectors(months)
+    _write_corr_sectors(months, imoex)
 
 
-def _write_corr_sectors(months):
+def _write_corr_sectors(months, imoex):
     sector_rows = read_csv(DERIVED / "sector_returns.csv")
     header = ["asset", *SECTORS, "n_obs"]
-    # IMOEX ещё нет в ценах: матрица секторов считается, когда появятся их доходности.
     assets = ["IMOEX", *SECTORS]
-    maps = {}
+    maps = {"IMOEX": imoex}
     for asset in assets:
         if asset == "IMOEX":
-            maps[asset] = {}
             continue
         maps[asset] = _series_map([row for row in sector_rows if row["sector"] == asset], "month", "ret_pct_eq")
     rows = []
@@ -677,8 +831,8 @@ def _write_seasonality(returns):
 
 
 def _write_calendar():
-    daily = [row for row in read_csv(CLEAN / "prices_daily.csv") if row.get("ticker") == "IMOEX" or row.get("index") == "IMOEX"]
-    # Индекс может появиться отдельным файлом; пока дневки акций не содержат IMOEX.
+    daily = [row for row in read_csv(CLEAN / "indices_daily.csv") if row.get("index") == "IMOEX"]
+    daily.sort(key=lambda row: row["date"])
     dates = [row["date"] for row in daily]
     closes = []
     for row in daily:
@@ -699,15 +853,47 @@ def _write_calendar():
     )
 
 
-def _write_rai_placeholders():
-    _empty(
-        DERIVED / "zigzag_episodes.csv",
-        ["index", "peak_date", "trough_date", "recovered_date", "peak_pts", "trough_pts", "depth_pct", "rebound_pct", "fall_days", "rec_days", "fall_speed", "rec_speed", "asym", "completed", "n_obs"],
-    )
-    _empty(DERIVED / "rai_daily.csv", ["date", "index", "rai", "n_obs"])
+def _write_rai():
+    by_index: dict[str, list[tuple[str, float]]] = {code: [] for code in RAI_INDEXES}
+    for row in read_csv(CLEAN / "indices_daily.csv"):
+        code = row.get("index")
+        if code not in by_index:
+            continue
+        try:
+            close = float(row["close"])
+        except (TypeError, ValueError):
+            continue
+        by_index[code].append((row["date"], close))
+    episodes = []
+    daily_rows = []
+    drawdowns = []
+    monthly: dict[str, dict] = {}
+    for code in RAI_INDEXES:
+        series = sorted(by_index[code])
+        if len(series) < 2:
+            continue
+        dates = [item[0] for item in series]
+        prices = [item[1] for item in series]
+        found, rai_rows, downs = rai_frame(code, dates, prices)
+        episodes.extend(found)
+        drawdowns.extend(downs)
+        last_by_month = {}
+        for stamp, value in rai_rows:
+            daily_rows.append({"date": stamp, "index": code, "rai": value, "n_obs": len(prices)})
+            if is_num(value):
+                last_by_month[stamp[:7]] = value
+        for month, value in last_by_month.items():
+            monthly.setdefault(month, {"month": month, "n_obs": len(prices)})[code] = value
+    episode_columns = ["index", "peak_date", "trough_date", "recovered_date", "peak_pts", "trough_pts", "depth_pct", "rebound_pct", "fall_days", "rec_days", "fall_speed", "rec_speed", "asym", "completed", "n_obs"]
+    write_csv(DERIVED / "zigzag_episodes.csv", episode_columns, [{key: row.get(key) for key in episode_columns} for row in episodes])
+    write_csv(DERIVED / "rai_daily.csv", ["date", "index", "rai", "n_obs"], daily_rows)
     columns = ["month", *RAI_INDEXES, "n_obs"]
-    _empty(DERIVED / "rai_monthly.csv", columns)
-    _empty(DERIVED / "drawdowns_global.csv", ["index", "peak_date", "trough_date", "depth_pct", "recovery_date", "days_down", "days_up", "n_obs"])
+    write_csv(DERIVED / "rai_monthly.csv", columns, [monthly[key] for key in sorted(monthly)])
+    write_csv(
+        DERIVED / "drawdowns_global.csv",
+        ["index", "peak_date", "trough_date", "depth_pct", "recovery_date", "days_down", "days_up", "n_obs"],
+        drawdowns,
+    )
 
 
 def rai_frame(index_name, dates, prices, window=126):
@@ -1044,7 +1230,32 @@ def _write_plan(today: date, macro_rows, events):
             trend = "down"
         else:
             trend = "flat"
-    rai_value = None
+    rai_series = []
+    for row in read_csv(DERIVED / "rai_monthly.csv"):
+        raw = row.get("IMOEX")
+        try:
+            rai_series.append(float(raw) if raw not in ("", None) else None)
+        except (TypeError, ValueError):
+            rai_series.append(None)
+    rai_value = next((value for value in reversed(rai_series) if is_num(value)), None)
+    curve_rows = read_csv(CLEAN / "ofz_curve_daily.csv")
+    curve = curve_rows[-1] if curve_rows else {}
+
+    def curve_num(name):
+        raw = curve.get(name)
+        try:
+            return float(raw) if raw not in ("", None) else None
+        except (TypeError, ValueError):
+            return None
+
+    y2, y10 = curve_num("t_2y"), curve_num("t_10y")
+    inverted = None if y2 is None or y10 is None else int(y2 > y10)
+    ofz_rows = read_csv(CLEAN / "ofz_daily.csv")
+    ofz_note = "ΔP/P ≈ −D_mod·Δy; D_mod в годах, Δy в долях."
+    if ofz_rows:
+        ofz_note += " duration_days в ofz_daily — дни ISS, в годы сами не переводятся."
+    else:
+        ofz_note += " Ряд ОФЗ пуст."
     step = instant_step(
         key_rate,
         trend,
@@ -1054,7 +1265,7 @@ def _write_plan(today: date, macro_rows, events):
         thresholds["step2_rate_above"],
         thresholds["rai_bull_below"],
     )
-    stop = stop_cap(trend, [], thresholds["stop_rai_months"])
+    stop = stop_cap(trend, rai_series, thresholds["stop_rai_months"])
     if stop["active"]:
         step = 0
     windows = weak_windows(today)
@@ -1065,24 +1276,24 @@ def _write_plan(today: date, macro_rows, events):
         "key_rate_trend": trend if key_rate is not None else None,
         "last_cb_meeting": events[-1]["date"] if events else None,
         "rai_imoex_monthly": rai_value,
-        "rai_imoex_months_above_1_in_row": rai_streak_above([]),
+        "rai_imoex_months_above_1_in_row": rai_streak_above(rai_series),
         "nsi_last_month": None,
         "nsi_last_month_including_draft": None,
         "nsi_confirmed_only": True,
-        "ofz_ytm_2y": None,
-        "ofz_ytm_5y": None,
-        "ofz_ytm_10y": None,
-        "ofz_curve_inverted": None,
+        "ofz_ytm_2y": y2,
+        "ofz_ytm_5y": curve_num("t_5y"),
+        "ofz_ytm_10y": y10,
+        "ofz_curve_inverted": inverted,
         "step": step,
         "step_confirmation": "instant_no_meeting_calendar",
         "soft_conditions": {
             "c1_monetary": monetary_soft(key_rate, trend, thresholds["step0_rate_above"]),
-            "c2_rai_below_1": None,
+            "c2_rai_below_1": None if rai_value is None else rai_value < 1,
             "c3_nsi_ge_0_and_weak_window": (nsi_value >= 0) and bool(windows),
         },
         "stop_cap": {"active": stop["active"], "reason": stop["reason"], "months_to_trigger": stop["months_to_trigger"]},
         "weak_windows_today": windows,
-        "ofz_repricing_note": "ΔP/P ≈ −D_mod·Δy; D_mod в годах, Δy в долях. Ряд ОФЗ в этом запуске пуст.",
+        "ofz_repricing_note": ofz_note,
         "ofz_example_delta_p": ofz_repricing(None, None),
     }
     write_json(DERIVED / "plan_dashboard.json", payload)

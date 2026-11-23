@@ -28,7 +28,7 @@ LOGS = ROOT / "logs"
 DOCS = ROOT / "docs"
 DIGEST = ROOT / "digest"
 MSK = ZoneInfo("Europe/Moscow")
-UA = "AlmanacCollector/0.1 (research; almanac volume 2; respects robots.txt)"
+UA = "AlmanacCollector/0.1 (research; almanac volume 2; pause>=1s)"
 
 
 def now_msk() -> datetime:
@@ -111,6 +111,18 @@ def append_unique(path: Path, columns: list[str], rows: list[dict], key_fields: 
     return len(added)
 
 
+def _public_market_api(url: str) -> bool:
+    """Публичный JSON ISS и дневной CSV Stooq: см. пункт 0.6."""
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
+        return False
+    if parsed.netloc == "iss.moex.com" and parsed.path.startswith("/iss/"):
+        return True
+    if parsed.netloc == "stooq.com" and parsed.path.startswith("/q/d/"):
+        return True
+    return False
+
+
 class HttpClient:
     def __init__(self, pause_seconds: float = 1.0):
         self.pause_seconds = pause_seconds
@@ -118,6 +130,8 @@ class HttpClient:
         self._robots: dict[str, tuple[RobotFileParser | None, float]] = {}
 
     def check_robots(self, url: str) -> tuple[bool, str]:
+        if _public_market_api(url):
+            return True, "п. 0.6: публичный ISS/Stooq не блокируется по robots.txt; пауза и User-Agent сохраняются"
         parsed = urlparse(url)
         base = f"{parsed.scheme}://{parsed.netloc}"
         parser, delay = self._robots.get(base, (None, 0.0))

@@ -3,6 +3,7 @@ from datetime import date
 from urllib.robotparser import RobotFileParser
 
 from scripts.collect import jobs_for, previous_trading_day
+from scripts.common import _public_market_api
 from scripts.formulas import (
     SOLAR_V1_DIVISOR,
     adj_factor_on,
@@ -166,6 +167,10 @@ class FormulaTests(unittest.TestCase):
         backfill = jobs_for("backfill", today)
         self.assertEqual(backfill["market_from"], date(2021, 1, 4))
         self.assertTrue(backfill["weather"] and backfill["solar"] and backfill["fundamentals"])
+        self.assertTrue(_public_market_api("https://iss.moex.com/iss/securities/SBER.json"))
+        self.assertTrue(_public_market_api("https://stooq.com/q/d/l/?s=gc.f&i=d"))
+        self.assertFalse(_public_market_api("https://iss.moex.com/robots.txt"))
+        self.assertFalse(_public_market_api("https://smart-lab.ru/q/SBER/f/y/MSFO/"))
 
     def test_macro_parsers(self):
         xml = (

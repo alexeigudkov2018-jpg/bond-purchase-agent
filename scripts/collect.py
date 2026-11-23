@@ -197,18 +197,32 @@ def _fetch(client, url, path, source, series, stamp, added, errors, gaps, pause=
 
 def _fetch_iss_market(client, start: date, end: date, run_day: date, added, errors, gaps):
     stamp = run_day.isoformat()
-    window = f"from={start.isoformat()}&till={end.isoformat()}"
-    for ticker in _active_tickers():
-        url = (
-            f"{ISS}/iss/history/engines/stock/markets/shares/boards/TQBR/securities/{ticker}.json?{window}"
-        )
+    window = f"from={start.isoformat()}&till={end.isoformat()}&iss.meta=off"
+    tickers = _active_tickers()
+    for index, ticker in enumerate(tickers, start=1):
+        print(f"iss shares {index}/{len(tickers)} {ticker}", flush=True)
+        url = f"{ISS}/iss/history/engines/stock/markets/shares/boards/TQBR/securities/{ticker}.json?{window}"
         _fetch_iss_paged(client, url, RAW / "moex_iss" / "shares" / f"{ticker}_{stamp}.json", "S1", ticker, stamp, added, errors, gaps)
-    for index in RAI_AND_EXTRA:
-        url = f"{ISS}/iss/history/engines/stock/markets/index/boards/SNDX/securities/{index}.json?{window}"
-        _fetch_iss_paged(client, url, RAW / "moex_iss" / "indices" / f"{index}_{stamp}.json", "S1", index, stamp, added, errors, gaps)
-    bond_url = f"{ISS}/iss/history/engines/stock/markets/bonds/boards/TQOB/securities.json?{window}"
-    _fetch_iss_paged(client, bond_url, RAW / "moex_iss" / "bonds" / f"ofz_{stamp}.json", "S1", "ofz", stamp, added, errors, gaps)
-    curve_url = f"{ISS}/iss/engines/stock/zcyc.json"
+    for index, code in enumerate(RAI_AND_EXTRA, start=1):
+        print(f"iss index {index}/{len(RAI_AND_EXTRA)} {code}", flush=True)
+        path = RAW / "moex_iss" / "indices" / f"{code}_{stamp}.json"
+        url = f"{ISS}/iss/history/engines/stock/markets/index/boards/SNDX/securities/{code}.json?{window}"
+        _fetch_iss_paged(client, url, path, "S1", code, stamp, added, errors, gaps)
+        if _history_rows(path) == 0:
+            alt = RAW / "moex_iss" / "indices" / f"{code}_all_{stamp}.json"
+            alt_url = f"{ISS}/iss/history/engines/stock/markets/index/securities/{code}.json?{window}"
+            _fetch_iss_paged(client, alt_url, alt, "S1", f"{code}_all", stamp, added, errors, gaps)
+            if _history_rows(alt) == 0:
+                gaps.append(
+                    {
+                        "date": stamp,
+                        "series": code,
+                        "source": "S1",
+                        "reason": "история индекса пуста и на доске SNDX, и без доски",
+                    }
+                )
+    _fetch_ofz_by_day(client, start, end, run_day, added, errors, gaps)
+    curve_url = f"{ISS}/iss/engines/stock/zcyc.json?iss.meta=off"
     _fetch(client, curve_url, RAW / "moex_iss" / "bonds" / f"zcyc_{stamp}.json", "S1", "zcyc", stamp, added, errors, gaps)
     gaps.append(
         {
@@ -220,8 +234,64 @@ def _fetch_iss_market(client, start: date, end: date, run_day: date, added, erro
     )
 
 
+def _fetch_ofz_by_day(client, start: date, end: date, run_day: date, added, errors, gaps):
+    """История всей доски TQOB по from/till не отдаётся: берём date= на каждый будний день."""
+    stamp = run_day.isoformat()
+    day = start
+    while day <= end:
+        if day.weekday() < 5:
+            month = day.strftime("%Y-%m")
+            path = RAW / "moex_iss" / "bonds" / f"ofz_{stamp}_{month}.json"
+            if not path.exists():
+                print(f"iss ofz {month}", flush=True)
+                failed = _fetch_ofz_month(client, day.replace(day=1), start, end, path, errors)
+                if path.exists():
+                    added[str(path.relative_to(ROOT))] = 1
+                for failed_day in failed:
+                    gaps.append(
+                        {
+                            "date": stamp,
+                            "series": f"ofz_{failed_day}",
+                            "source": "S1",
+                            "reason": "день ОФЗ не скачан, месяц сохранён без этой даты",
+                        }
+                    )
+        day += timedelta(days=1)
+
+
+def _fetch_ofz_month(client, month_start: date, series_start: date, series_end: date, path, errors) -> list[str]:
+    columns = None
+    data = []
+    failed = []
+    day = month_start
+    while day.month == month_start.month and day <= series_end:
+        if day >= series_start and day.weekday() < 5:
+            url = (
+                f"{ISS}/iss/history/engines/stock/markets/bonds/boards/TQOB/securities.json"
+                f"?date={day.isoformat()}&iss.meta=off"
+            )
+            try:
+                payload = json.loads(client.get(url))
+            except Exception as error:  # noqa: BLE001
+                errors.append({"source": "S1", "error": f"ofz {day.isoformat()}: {error}"})
+                failed.append(day.isoformat())
+            else:
+                block = payload.get("history") or {}
+                columns = block.get("columns") or columns
+                data.extend(block.get("data") or [])
+        day += timedelta(days=1)
+    body = json.dumps({"history": {"columns": columns or [], "data": data}}, ensure_ascii=False).encode("utf-8")
+    save_raw(
+        path,
+        body,
+        f"{ISS}/iss/history/engines/stock/markets/bonds/boards/TQOB/securities.json?month={month_start.strftime('%Y-%m')}",
+    )
+    return failed
+
+
 def _fetch_iss_reference(client, run_day: date, added, errors, gaps):
     stamp = run_day.isoformat()
+    dividend_gap = False
     for ticker in _active_tickers():
         _fetch(
             client,
@@ -234,17 +304,38 @@ def _fetch_iss_reference(client, run_day: date, added, errors, gaps):
             errors,
             gaps,
         )
-        _fetch_iss_paged(
-            client,
-            f"{ISS}/iss/securities/{ticker}/dividends.json",
-            RAW / "moex_iss" / "dividends" / f"{ticker}_{stamp}.json",
-            "S1",
-            f"{ticker}_dividends",
-            stamp,
-            added,
-            errors,
-            gaps,
-        )
+        if dividend_gap:
+            continue
+        path = RAW / "moex_iss" / "dividends" / f"{ticker}_{stamp}.json"
+        url = f"{ISS}/iss/securities/{ticker}/dividends.json?iss.meta=off"
+        if path.exists():
+            added[str(path.relative_to(ROOT))] = 0
+            continue
+        try:
+            payload = json.loads(client.get(url))
+        except Exception as error:  # noqa: BLE001
+            errors.append({"source": "S1", "error": f"{ticker}_dividends: {error}"})
+            continue
+        if "dividends" not in payload:
+            dividend_gap = True
+            gaps.append(
+                {
+                    "date": stamp,
+                    "series": "dividends",
+                    "source": "S1",
+                    "reason": "ISS /securities/{ticker}/dividends.json не содержит блок dividends",
+                }
+            )
+            continue
+        created = save_raw(path, json.dumps(payload, ensure_ascii=False).encode("utf-8"), url)
+        added[str(path.relative_to(ROOT))] = 1 if created else 0
+
+
+def _history_rows(path) -> int:
+    if not path.exists():
+        return 0
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return len((payload.get("history") or {}).get("data") or [])
 
 
 def _fetch_iss_paged(client, url, path, source, series, stamp, added, errors, gaps):
@@ -256,7 +347,7 @@ def _fetch_iss_paged(client, url, path, source, series, stamp, added, errors, ga
     start = 0
     try:
         while True:
-            page_url = f"{url}{'&' if '?' in url else '?'}start={start}"
+            page_url = f"{url}{'&' if '?' in url else '?'}start={start}&iss.meta=off"
             payload = json.loads(client.get(page_url))
             block = None
             for key in ("history", "dividends"):
@@ -319,7 +410,7 @@ def _fetch_metals(client, start: date, end: date, run_day: date, added, errors, 
             _fetch(
                 client,
                 f"https://stooq.com/q/d/l/?s={symbol}&i=d",
-                RAW / "cbr" / f"{name}_usd_{stamp}.csv",
+                RAW / "stooq" / f"{name}_{stamp}.csv",
                 "S4",
                 name,
                 stamp,
@@ -327,6 +418,14 @@ def _fetch_metals(client, start: date, end: date, run_day: date, added, errors, 
                 errors,
                 gaps,
             )
+        gaps.append(
+            {
+                "date": stamp,
+                "series": "metals_usd_units",
+                "source": "S4",
+                "reason": "файлы Stooq сохранены отдельно: колонки gold/silver/platinum/palladium остаются учётными ценами ЦБ в рублях за грамм, чтобы не смешивать единицы",
+            }
+        )
     url = (
         "https://www.cbr.ru/scripts/xml_metall.asp?date_req1="
         + start.strftime("%d/%m/%Y")
