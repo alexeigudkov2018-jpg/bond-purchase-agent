@@ -1,0 +1,300 @@
+{
+  "files": [
+    {
+      "file": "data/clean/dividends.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "a6e0c63bb131ccfa190e93666374f47433a796616cf987826f1e92b0209a5e33",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/clean/fundamentals_quarterly.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "f1c325b8083672cc0b743bbf484aba88b44fddb353b49f6957d9f7867a48f992",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/clean/indices_daily.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "509926cb2a900998c476b7916e1196e100c1af716164eb8b36603061703356d6",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/clean/indices_monthly.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "716db7b94b62ea9edb0a88975a6a3e227a9b2b3d4b11021fe80c8642bbbdd0db",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/clean/key_rate_events.csv",
+      "rows": 33,
+      "min_date": "2021-03-22",
+      "max_date": "2026-07-27",
+      "sha256": "2d447ee7fd24d8c19d598d2eae8ec4786e7a040b6f107e84b63ff5e575db097c",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/clean/macro_monthly.csv",
+      "rows": 475,
+      "min_date": "1987-05",
+      "max_date": "2026-11",
+      "sha256": "bb8189f0d7d95fbcc492ab9bbd8cc02bc1287bd238e04e46aced90415d0c6c77",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/clean/news_events.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "6d4628fc7b7494bf15401e724ead1242596137a5dae8bb7fa537697d2b5a6b04",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/clean/ofz_curve_daily.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "2da33f0e5d9d12d6ad39757208e75a354c7358144569e0837cd71467b577baa5",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/clean/ofz_daily.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "1dbf7a8abc3f9bc6bcf0f963f15b1e0e7122ffe6bf7b994642a9e492c9f99704",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/clean/prices_daily.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "b5010eb2dfe0959223b1cc59337530082fe55c9d5ee1a06553ee161424fffafe",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/clean/prices_monthly.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "6c8597a9f3074244ffc9ac14de366d5ff63b853f0491d618b9d2587714abd86d",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/clean/weather_monthly.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "740621ec5035011e0180e54b68f230b19ac1175d054e48ee5625d7f227aee8da",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/betas_corr.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "625a284130513395858cf0ff7999f7291af3a88401809bdc996851880ac66e9b",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/corr_matrix_22.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "0800284efc447c897576609fed80e5041fa56d93b1c7f92cf88b2c56d59940f0",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/corr_sectors.csv",
+      "rows": 10,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "aab2bae91b026244aa502253cde99b49620feea499776041b7243b07fd02571e",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/drawdowns_global.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "a83ae15c838a3d40bc81883a705aba34b4a8958bbcee7514875ceb0a352ee88e",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/echelon_vol.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "c35ba45ae6820aa396849376a4d54b0a1e86f5e14e111c2c38938ef3e035095d",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/extremes_monthly.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "c6ed97e3d544546cd448cf670bd5e77a14ec6f071a9fa2ef296527e2fd5ab310",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/imoex_year_month.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "c50af4b73bb879ee04e849aee4eec5e3ea60e516522108f6233f9c27eaf76dce",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/month_parts_stats.csv",
+      "rows": 4,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "23a7ce76077b161a0875d50ab5209f0841a3696bd503bcf0595088bbb34afa92",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/nsi_monthly.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "3e7b5632f4e0ceb4dd18968f39bf3963dd90d55fd2b598097a15c150489bed2a",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/plan_dashboard.json",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "d2a05be046e258c3334b00113601e897c9f636f481893ff17db882487fe064f8",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/plan_flows.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "35093032e5fd8f4cdc43a9ae6c48d114e9d2622806c67261d6d7cc439471e445",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/rai_daily.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "b4b74eb419561cba05815111005010d91be1c0cb28f79ccd7c9783b3113403f8",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/rai_monthly.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "c3f027bdf4529d9c993b738b96f6edeb5121074761f58049131d55bee9a92a52",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/regime_windows.csv",
+      "rows": 6,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "88be3d3850660afb07fe3e6d87b88f4db50f3d8d815d297075ef926695c89151",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/returns_monthly.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "4efa10f6cc01aae7b78c3abef9b6c9c4ffc7d6d0a1aed798afe007bfb2ba2b79",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/seasonality.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "8fcf0f55cccfe367c5fff0c8c76f1ad932b00b394450ff74589cebc6af5abfa9",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/sector_returns.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "c4c3baef283f140eaf08c48a7c0432eea54941321d19f92ab99cf09e0b9aedaf",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/solar_lags.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "486f222880eb330feae65fcb86abab900541fad7b26fe957b42e88e4a71c0301",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/solar_phases.csv",
+      "rows": 142,
+      "min_date": "2015-01",
+      "max_date": "2026-10",
+      "sha256": "8c9c64725c001edce172c35575cdc5b0d07c4fa61a549ebf34146d18af35cccb",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/valuation_snapshot.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "454de0d2dace1e7424171dae20508db592f98e77f6474cff7ac3f2d4c7bed714",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/weather_composite.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "b06bd342dfef9c759cf4281abb6765761c879816f5ede867bb8511458101f16a",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/weather_events.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "02d6c7996ac54c1d9ac9db0b2b480e9343233931f67d3317af2a2817145d1469",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/weekday_stats.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "0d614a529f30ecfe9c732380d8d3d1a0f0f2b4beddc89e49cebfc48b8c1141ca",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/yoy_compare.csv",
+      "rows": 18,
+      "min_date": "2021",
+      "max_date": "2026",
+      "sha256": "da9cf37b56c996af56c5545fefd4da9bb1778df2eaecdbc5201bee89e656275b",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    },
+    {
+      "file": "data/derived/zigzag_episodes.csv",
+      "rows": 0,
+      "min_date": "",
+      "max_date": "",
+      "sha256": "410c39179edafff6e0c43ad402238102afc4113566a6e3bbe5df29dc31bf53d0",
+      "updated_at": "2026-11-23T16:02:26+03:00"
+    }
+  ]
+}

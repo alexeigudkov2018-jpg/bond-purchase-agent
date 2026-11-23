@@ -1,0 +1,30 @@
+{
+  "as_of": "2026-11-23",
+  "key_rate": 14.0,
+  "key_rate_trend": "flat",
+  "last_cb_meeting": "2026-07-27",
+  "rai_imoex_monthly": null,
+  "rai_imoex_months_above_1_in_row": 0,
+  "nsi_last_month": null,
+  "nsi_last_month_including_draft": null,
+  "nsi_confirmed_only": true,
+  "ofz_ytm_2y": null,
+  "ofz_ytm_5y": null,
+  "ofz_ytm_10y": null,
+  "ofz_curve_inverted": null,
+  "step": 0,
+  "step_confirmation": "instant_no_meeting_calendar",
+  "soft_conditions": {
+    "c1_monetary": false,
+    "c2_rai_below_1": null,
+    "c3_nsi_ge_0_and_weak_window": false
+  },
+  "stop_cap": {
+    "active": false,
+    "reason": "none",
+    "months_to_trigger": 3
+  },
+  "weak_windows_today": [],
+  "ofz_repricing_note": "ΔP/P ≈ −D_mod·Δy; D_mod в годах, Δy в долях. Ряд ОФЗ в этом запуске пуст.",
+  "ofz_example_delta_p": null
+}

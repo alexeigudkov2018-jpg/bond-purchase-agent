@@ -1,0 +1,5 @@
+path,url,fetched_at
+data/raw/cbr/keyrate_2026-11-23.html,https://www.cbr.ru/hd_base/keyrate/?UniDbQuery.Posted=True&UniDbQuery.From=01.01.2021&UniDbQuery.To=23.11.2026,2026-11-23T16:02:24+03:00
+data/raw/cbr/usdrub_2026-11-23.xml,https://www.cbr.ru/scripts/XML_dynamic.asp?date_req1=04/01/2021&date_req2=23/11/2026&VAL_NM_RQ=R01235,2026-11-23T16:02:24+03:00
+data/raw/fred/brent_2026-11-23.csv,https://fred.stlouisfed.org/graph/fredgraph.csv?id=DCOILBRENTEU,2026-11-23T16:02:25+03:00
+data/raw/solar/noaa_2026-11-23.json,https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json,2026-11-23T16:02:26+03:00
