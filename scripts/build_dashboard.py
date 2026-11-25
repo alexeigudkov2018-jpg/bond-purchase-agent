@@ -975,13 +975,13 @@ header.app .note { margin: 6px 0 0; font-size: 12px; color: var(--muted); max-wi
 .chart { height: 420px; border: 1px solid var(--rule); background: var(--chart-bg); }
 .chart.small { height: 260px; }
 #lower { height: 150px; margin-top: 8px; border: 1px solid var(--rule); background: var(--chart-bg); }
-#pctRBox { display: none; margin-top: 8px; border: 1px solid var(--rule); background: var(--card); padding: 8px; }
-#pctRBox .pct-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-#pctRBox .pct-head h3 { margin: 0; font-size: 13px; }
-#pctRSpeed { display: flex; gap: 4px; }
-#pctRSpeed button { font-family: "JetBrains Mono", Consolas, monospace; font-size: 10px; padding: 4px 8px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); cursor: pointer; }
-#pctRSpeed button.active { background: var(--ink); color: var(--paper); }
-#pctRChart { height: 160px; border: 1px solid var(--rule); background: var(--chart-bg); }
+#pctRBox, #rsiStochBox { display: none; margin-top: 8px; border: 1px solid var(--rule); background: var(--card); padding: 8px; }
+#pctRBox .pct-head, #rsiStochBox .pct-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+#pctRBox .pct-head h3, #rsiStochBox .pct-head h3 { margin: 0; font-size: 13px; }
+#pctRSpeed, #rsiStochMode { display: flex; gap: 4px; }
+#pctRSpeed button, #rsiStochMode button { font-family: "JetBrains Mono", Consolas, monospace; font-size: 10px; padding: 4px 8px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); cursor: pointer; }
+#pctRSpeed button.active, #rsiStochMode button.active { background: var(--ink); color: var(--paper); }
+#pctRChart, #rsiStochChart { height: 160px; border: 1px solid var(--rule); background: var(--chart-bg); }
 #tip {
   display: none; position: absolute; z-index: 5; max-width: 340px;
   background: var(--card); border: 1px solid var(--rule); padding: 8px 10px;
@@ -1061,12 +1061,13 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
 <section class="panel active" id="tab-candles">
   <div class="board">
     <h2>Свечи, Kennedy и нарративы</h2>
-    <p class="hint">TradingView Lightweight Charts. Флажки — <span class="mono">radar_events.csv</span>. Три модуля Kennedy: Trend, Donchian DC20, панель %R.</p>
+    <p class="hint">TradingView Lightweight Charts. Флажки — <span class="mono">radar_events.csv</span>. Модули Kennedy: Trend, Donchian DC20, %R, RSI/Stoch.</p>
     <div class="tickers" id="tickers"></div>
     <div class="modes" id="modeButtons">
       <button type="button" data-mode="kennedy" id="btnKennedy">Kennedy Trend (MA + HA + Сигналы L/S)</button>
       <button type="button" data-mode="donch" id="btnDonch">Kennedy Donchian + Поглощения (DC20)</button>
       <button type="button" data-mode="pctr" id="btnPctR">Панель %R (5 / 20)</button>
+      <button type="button" data-mode="rsistoch" id="btnRsiStoch">Панель RSI + Stoch (Kennedy)</button>
       <button type="button" data-mode="clear" id="btnClearModes">Очистить график</button>
     </div>
     <div class="wrap">
@@ -1084,12 +1085,23 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
       </div>
       <div id="pctRChart"></div>
     </div>
+    <div id="rsiStochBox">
+      <div class="pct-head">
+        <h3 id="rsiStochTitle">Панель RSI (14 / SMA9 / EMA45)</h3>
+        <div id="rsiStochMode">
+          <button type="button" data-pane="rsi" class="active">RSI (14 / SMA9 / EMA45)</button>
+          <button type="button" data-pane="stoch">Stochastic (8, 5, 3)</button>
+        </div>
+      </div>
+      <div id="rsiStochChart"></div>
+    </div>
     <div class="board" id="explainBoard" style="display:none;margin-top:10px;padding:10px;">
       <h2 id="explainTitle">Пояснения · Kennedy</h2>
       <div id="kennedySummary"></div>
       <div id="kennedyStatus"></div>
       <div id="donchStatus"></div>
       <div id="pctRStatus"></div>
+      <div id="rsiStochStatus"></div>
     </div>
     <div id="eventList"></div>
   </div>
@@ -1315,6 +1327,8 @@ let kennedyOn = false;
 let donchOn = false;
 let pctROn = false;
 let pctRPeriod = 5;
+let rsiStochOn = false;
+let rsiStochMode = "rsi";
 const kennedySeries = { ema5: null, sma10: null, sma30: null, haOpen: null, haClose: null };
 const donchSeries = { hh: null, mid: null, ll: null };
 const explainBoard = document.getElementById("explainBoard");
@@ -1323,14 +1337,24 @@ const kennedySummaryEl = document.getElementById("kennedySummary");
 const kennedyStatusEl = document.getElementById("kennedyStatus");
 const donchStatusEl = document.getElementById("donchStatus");
 const pctRStatusEl = document.getElementById("pctRStatus");
+const rsiStochStatusEl = document.getElementById("rsiStochStatus");
 const pctRBox = document.getElementById("pctRBox");
 const pctRChartEl = document.getElementById("pctRChart");
+const rsiStochBox = document.getElementById("rsiStochBox");
+const rsiStochChartEl = document.getElementById("rsiStochChart");
 let pctRChart = null;
 let pctRHist = null;
 let pctRSmaLine = null;
 let pctRLevel80 = null;
 let pctRLevel50 = null;
 let pctRLevel20 = null;
+let rsiStochChart = null;
+let rsiStochMain = null;
+let rsiStochSec = null;
+let rsiStochThird = null;
+let rsiStochLvlA = null;
+let rsiStochLvlB = null;
+let rsiStochLvlC = null;
 document.getElementById("btnKennedy").addEventListener("click", () => {
   kennedyOn = !kennedyOn;
   document.getElementById("btnKennedy").classList.toggle("active", kennedyOn);
@@ -1346,6 +1370,11 @@ document.getElementById("btnPctR").addEventListener("click", () => {
   document.getElementById("btnPctR").classList.toggle("active", pctROn);
   if (currentTicker) showTicker(currentTicker);
 });
+document.getElementById("btnRsiStoch").addEventListener("click", () => {
+  rsiStochOn = !rsiStochOn;
+  document.getElementById("btnRsiStoch").classList.toggle("active", rsiStochOn);
+  if (currentTicker) showTicker(currentTicker);
+});
 document.getElementById("pctRSpeed").addEventListener("click", (event) => {
   const btn = event.target.closest("button[data-speed]");
   if (!btn) return;
@@ -1356,13 +1385,25 @@ document.getElementById("pctRSpeed").addEventListener("click", (event) => {
     : "Панель %R · медленный (20)";
   if (pctROn && currentTicker) applyPctRPanel(candleData.bars[currentTicker] || []);
 });
+document.getElementById("rsiStochMode").addEventListener("click", (event) => {
+  const btn = event.target.closest("button[data-pane]");
+  if (!btn) return;
+  rsiStochMode = btn.getAttribute("data-pane") === "stoch" ? "stoch" : "rsi";
+  document.querySelectorAll("#rsiStochMode button").forEach((el) => el.classList.toggle("active", el === btn));
+  document.getElementById("rsiStochTitle").textContent = rsiStochMode === "rsi"
+    ? "Панель RSI (14 / SMA9 / EMA45)"
+    : "Панель Stochastic (8, 5, 3)";
+  if (rsiStochOn && currentTicker) applyRsiStochPanel(candleData.bars[currentTicker] || []);
+});
 document.getElementById("btnClearModes").addEventListener("click", () => {
   kennedyOn = false;
   donchOn = false;
   pctROn = false;
+  rsiStochOn = false;
   document.getElementById("btnKennedy").classList.remove("active");
   document.getElementById("btnDonch").classList.remove("active");
   document.getElementById("btnPctR").classList.remove("active");
+  document.getElementById("btnRsiStoch").classList.remove("active");
   if (currentTicker) showTicker(currentTicker);
 });
 
@@ -1495,22 +1536,25 @@ function clearIndicatorOverlays() {
   kennedyStatusEl.innerHTML = "";
   donchStatusEl.innerHTML = "";
   pctRStatusEl.innerHTML = "";
+  rsiStochStatusEl.innerHTML = "";
   pctRBox.style.display = "none";
+  rsiStochBox.style.display = "none";
 }
 
 function refreshExplainVisibility() {
-  const any = kennedyOn || donchOn || pctROn;
+  const any = kennedyOn || donchOn || pctROn || rsiStochOn;
   explainBoard.style.display = any ? "block" : "none";
   const titles = [];
   if (kennedyOn) titles.push("Trend");
   if (donchOn) titles.push("Donchian DC20");
   if (pctROn) titles.push("%R");
+  if (rsiStochOn) titles.push("RSI/Stoch");
   explainTitle.textContent = titles.length ? ("Пояснения · Kennedy · " + titles.join(" · ")) : "Пояснения · Kennedy";
 }
 
 function renderKennedySummary(bars) {
   kennedySummaryEl.innerHTML = "";
-  if (!bars.length || !(kennedyOn || donchOn || pctROn)) return;
+  if (!bars.length || !(kennedyOn || donchOn || pctROn || rsiStochOn)) return;
   const trend = computeKennedy(bars);
   const donch = computeDonch(bars);
   const pr5 = percentR(bars, 5);
@@ -1535,6 +1579,134 @@ function renderKennedySummary(bars) {
       <tr><td>%R(20)</td><td class="mono">${fmt(pr20[last], 2)}</td></tr>
       <tr><td>Активный сигнал</td><td><strong>${esc(active)}</strong></td></tr>
     </table></div>`;
+}
+
+function ensureRsiStochChart() {
+  if (rsiStochChart) return;
+  rsiStochChart = LightweightCharts.createChart(rsiStochChartEl, Object.assign(chartBase(160), {
+    height: 160,
+    rightPriceScale: {
+      borderColor: getComputedStyle(root).getPropertyValue("--rule").trim() || "#B89856",
+      scaleMargins: { top: 0.08, bottom: 0.08 },
+    },
+  }));
+  rsiStochMain = rsiStochChart.addLineSeries({
+    color: getComputedStyle(root).getPropertyValue("--blue").trim() || "#1D3E6E",
+    lineWidth: 2,
+    priceLineVisible: false,
+  });
+  rsiStochSec = rsiStochChart.addLineSeries({
+    color: "#1C1915",
+    lineWidth: 1,
+    priceLineVisible: false,
+  });
+  rsiStochThird = rsiStochChart.addLineSeries({
+    color: "#1C1915",
+    lineWidth: 3,
+    priceLineVisible: false,
+  });
+  const dash = () => rsiStochChart.addLineSeries({
+    color: getComputedStyle(root).getPropertyValue("--muted").trim() || "#5C4F38",
+    lineWidth: 1,
+    lineStyle: 2,
+    lastValueVisible: false,
+    priceLineVisible: false,
+    crosshairMarkerVisible: false,
+  });
+  rsiStochLvlA = dash();
+  rsiStochLvlB = dash();
+  rsiStochLvlC = dash();
+  priceChart.timeScale().subscribeVisibleTimeRangeChange((range) => {
+    if (!rsiStochOn || !range || !rsiStochChart) return;
+    try { rsiStochChart.timeScale().setVisibleRange(range); } catch (e) {}
+  });
+}
+
+function applyRsiStochPanel(bars) {
+  rsiStochStatusEl.innerHTML = "";
+  if (!rsiStochOn || !bars.length) {
+    rsiStochBox.style.display = "none";
+    return;
+  }
+  rsiStochBox.style.display = "block";
+  ensureRsiStochChart();
+  const blue = getComputedStyle(root).getPropertyValue("--blue").trim() || "#1D3E6E";
+  const ink = getComputedStyle(root).getPropertyValue("--ink").trim() || "#1C1915";
+  const muted = getComputedStyle(root).getPropertyValue("--muted").trim() || "#5C4F38";
+  rsiStochChart.applyOptions(Object.assign(chartBase(160), { height: 160 }));
+  rsiStochMain.applyOptions({ color: blue, lineWidth: 2 });
+  rsiStochSec.applyOptions({ color: ink, lineWidth: 1 });
+  rsiStochThird.applyOptions({ color: ink, lineWidth: 3 });
+  [rsiStochLvlA, rsiStochLvlB, rsiStochLvlC].forEach((series) => series.applyOptions({ color: muted, lineStyle: 2 }));
+  const closes = bars.map((b) => b.close);
+  const rsi = rsiWilder(closes, 14);
+  const rsiSma9 = sma(rsi, 9);
+  const rsiEma45 = ema(rsi, 45);
+  const stoch = stochastic(bars, 8, 5, 3);
+  const lvl = (seriesArr, level) => bars.map((b, i) => (seriesArr[i] == null ? null : { time: b.time, value: level })).filter(Boolean);
+  let note = "";
+  let lastIdx = bars.length - 1;
+  if (rsiStochMode === "rsi") {
+    rsiStochMain.setData(linePoints(bars, rsi));
+    rsiStochSec.setData(linePoints(bars, rsiSma9));
+    rsiStochThird.setData(linePoints(bars, rsiEma45));
+    rsiStochLvlA.setData(lvl(rsi, 70));
+    rsiStochLvlB.setData(lvl(rsi, 50));
+    rsiStochLvlC.setData(lvl(rsi, 25));
+    while (lastIdx >= 0 && rsi[lastIdx] == null) lastIdx -= 1;
+    const r = lastIdx >= 0 ? rsi[lastIdx] : null;
+    const s9 = lastIdx >= 0 ? rsiSma9[lastIdx] : null;
+    const e45 = lastIdx >= 0 ? rsiEma45[lastIdx] : null;
+    const fan = r != null && s9 != null && e45 != null && r > s9 && s9 > e45;
+    if (r == null) note = "RSI ещё не посчитан";
+    else if (r > 70) note = `перегрев RSI > 70 (сейчас ${fmt(r, 1)})`;
+    else if (r < 25) note = `перепроданность RSI < 25 (сейчас ${fmt(r, 1)})`;
+    else note = `RSI в рабочей зоне (${fmt(r, 1)})`;
+    if (fan) note += " · бычий веер RSI > SMA9 > EMA45";
+    else if (r != null && s9 != null && e45 != null && r < s9 && s9 < e45) note += " · медвежий веер RSI < SMA9 < EMA45";
+    else if (r != null && s9 != null) note += r > s9 ? " · RSI выше SMA9" : " · RSI ниже SMA9";
+    rsiStochStatusEl.innerHTML = `
+      <h3 style="font-size:13px;margin:12px 0 6px">Панель RSI + Stoch · RSI</h3>
+      <p class="hint">Kennedy RSI/Stoch pane: RSI(14), SMA9 и EMA45 от RSI, уровни 70 / 50 / 25.</p>
+      <div class="scroll"><table class="grid">
+        <tr><th>Параметр</th><th>Статус</th></tr>
+        <tr><td>RSI / SMA9 / EMA45</td><td class="mono">${fmt(r, 2)} / ${fmt(s9, 2)} / ${fmt(e45, 2)}</td></tr>
+        <tr><td>Диагностика</td><td>${esc(note)}</td></tr>
+      </table></div>`;
+  } else {
+    rsiStochMain.setData(linePoints(bars, stoch.k));
+    rsiStochSec.setData(linePoints(bars, stoch.d));
+    rsiStochThird.setData([]);
+    rsiStochLvlA.setData(lvl(stoch.k, 80));
+    rsiStochLvlB.setData(lvl(stoch.k, 20));
+    rsiStochLvlC.setData([]);
+    while (lastIdx >= 0 && stoch.k[lastIdx] == null) lastIdx -= 1;
+    const k = lastIdx >= 0 ? stoch.k[lastIdx] : null;
+    const d = lastIdx >= 0 ? stoch.d[lastIdx] : null;
+    const prevK = lastIdx > 0 ? stoch.k[lastIdx - 1] : null;
+    const prevD = lastIdx > 0 ? stoch.d[lastIdx - 1] : null;
+    if (k == null || d == null) note = "Stochastic ещё не посчитан";
+    else if (prevK != null && prevD != null && prevK <= prevD && k > d) note = `%K пересёк %D снизу вверх (${fmt(k, 1)} > ${fmt(d, 1)})`;
+    else if (prevK != null && prevD != null && prevK >= prevD && k < d) note = `%K пересёк %D сверху вниз (${fmt(k, 1)} < ${fmt(d, 1)})`;
+    else if (k > d) note = `%K выше %D (${fmt(k, 1)} / ${fmt(d, 1)}) — бычий уклон`;
+    else if (k < d) note = `%K ниже %D (${fmt(k, 1)} / ${fmt(d, 1)}) — медвежий уклон`;
+    else note = `%K и %D совпали (${fmt(k, 1)})`;
+    if (k != null && k > 80) note += " · зона перекупленности > 80";
+    if (k != null && k < 20) note += " · зона перепроданности < 20";
+    rsiStochStatusEl.innerHTML = `
+      <h3 style="font-size:13px;margin:12px 0 6px">Панель RSI + Stoch · Stochastic</h3>
+      <p class="hint">Kennedy RSI/Stoch pane: Stochastic(8,5,3), %K синий, %D чёрный, уровни 80 / 20.</p>
+      <div class="scroll"><table class="grid">
+        <tr><th>Параметр</th><th>Статус</th></tr>
+        <tr><td>%K / %D</td><td class="mono">${fmt(k, 2)} / ${fmt(d, 2)}</td></tr>
+        <tr><td>Диагностика</td><td>${esc(note)}</td></tr>
+      </table></div>`;
+  }
+  rsiStochChart.timeScale().applyOptions({ barSpacing: 18, rightOffset: 6 });
+  try {
+    const range = priceChart.timeScale().getVisibleRange();
+    if (range) rsiStochChart.timeScale().setVisibleRange(range);
+  } catch (e) {}
 }
 
 function ensurePctRChart() {
@@ -1915,6 +2087,7 @@ function showTicker(ticker) {
   markers = applyKennedy(bars, markers);
   markers = applyDonch(bars, markers);
   applyPctRPanel(bars);
+  applyRsiStochPanel(bars);
   renderKennedySummary(bars);
   refreshExplainVisibility();
   if (typeof priceSeries.setMarkers === "function") priceSeries.setMarkers(markers);
@@ -2104,6 +2277,7 @@ window.addEventListener("resize", () => {
   priceChart.applyOptions({ width: priceEl.clientWidth });
   lowerChart.applyOptions({ width: lowerEl.clientWidth });
   if (pctRChart) pctRChart.applyOptions({ width: pctRChartEl.clientWidth });
+  if (rsiStochChart) rsiStochChart.applyOptions({ width: rsiStochChartEl.clientWidth });
   if (curveChart) curveChart.applyOptions({ width: document.getElementById("curveChart").clientWidth });
   if (psChartObj) psChartObj.applyOptions({ width: document.getElementById("psChart").clientWidth });
 });
