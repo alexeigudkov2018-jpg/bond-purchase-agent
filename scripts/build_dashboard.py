@@ -65,6 +65,40 @@ SECTOR_INDICES = (
     ("MOEXTN", "Транспорт"),
     ("MOEX10", "MOEX10"),
 )
+# 9 активных отраслей Стовалла (MOEXTL застыл 19.03.2026 — не используем).
+STOVALL_SECTORS = (
+    ("MOEXOG", "Нефтегаз"),
+    ("MOEXFN", "Финансы"),
+    ("MOEXMM", "Металлы и добыча"),
+    ("MOEXIT", "ИТ и телеком"),
+    ("MOEXTN", "Транспорт"),
+    ("MOEXRE", "Недвижимость"),
+    ("MOEXCN", "Потребительский"),
+    ("MOEXEU", "Электроэнергетика"),
+    ("MOEXCH", "Химия и нефтехимия"),
+)
+STOVALL_HORIZONS = {
+    "tactical": {"label": "Тактика 20/10", "rs": 20, "mom": 10},
+    "cycle": {"label": "Цикл 60/30", "rs": 60, "mom": 30},
+    "long": {"label": "Долгосрок 120/60", "rs": 120, "mom": 60},
+}
+# Макро-бонус фазы: кто обычно лидирует у Стовалла / на рублевой ставке.
+STOVALL_PHASE_BONUS = {
+    "ПИК СТАВКИ": {"MOEXEU": 1.0, "MOEXCN": 0.8, "MOEXFN": 0.4},
+    "РАННЯЯ ЭКСПАНСИЯ": {"MOEXFN": 1.0, "MOEXRE": 1.0, "MOEXIT": 0.8, "MOEXCN": 0.6, "MOEXTN": 0.4},
+    "СРЕДНЯЯ ЭКСПАНСИЯ": {"MOEXTN": 1.0, "MOEXMM": 0.9, "MOEXCH": 0.8, "MOEXIT": 0.5, "MOEXOG": 0.4},
+    "ПОЗДНЯЯ ЭКСПАНСИЯ": {"MOEXOG": 1.0, "MOEXCH": 0.8, "MOEXEU": 0.7, "MOEXMM": 0.5},
+    "РАННЯЯ КОНТРАКЦИЯ": {"MOEXEU": 1.0, "MOEXCN": 0.9, "MOEXIT": 0.4},
+    "СРЕДНЯЯ КОНТРАКЦИЯ": {"MOEXEU": 1.0, "MOEXCN": 0.9, "MOEXIT": 0.5, "MOEXCH": 0.3},
+    "ПОЗДНЯЯ КОНТРАКЦИЯ": {"MOEXFN": 0.9, "MOEXRE": 0.8, "MOEXIT": 0.6, "MOEXCN": 0.5},
+}
+# Бонус направления RUSFAR: выигрывают от снижения / повышения ставки.
+STOVALL_RATE_BONUS = {
+    "СНИЖЕНИЕ": {"MOEXRE": 0.8, "MOEXFN": 0.7, "MOEXIT": 0.5, "MOEXCN": 0.3, "MOEXTN": 0.2},
+    "ПОВЫШЕНИЕ": {"MOEXOG": 0.6, "MOEXMM": 0.5, "MOEXCH": 0.4, "MOEXEU": 0.3, "MOEXFN": 0.2},
+    "ПЛАТО": {},
+}
+ROTATION_CSV = CLEAN / "indices_rotation_daily.csv"
 FRACTIONS = (
     ("MOEXOG", "IMOEX", "Нефтегаз / IMOEX"),
     ("MOEXMM", "IMOEX", "Металлы / IMOEX"),
@@ -110,13 +144,182 @@ def _json_blob(payload) -> str:
 
 def load_index_series() -> dict[str, dict[str, float]]:
     series: dict[str, dict[str, float]] = defaultdict(dict)
-    for row in read_csv(CLEAN / "indices_daily.csv"):
-        name = row.get("index") or ""
-        stamp = row.get("date") or ""
-        close = _num(row.get("close"))
-        if name and stamp and close is not None:
-            series[name][stamp] = close
+    for path in (CLEAN / "indices_daily.csv", ROTATION_CSV):
+        for row in read_csv(path):
+            name = row.get("index") or ""
+            stamp = row.get("date") or ""
+            close = _num(row.get("close"))
+            if name and stamp and close is not None:
+                series[name][stamp] = close
     return series
+
+
+def _zscores(values: list[float | None]) -> list[float | None]:
+    present = [v for v in values if v is not None]
+    if len(present) < 2:
+        return [0.0 if v is not None else None for v in values]
+    mean = sum(present) / len(present)
+    var = sum((v - mean) ** 2 for v in present) / len(present)
+    std = var ** 0.5
+    if std < 1e-12:
+        return [0.0 if v is not None else None for v in values]
+    return [None if v is None else (v - mean) / std for v in values]
+
+
+def _session_return(series: dict[str, float], sessions: int) -> float | None:
+    return ret_n(series, sessions)
+
+
+def classify_rusfar_cycle(rusfar: dict[str, float]) -> dict:
+    dates = sorted(rusfar)
+    if len(dates) < 60:
+        return {
+            "asof": dates[-1] if dates else None,
+            "rate": rusfar.get(dates[-1]) if dates else None,
+            "cycle_pos": None,
+            "delta_60": None,
+            "delta_dir": "нет ряда",
+            "phase": "нет ряда",
+            "corridor_low": None,
+            "corridor_high": None,
+            "window_days": 0,
+            "favored": [],
+        }
+    asof = dates[-1]
+    rate = rusfar[asof]
+    # ~2 календарных года ≈ 504 торговых сессии, иначе вся доступная история.
+    window = dates[-min(len(dates), 504) :]
+    lows = [rusfar[d] for d in window]
+    lo, hi = min(lows), max(lows)
+    cycle_pos = 0.5 if hi <= lo else (rate - lo) / (hi - lo)
+    # 60 торговых сессий назад
+    prev_idx = max(0, len(dates) - 1 - 60)
+    prev_rate = rusfar[dates[prev_idx]]
+    delta_60 = rate - prev_rate
+    if abs(delta_60) < 0.15:
+        delta_dir = "ПЛАТО"
+    elif delta_60 < 0:
+        delta_dir = "СНИЖЕНИЕ"
+    else:
+        delta_dir = "ПОВЫШЕНИЕ"
+    if cycle_pos >= 0.85 and delta_dir in ("ПЛАТО", "СНИЖЕНИЕ"):
+        phase = "ПИК СТАВКИ"
+    elif delta_dir == "ПОВЫШЕНИЕ":
+        if cycle_pos < 0.35:
+            phase = "РАННЯЯ КОНТРАКЦИЯ"
+        elif cycle_pos < 0.70:
+            phase = "СРЕДНЯЯ КОНТРАКЦИЯ"
+        else:
+            phase = "ПОЗДНЯЯ КОНТРАКЦИЯ"
+    elif delta_dir == "СНИЖЕНИЕ":
+        if cycle_pos >= 0.70:
+            phase = "РАННЯЯ ЭКСПАНСИЯ"
+        elif cycle_pos >= 0.35:
+            phase = "СРЕДНЯЯ ЭКСПАНСИЯ"
+        else:
+            phase = "ПОЗДНЯЯ ЭКСПАНСИЯ"
+    else:  # ПЛАТО
+        if cycle_pos >= 0.70:
+            phase = "ПОЗДНЯЯ КОНТРАКЦИЯ"
+        elif cycle_pos <= 0.30:
+            phase = "ПОЗДНЯЯ ЭКСПАНСИЯ"
+        else:
+            phase = "СРЕДНЯЯ ЭКСПАНСИЯ"
+    favored_map = STOVALL_PHASE_BONUS.get(phase, {})
+    favored = [code for code, _ in sorted(favored_map.items(), key=lambda item: -item[1])]
+    return {
+        "asof": asof,
+        "rate": rate,
+        "cycle_pos": cycle_pos,
+        "delta_60": delta_60,
+        "delta_dir": delta_dir,
+        "phase": phase,
+        "corridor_low": lo,
+        "corridor_high": hi,
+        "window_days": len(window),
+        "favored": favored,
+    }
+
+
+def build_stovall_rotation(series: dict[str, dict[str, float]]) -> dict:
+    cycle = classify_rusfar_cycle(series.get("RUSFAR", {}))
+    imoex = series.get("IMOEX", {})
+    phase = cycle.get("phase") or ""
+    delta_dir = cycle.get("delta_dir") or ""
+    phase_bonus_map = STOVALL_PHASE_BONUS.get(phase, {})
+    rate_bonus_map = STOVALL_RATE_BONUS.get(delta_dir, {})
+    horizons_out: dict[str, list[dict]] = {}
+    for key, cfg in STOVALL_HORIZONS.items():
+        rs_n = cfg["rs"]
+        mom_n = cfg["mom"]
+        raw_rows = []
+        for code, title in STOVALL_SECTORS:
+            own = series.get(code, {})
+            sec_ret = _session_return(own, rs_n)
+            imx_ret = _session_return(imoex, rs_n)
+            rs = None if sec_ret is None or imx_ret is None else sec_ret - imx_ret
+            mom = _session_return(own, mom_n)
+            mom_prev = None
+            dates = sorted(own)
+            if len(dates) > mom_n * 2:
+                truncated = {d: own[d] for d in dates[: -(mom_n)]}
+                mom_prev = _session_return(truncated, mom_n)
+            accel = None if mom is None or mom_prev is None else mom - mom_prev
+            raw_rows.append(
+                {
+                    "code": code,
+                    "title": title,
+                    "rs": rs,
+                    "momentum": mom,
+                    "acceleration": accel,
+                    "close": own.get(dates[-1]) if dates else None,
+                    "asof": dates[-1] if dates else None,
+                    "rate_bonus": float(rate_bonus_map.get(code, 0.0)),
+                    "phase_bonus": float(phase_bonus_map.get(code, 0.0)),
+                }
+            )
+        z_rs = _zscores([row["rs"] for row in raw_rows])
+        z_mom = _zscores([row["momentum"] for row in raw_rows])
+        z_acc = _zscores([row["acceleration"] for row in raw_rows])
+        scored = []
+        for i, row in enumerate(raw_rows):
+            if z_rs[i] is None or z_mom[i] is None:
+                score = None
+            else:
+                acc = z_acc[i] if z_acc[i] is not None else 0.0
+                score = z_rs[i] + z_mom[i] + 0.5 * acc + row["rate_bonus"] + row["phase_bonus"]
+            scored.append(
+                {
+                    **row,
+                    "z_rs": z_rs[i],
+                    "z_momentum": z_mom[i],
+                    "z_acceleration": z_acc[i],
+                    "score": score,
+                    "macro_boost": bool(row["rate_bonus"] or row["phase_bonus"]),
+                    "boost_note": (
+                        (
+                            (f"фаза +{row['phase_bonus']:.1f}" if row["phase_bonus"] else "")
+                            + (" · " if row["phase_bonus"] and row["rate_bonus"] else "")
+                            + (f"ставка +{row['rate_bonus']:.1f}" if row["rate_bonus"] else "")
+                        )
+                        or "без макро-бонуса"
+                    ),
+                }
+            )
+        scored.sort(key=lambda item: (item["score"] is None, -(item["score"] or 0.0)))
+        for rank, row in enumerate(scored, start=1):
+            row["rank"] = rank
+        horizons_out[key] = scored
+    return {
+        "model": "Sector Rotation MOEX · Стовалл + RUSFAR",
+        "cycle": cycle,
+        "horizons": {
+            key: {"label": STOVALL_HORIZONS[key]["label"], "rs": STOVALL_HORIZONS[key]["rs"], "mom": STOVALL_HORIZONS[key]["mom"], "rows": rows}
+            for key, rows in horizons_out.items()
+        },
+        "default_horizon": "cycle",
+        "note": "Score = Z(RS) + Z(Momentum) + 0.5·Z(Acceleration) + бонус RUSFAR + бонус фазы. MOEXTL исключён.",
+    }
 
 
 def last_two(series: dict[str, float]) -> tuple[str | None, float | None, float | None, float | None]:
@@ -809,6 +1012,7 @@ def build_payload() -> dict:
         "ps_history": ps_history,
         "fractions": build_fractions(series),
         "sectors": build_sectors(series),
+        "stovall": build_stovall_rotation(series),
         "almanac_diff": parse_almanac_diff(),
         "disclaimer": "Материал не является индивидуальной инвестиционной рекомендацией.",
     }
@@ -975,13 +1179,32 @@ header.app .note { margin: 6px 0 0; font-size: 12px; color: var(--muted); max-wi
 .chart { height: 420px; border: 1px solid var(--rule); background: var(--chart-bg); }
 .chart.small { height: 260px; }
 #lower { height: 150px; margin-top: 8px; border: 1px solid var(--rule); background: var(--chart-bg); }
-#pctRBox, #rsiStochBox { display: none; margin-top: 8px; border: 1px solid var(--rule); background: var(--card); padding: 8px; }
-#pctRBox .pct-head, #rsiStochBox .pct-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-#pctRBox .pct-head h3, #rsiStochBox .pct-head h3 { margin: 0; font-size: 13px; }
+#pctRBox, #rsiStochBox, #haBox, #rsxBox { display: none; margin-top: 8px; border: 1px solid var(--rule); background: var(--card); padding: 8px; }
+#pctRBox .pct-head, #rsiStochBox .pct-head, #haBox .pct-head, #rsxBox .pct-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+#pctRBox .pct-head h3, #rsiStochBox .pct-head h3, #haBox .pct-head h3, #rsxBox .pct-head h3 { margin: 0; font-size: 13px; }
 #pctRSpeed, #rsiStochMode { display: flex; gap: 4px; }
-#pctRSpeed button, #rsiStochMode button { font-family: "JetBrains Mono", Consolas, monospace; font-size: 10px; padding: 4px 8px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); cursor: pointer; }
-#pctRSpeed button.active, #rsiStochMode button.active { background: var(--ink); color: var(--paper); }
-#pctRChart, #rsiStochChart { height: 160px; border: 1px solid var(--rule); background: var(--chart-bg); }
+#fairMode { display: none; gap: 4px; flex-wrap: wrap; align-items: center; margin: 6px 0 0; }
+#pctRSpeed button, #rsiStochMode button, #fairMode button { font-family: "JetBrains Mono", Consolas, monospace; font-size: 10px; padding: 4px 8px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); cursor: pointer; }
+#pctRSpeed button.active, #rsiStochMode button.active, #fairMode button.active { background: var(--ink); color: var(--paper); }
+#pctRChart, #rsiStochChart, #rsxChart { height: 160px; border: 1px solid var(--rule); background: var(--chart-bg); }
+#haChart { height: 220px; border: 1px solid var(--rule); background: var(--chart-bg); }
+#haBox.ha-bull { box-shadow: inset 0 0 0 9999px rgba(27, 107, 58, 0.06); }
+#haBox.ha-bear { box-shadow: inset 0 0 0 9999px rgba(166, 38, 38, 0.06); }
+.stovall-cycle {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+.stovall-cycle .cell {
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  padding: 8px 10px;
+}
+.stovall-cycle .cell .k { display: block; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.stovall-cycle .cell .v { display: block; margin-top: 4px; font-family: "JetBrains Mono", Consolas, monospace; font-size: 13px; }
+.stovall-cycle .phase .v { font-family: "Libre Baskerville", Georgia, serif; font-size: 15px; font-weight: 700; }
+tr.macro-boost td:first-child { box-shadow: inset 3px 0 0 var(--blue); }
 #tip {
   display: none; position: absolute; z-index: 5; max-width: 340px;
   background: var(--card); border: 1px solid var(--rule); padding: 8px 10px;
@@ -1061,14 +1284,24 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
 <section class="panel active" id="tab-candles">
   <div class="board">
     <h2>Свечи, Kennedy и нарративы</h2>
-    <p class="hint">TradingView Lightweight Charts. Флажки — <span class="mono">radar_events.csv</span>. Модули Kennedy: Trend, Donchian DC20, %R, RSI/Stoch.</p>
+    <p class="hint">TradingView Lightweight Charts. Флажки — <span class="mono">radar_events.csv</span>. Модули: Kennedy, RSX, HA, 5 vs 200, Fair Range, Канал Пламмера.</p>
     <div class="tickers" id="tickers"></div>
     <div class="modes" id="modeButtons">
       <button type="button" data-mode="kennedy" id="btnKennedy">Kennedy Trend (MA + HA + Сигналы L/S)</button>
       <button type="button" data-mode="donch" id="btnDonch">Kennedy Donchian + Поглощения (DC20)</button>
       <button type="button" data-mode="pctr" id="btnPctR">Панель %R (5 / 20)</button>
       <button type="button" data-mode="rsistoch" id="btnRsiStoch">Панель RSI + Stoch (Kennedy)</button>
+      <button type="button" data-mode="rsx" id="btnRsx">Панель Jurik RSX (Ход, Сила, Слом)</button>
+      <button type="button" data-mode="ha" id="btnHa">Панель свечей Heikin-Ashi + EMA9</button>
+      <button type="button" data-mode="hill" id="btnHill">Облако 5 vs 200 + Пивоты (Arthur Hill)</button>
+      <button type="button" data-mode="fair" id="btnFair">Средний High / Low (Диапазон справедливости)</button>
+      <button type="button" data-mode="plummer" id="btnPlummer">Вибрация Тони Пламмера</button>
       <button type="button" data-mode="clear" id="btnClearModes">Очистить график</button>
+    </div>
+    <div id="fairMode">
+      <span class="meta" style="margin-right:4px">Режим коридора:</span>
+      <button type="button" data-fair="cum" class="active">Накопленное среднее (вся история)</button>
+      <button type="button" data-fair="sma20">Скользящий конверт SMA(20)</button>
     </div>
     <div class="wrap">
       <div class="chart" id="price"></div>
@@ -1095,6 +1328,20 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
       </div>
       <div id="rsiStochChart"></div>
     </div>
+    <div id="rsxBox">
+      <div class="pct-head">
+        <h3 id="rsxTitle">Панель Jurik RSX (14) · Ход / Сила / Слом</h3>
+        <span class="meta" id="rsxHint">ось 50 · слом наклона</span>
+      </div>
+      <div id="rsxChart"></div>
+    </div>
+    <div id="haBox">
+      <div class="pct-head">
+        <h3 id="haTitle">Панель Heikin-Ashi + EMA9</h3>
+        <span class="meta" id="haRibbonHint">лента EMA9</span>
+      </div>
+      <div id="haChart"></div>
+    </div>
     <div class="board" id="explainBoard" style="display:none;margin-top:10px;padding:10px;">
       <h2 id="explainTitle">Пояснения · Kennedy</h2>
       <div id="kennedySummary"></div>
@@ -1102,6 +1349,11 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
       <div id="donchStatus"></div>
       <div id="pctRStatus"></div>
       <div id="rsiStochStatus"></div>
+      <div id="rsxStatus"></div>
+      <div id="haStatus"></div>
+      <div id="hillStatus"></div>
+      <div id="fairStatus"></div>
+      <div id="plummerStatus"></div>
     </div>
     <div id="eventList"></div>
   </div>
@@ -1139,6 +1391,18 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
 </section>
 
 <section class="panel" id="tab-fractions">
+  <div class="board">
+    <h2>Sector Rotation MOEX · Стовалл + RUSFAR</h2>
+    <p class="hint">Фаза денежного цикла по RUSFAR (2-летний коридор ISS) и Score Стовалла по 9 отраслям. Горизонт: Тактика 20/10 · Цикл 60/30 · Долгосрок 120/60.</p>
+    <div id="stovallCycle" class="stovall-cycle"></div>
+    <div id="stovallHorizon" class="modes" style="margin:10px 0 8px">
+      <button type="button" data-horizon="tactical">Тактика 20/10</button>
+      <button type="button" data-horizon="cycle" class="active">Цикл 60/30</button>
+      <button type="button" data-horizon="long">Долгосрок 120/60</button>
+    </div>
+    <div class="scroll"><table class="grid" id="stovallTable"></table></div>
+    <p class="hint" id="stovallNote"></p>
+  </div>
   <div class="board">
     <h2>Межрыночные дроби · 5 и 20 сессий</h2>
     <p class="hint">Направление по закрытиям из <span class="mono">indices_daily</span> / снимок <span class="mono">macro_ofz_latest.md</span>.</p>
@@ -1329,8 +1593,20 @@ let pctROn = false;
 let pctRPeriod = 5;
 let rsiStochOn = false;
 let rsiStochMode = "rsi";
+let rsxOn = false;
+let haOn = false;
+let hillOn = false;
+let fairOn = false;
+let fairMode = "cum";
+let plummerOn = false;
 const kennedySeries = { ema5: null, sma10: null, sma30: null, haOpen: null, haClose: null };
 const donchSeries = { hh: null, mid: null, ll: null };
+const fairSeries = { hi: null, lo: null };
+const hillSeries = { sma5: null, sma200: null, clouds: [] };
+const plummerSeries = {
+  basis: null, upperIn: null, lowerIn: null, upperEx: null, lowerEx: null,
+  fillInnerHi: null, fillInnerLo: null, fillUpHi: null, fillUpLo: null, fillDnHi: null, fillDnLo: null,
+};
 const explainBoard = document.getElementById("explainBoard");
 const explainTitle = document.getElementById("explainTitle");
 const kennedySummaryEl = document.getElementById("kennedySummary");
@@ -1338,10 +1614,28 @@ const kennedyStatusEl = document.getElementById("kennedyStatus");
 const donchStatusEl = document.getElementById("donchStatus");
 const pctRStatusEl = document.getElementById("pctRStatus");
 const rsiStochStatusEl = document.getElementById("rsiStochStatus");
+const rsxStatusEl = document.getElementById("rsxStatus");
+const haStatusEl = document.getElementById("haStatus");
+const hillStatusEl = document.getElementById("hillStatus");
+const fairStatusEl = document.getElementById("fairStatus");
+const plummerStatusEl = document.getElementById("plummerStatus");
+const fairModeEl = document.getElementById("fairMode");
 const pctRBox = document.getElementById("pctRBox");
 const pctRChartEl = document.getElementById("pctRChart");
 const rsiStochBox = document.getElementById("rsiStochBox");
 const rsiStochChartEl = document.getElementById("rsiStochChart");
+const rsxBox = document.getElementById("rsxBox");
+const rsxChartEl = document.getElementById("rsxChart");
+const haBox = document.getElementById("haBox");
+const haChartEl = document.getElementById("haChart");
+let haChart = null;
+let haCandleSeries = null;
+let haEmaCloseLine = null;
+let haEmaOpenLine = null;
+let rsxChart = null;
+let rsxLine = null;
+let rsxBreakHist = null;
+let rsxLevel50 = null;
 let pctRChart = null;
 let pctRHist = null;
 let pctRSmaLine = null;
@@ -1355,6 +1649,10 @@ let rsiStochThird = null;
 let rsiStochLvlA = null;
 let rsiStochLvlB = null;
 let rsiStochLvlC = null;
+let rsiZoneBullHi = null;
+let rsiZoneBullLo = null;
+let rsiZoneBearHi = null;
+let rsiZoneBearLo = null;
 document.getElementById("btnKennedy").addEventListener("click", () => {
   kennedyOn = !kennedyOn;
   document.getElementById("btnKennedy").classList.toggle("active", kennedyOn);
@@ -1374,6 +1672,39 @@ document.getElementById("btnRsiStoch").addEventListener("click", () => {
   rsiStochOn = !rsiStochOn;
   document.getElementById("btnRsiStoch").classList.toggle("active", rsiStochOn);
   if (currentTicker) showTicker(currentTicker);
+});
+document.getElementById("btnRsx").addEventListener("click", () => {
+  rsxOn = !rsxOn;
+  document.getElementById("btnRsx").classList.toggle("active", rsxOn);
+  if (currentTicker) showTicker(currentTicker);
+});
+document.getElementById("btnHa").addEventListener("click", () => {
+  haOn = !haOn;
+  document.getElementById("btnHa").classList.toggle("active", haOn);
+  if (currentTicker) showTicker(currentTicker);
+});
+document.getElementById("btnHill").addEventListener("click", () => {
+  hillOn = !hillOn;
+  document.getElementById("btnHill").classList.toggle("active", hillOn);
+  if (currentTicker) showTicker(currentTicker);
+});
+document.getElementById("btnFair").addEventListener("click", () => {
+  fairOn = !fairOn;
+  document.getElementById("btnFair").classList.toggle("active", fairOn);
+  fairModeEl.style.display = fairOn ? "flex" : "none";
+  if (currentTicker) showTicker(currentTicker);
+});
+document.getElementById("btnPlummer").addEventListener("click", () => {
+  plummerOn = !plummerOn;
+  document.getElementById("btnPlummer").classList.toggle("active", plummerOn);
+  if (currentTicker) showTicker(currentTicker);
+});
+document.getElementById("fairMode").addEventListener("click", (event) => {
+  const btn = event.target.closest("button[data-fair]");
+  if (!btn) return;
+  fairMode = btn.getAttribute("data-fair") === "sma20" ? "sma20" : "cum";
+  document.querySelectorAll("#fairMode button").forEach((el) => el.classList.toggle("active", el === btn));
+  if (fairOn && currentTicker) showTicker(currentTicker);
 });
 document.getElementById("pctRSpeed").addEventListener("click", (event) => {
   const btn = event.target.closest("button[data-speed]");
@@ -1400,10 +1731,21 @@ document.getElementById("btnClearModes").addEventListener("click", () => {
   donchOn = false;
   pctROn = false;
   rsiStochOn = false;
+  rsxOn = false;
+  haOn = false;
+  hillOn = false;
+  fairOn = false;
+  plummerOn = false;
   document.getElementById("btnKennedy").classList.remove("active");
   document.getElementById("btnDonch").classList.remove("active");
   document.getElementById("btnPctR").classList.remove("active");
   document.getElementById("btnRsiStoch").classList.remove("active");
+  document.getElementById("btnRsx").classList.remove("active");
+  document.getElementById("btnHa").classList.remove("active");
+  document.getElementById("btnHill").classList.remove("active");
+  document.getElementById("btnFair").classList.remove("active");
+  document.getElementById("btnPlummer").classList.remove("active");
+  fairModeEl.style.display = "none";
   if (currentTicker) showTicker(currentTicker);
 });
 
@@ -1470,6 +1812,51 @@ function heikinAshi(bars) {
   return ha;
 }
 
+function jurikRsx(closes, length = 14) {
+  const n = closes.length;
+  const out = new Array(n).fill(null);
+  if (n < 2) return out;
+  const f18 = 3 / (length + 2);
+  const f20 = 1 - f18;
+  let f28 = 0, f30 = 0, f38 = 0, f40 = 0, f48 = 0, f50 = 0;
+  let f58 = 0, f60 = 0, f68 = 0, f70 = 0, f78 = 0, f80 = 0;
+  let f88 = 0;
+  let prev = closes[0];
+  for (let i = 1; i < n; i++) {
+    const src = closes[i];
+    if (src == null || Number.isNaN(src) || prev == null || Number.isNaN(prev)) {
+      prev = src;
+      continue;
+    }
+    const v8 = 100 * src - 100 * prev;
+    f28 = f20 * f28 + f18 * v8;
+    f30 = f18 * f28 + f20 * f30;
+    const vC = f28 * 1.5 - f30 * 0.5;
+    f38 = f20 * f38 + f18 * vC;
+    f40 = f18 * f38 + f20 * f40;
+    const v10 = f38 * 1.5 - f40 * 0.5;
+    f48 = f20 * f48 + f18 * v10;
+    f50 = f18 * f48 + f20 * f50;
+    const v14 = f48 * 1.5 - f50 * 0.5;
+    f58 = f20 * f58 + f18 * Math.abs(v8);
+    f60 = f18 * f58 + f20 * f60;
+    const v18 = f58 * 1.5 - f60 * 0.5;
+    f68 = f20 * f68 + f18 * v18;
+    f70 = f18 * f68 + f20 * f70;
+    const v1C = f68 * 1.5 - f70 * 0.5;
+    f78 = f20 * f78 + f18 * v1C;
+    f80 = f18 * f78 + f20 * f80;
+    const v20 = f78 * 1.5 - f80 * 0.5;
+    if (v20 > 0) f88 = v14 / v20;
+    const raw = v20 <= 0 ? 50 : 50 * (f88 + 1);
+    out[i] = Math.max(0, Math.min(100, raw));
+    prev = src;
+  }
+  const warm = Math.min(length, n);
+  for (let i = 0; i < warm; i++) out[i] = null;
+  return out;
+}
+
 function rsiWilder(closes, period = 14) {
   const out = new Array(closes.length).fill(null);
   if (closes.length <= period) return out;
@@ -1518,6 +1905,164 @@ function linePoints(bars, values) {
   return out;
 }
 
+function trueRange(bars) {
+  const out = new Array(bars.length).fill(null);
+  for (let i = 0; i < bars.length; i++) {
+    const hi = bars[i].high;
+    const lo = bars[i].low;
+    if (i === 0) {
+      out[i] = hi - lo;
+      continue;
+    }
+    const prevClose = bars[i - 1].close;
+    out[i] = Math.max(hi - lo, Math.abs(hi - prevClose), Math.abs(lo - prevClose));
+  }
+  return out;
+}
+
+function rma(values, period) {
+  const out = new Array(values.length).fill(null);
+  let prev = null;
+  let seed = 0;
+  let count = 0;
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    if (v == null || Number.isNaN(v)) continue;
+    if (prev == null) {
+      seed += v;
+      count += 1;
+      if (count < period) continue;
+      prev = seed / period;
+      out[i] = prev;
+      continue;
+    }
+    prev = (prev * (period - 1) + v) / period;
+    out[i] = prev;
+  }
+  return out;
+}
+
+function computePlummer(bars, len = 34, multIn = 1.618, multEx = 2.618) {
+  const hlc3 = bars.map((b) => (b.high + b.low + b.close) / 3);
+  const basis = ema(hlc3, len);
+  const vibUnit = rma(trueRange(bars), len);
+  const upperIn = basis.map((v, i) => (v == null || vibUnit[i] == null ? null : v + vibUnit[i] * multIn));
+  const lowerIn = basis.map((v, i) => (v == null || vibUnit[i] == null ? null : v - vibUnit[i] * multIn));
+  const upperEx = basis.map((v, i) => (v == null || vibUnit[i] == null ? null : v + vibUnit[i] * multEx));
+  const lowerEx = basis.map((v, i) => (v == null || vibUnit[i] == null ? null : v - vibUnit[i] * multEx));
+  const signals = [];
+  for (let i = 0; i < bars.length; i++) {
+    if (lowerEx[i] == null || upperEx[i] == null) continue;
+    const b = bars[i];
+    if (b.low <= lowerEx[i] && b.close > lowerEx[i] && b.close > b.open) {
+      signals.push({ time: b.time, side: "P+", index: i });
+    }
+    if (b.high >= upperEx[i] && b.close < upperEx[i] && b.close < b.open) {
+      signals.push({ time: b.time, side: "P-", index: i });
+    }
+  }
+  let last = bars.length - 1;
+  while (last >= 0 && (basis[last] == null || vibUnit[last] == null)) last -= 1;
+  let pulsePhase = "нет данных";
+  if (last >= 0) {
+    const b = bars[last];
+    const slopeUp = last > 0 && basis[last - 1] != null ? basis[last] > basis[last - 1] : false;
+    if (b.close >= upperEx[last]) pulsePhase = "Пик пульса (+2.618): истощение роста";
+    else if (b.close >= upperIn[last] && slopeUp) pulsePhase = "Фаза расширения вверх (+1.618)";
+    else if (b.close <= lowerEx[last]) pulsePhase = "Дно пульса (−2.618): истощение падения";
+    else if (b.close <= lowerIn[last] && !slopeUp) pulsePhase = "Фаза сжатия вниз (−1.618)";
+    else if (slopeUp) pulsePhase = "Восходящий ритм к верхней стенке";
+    else pulsePhase = "Нисходящий ритм к нижней стенке";
+  }
+  return {
+    basis, vibUnit, upperIn, lowerIn, upperEx, lowerEx, signals,
+    status: {
+      len,
+      vibUnit: last >= 0 ? vibUnit[last] : null,
+      basis: last >= 0 ? basis[last] : null,
+      upperIn: last >= 0 ? upperIn[last] : null,
+      lowerIn: last >= 0 ? lowerIn[last] : null,
+      upperEx: last >= 0 ? upperEx[last] : null,
+      lowerEx: last >= 0 ? lowerEx[last] : null,
+      pulsePhase,
+      close: last >= 0 ? bars[last].close : null,
+      time: last >= 0 ? bars[last].time : null,
+    },
+  };
+}
+
+function applyPlummer(bars, eventMarkers) {
+  plummerStatusEl.innerHTML = "";
+  if (!plummerOn || !bars.length) return eventMarkers;
+  const pack = computePlummer(bars, 34, 1.618, 2.618);
+  const chartBg = getComputedStyle(root).getPropertyValue("--chart-bg").trim() || "#FCF8E3";
+  const navy = getComputedStyle(root).getPropertyValue("--blue").trim() || "#1D3E6E";
+  const blue = "#2F6FED";
+  const red = getComputedStyle(root).getPropertyValue("--down").trim() || "#A62626";
+  const green = getComputedStyle(root).getPropertyValue("--up").trim() || "#1B6B3A";
+  const band = (hiKey, loKey, fill) => {
+    plummerSeries[hiKey] = priceChart.addAreaSeries({
+      lineColor: "rgba(0,0,0,0)",
+      topColor: fill,
+      bottomColor: fill,
+      lineWidth: 1,
+      priceLineVisible: false,
+      lastValueVisible: false,
+      crosshairMarkerVisible: false,
+    });
+    plummerSeries[loKey] = priceChart.addAreaSeries({
+      lineColor: "rgba(0,0,0,0)",
+      topColor: chartBg,
+      bottomColor: chartBg,
+      lineWidth: 1,
+      priceLineVisible: false,
+      lastValueVisible: false,
+      crosshairMarkerVisible: false,
+    });
+  };
+  // Сначала внешние зоны, затем внутренняя, затем линии поверх.
+  band("fillUpHi", "fillUpLo", "rgba(166, 38, 38, 0.12)");
+  band("fillDnHi", "fillDnLo", "rgba(27, 107, 58, 0.12)");
+  band("fillInnerHi", "fillInnerLo", "rgba(47, 111, 237, 0.10)");
+  plummerSeries.fillUpHi.setData(linePoints(bars, pack.upperEx));
+  plummerSeries.fillUpLo.setData(linePoints(bars, pack.upperIn));
+  plummerSeries.fillDnHi.setData(linePoints(bars, pack.lowerIn));
+  plummerSeries.fillDnLo.setData(linePoints(bars, pack.lowerEx));
+  plummerSeries.fillInnerHi.setData(linePoints(bars, pack.upperIn));
+  plummerSeries.fillInnerLo.setData(linePoints(bars, pack.lowerIn));
+  plummerSeries.basis = priceChart.addLineSeries({ color: navy, lineWidth: 2, title: "Ось 0" });
+  plummerSeries.upperIn = priceChart.addLineSeries({ color: blue, lineWidth: 1, title: "+1.618" });
+  plummerSeries.lowerIn = priceChart.addLineSeries({ color: blue, lineWidth: 1, title: "-1.618" });
+  plummerSeries.upperEx = priceChart.addLineSeries({ color: red, lineWidth: 2, title: "+2.618" });
+  plummerSeries.lowerEx = priceChart.addLineSeries({ color: green, lineWidth: 2, title: "-2.618" });
+  plummerSeries.basis.setData(linePoints(bars, pack.basis));
+  plummerSeries.upperIn.setData(linePoints(bars, pack.upperIn));
+  plummerSeries.lowerIn.setData(linePoints(bars, pack.lowerIn));
+  plummerSeries.upperEx.setData(linePoints(bars, pack.upperEx));
+  plummerSeries.lowerEx.setData(linePoints(bars, pack.lowerEx));
+  const markers = pack.signals.map((sig) => ({
+    time: sig.time,
+    position: sig.side === "P+" ? "belowBar" : "aboveBar",
+    color: sig.side === "P+" ? green : red,
+    shape: sig.side === "P+" ? "arrowUp" : "arrowDown",
+    text: sig.side,
+  }));
+  const st = pack.status;
+  plummerStatusEl.innerHTML = `
+    <h3 style="font-size:13px;margin:12px 0 6px">Канал Пламмера · Пульс Жизни v3</h3>
+    <p class="hint">Ритм ${st.len}: <span class="mono">basis = EMA(hlc3, ${st.len})</span>, <span class="mono">vibUnit = RMA(TR, ${st.len})</span>. Внутренний коридор ±1.618, внешний ±2.618. Сигналы P+/P− — отбой от экстремумов.</p>
+    <div class="scroll"><table class="grid">
+      <tr><th>Параметр</th><th>Статус</th></tr>
+      <tr><td>Единица вибрации</td><td class="mono">${fmt(st.vibUnit, 4)}</td></tr>
+      <tr><td>Ось равновесия</td><td class="mono">${fmt(st.basis, 4)}</td></tr>
+      <tr><td>Коридор +1.618 / −1.618</td><td class="mono">${fmt(st.upperIn, 4)} / ${fmt(st.lowerIn, 4)}</td></tr>
+      <tr><td>Пределы +2.618 / −2.618</td><td class="mono">${fmt(st.upperEx, 4)} / ${fmt(st.lowerEx, 4)}</td></tr>
+      <tr><td>Фаза Пульса Жизни</td><td><strong>${esc(st.pulsePhase)}</strong></td></tr>
+      <tr><td>Сигналов P+ / P−</td><td class="mono">${pack.signals.filter((s) => s.side === "P+").length} / ${pack.signals.filter((s) => s.side === "P-").length}</td></tr>
+    </table></div>`;
+  return eventMarkers.concat(markers).sort((a, b) => String(a.time).localeCompare(String(b.time)));
+}
+
 function clearIndicatorOverlays() {
   Object.keys(kennedySeries).forEach((key) => {
     if (kennedySeries[key]) {
@@ -1531,30 +2076,68 @@ function clearIndicatorOverlays() {
       donchSeries[key] = null;
     }
   });
+  Object.keys(fairSeries).forEach((key) => {
+    if (fairSeries[key]) {
+      try { priceChart.removeSeries(fairSeries[key]); } catch (e) {}
+      fairSeries[key] = null;
+    }
+  });
+  if (hillSeries.sma5) {
+    try { priceChart.removeSeries(hillSeries.sma5); } catch (e) {}
+    hillSeries.sma5 = null;
+  }
+  if (hillSeries.sma200) {
+    try { priceChart.removeSeries(hillSeries.sma200); } catch (e) {}
+    hillSeries.sma200 = null;
+  }
+  (hillSeries.clouds || []).forEach((series) => {
+    try { priceChart.removeSeries(series); } catch (e) {}
+  });
+  hillSeries.clouds = [];
+  Object.keys(plummerSeries).forEach((key) => {
+    if (plummerSeries[key]) {
+      try { priceChart.removeSeries(plummerSeries[key]); } catch (e) {}
+      plummerSeries[key] = null;
+    }
+  });
   explainBoard.style.display = "none";
   kennedySummaryEl.innerHTML = "";
   kennedyStatusEl.innerHTML = "";
   donchStatusEl.innerHTML = "";
   pctRStatusEl.innerHTML = "";
   rsiStochStatusEl.innerHTML = "";
+  rsxStatusEl.innerHTML = "";
+  haStatusEl.innerHTML = "";
+  hillStatusEl.innerHTML = "";
+  fairStatusEl.innerHTML = "";
+  plummerStatusEl.innerHTML = "";
   pctRBox.style.display = "none";
   rsiStochBox.style.display = "none";
+  rsxBox.style.display = "none";
+  haBox.style.display = "none";
+  haBox.classList.remove("ha-bull", "ha-bear");
+  fairModeEl.style.display = fairOn ? "flex" : "none";
 }
 
 function refreshExplainVisibility() {
-  const any = kennedyOn || donchOn || pctROn || rsiStochOn;
+  const any = kennedyOn || donchOn || pctROn || rsiStochOn || rsxOn || haOn || hillOn || fairOn || plummerOn;
   explainBoard.style.display = any ? "block" : "none";
   const titles = [];
   if (kennedyOn) titles.push("Trend");
   if (donchOn) titles.push("Donchian DC20");
   if (pctROn) titles.push("%R");
   if (rsiStochOn) titles.push("RSI/Stoch");
+  if (rsxOn) titles.push("RSX");
+  if (haOn) titles.push("Heikin-Ashi");
+  if (hillOn) titles.push("5 vs 200");
+  if (fairOn) titles.push("Диапазон справедливости");
+  if (plummerOn) titles.push("Пламмер");
   explainTitle.textContent = titles.length ? ("Пояснения · Kennedy · " + titles.join(" · ")) : "Пояснения · Kennedy";
 }
 
 function renderKennedySummary(bars) {
   kennedySummaryEl.innerHTML = "";
-  if (!bars.length || !(kennedyOn || donchOn || pctROn || rsiStochOn)) return;
+  if (!bars.length || !(kennedyOn || donchOn || pctROn || rsiStochOn || rsxOn || haOn || hillOn || fairOn || plummerOn)) return;
   const trend = computeKennedy(bars);
   const donch = computeDonch(bars);
   const pr5 = percentR(bars, 5);
@@ -1590,6 +2173,20 @@ function ensureRsiStochChart() {
       scaleMargins: { top: 0.08, bottom: 0.08 },
     },
   }));
+  const zoneArea = (top, bottom) => rsiStochChart.addAreaSeries({
+    lineColor: "rgba(0,0,0,0)",
+    topColor: top,
+    bottomColor: bottom,
+    lineWidth: 1,
+    priceLineVisible: false,
+    lastValueVisible: false,
+    crosshairMarkerVisible: false,
+  });
+  // Сначала медвежий коридор 20–60, затем бычий 40–80, маски снизу отсекают заливку.
+  rsiZoneBearHi = zoneArea("rgba(166, 38, 38, 0.16)", "rgba(166, 38, 38, 0.16)");
+  rsiZoneBearLo = zoneArea("rgba(252, 248, 227, 1)", "rgba(252, 248, 227, 1)");
+  rsiZoneBullHi = zoneArea("rgba(29, 62, 110, 0.16)", "rgba(29, 62, 110, 0.16)");
+  rsiZoneBullLo = zoneArea("rgba(252, 248, 227, 1)", "rgba(252, 248, 227, 1)");
   rsiStochMain = rsiStochChart.addLineSeries({
     color: getComputedStyle(root).getPropertyValue("--blue").trim() || "#1D3E6E",
     lineWidth: 2,
@@ -1633,11 +2230,16 @@ function applyRsiStochPanel(bars) {
   const blue = getComputedStyle(root).getPropertyValue("--blue").trim() || "#1D3E6E";
   const ink = getComputedStyle(root).getPropertyValue("--ink").trim() || "#1C1915";
   const muted = getComputedStyle(root).getPropertyValue("--muted").trim() || "#5C4F38";
+  const paper = getComputedStyle(root).getPropertyValue("--chart-bg").trim() || getComputedStyle(root).getPropertyValue("--card").trim() || "#FCF8E3";
   rsiStochChart.applyOptions(Object.assign(chartBase(160), { height: 160 }));
   rsiStochMain.applyOptions({ color: blue, lineWidth: 2 });
   rsiStochSec.applyOptions({ color: ink, lineWidth: 1 });
   rsiStochThird.applyOptions({ color: ink, lineWidth: 3 });
   [rsiStochLvlA, rsiStochLvlB, rsiStochLvlC].forEach((series) => series.applyOptions({ color: muted, lineStyle: 2 }));
+  rsiZoneBearHi.applyOptions({ topColor: "rgba(166, 38, 38, 0.16)", bottomColor: "rgba(166, 38, 38, 0.16)", lineColor: "rgba(0,0,0,0)" });
+  rsiZoneBullHi.applyOptions({ topColor: "rgba(29, 62, 110, 0.16)", bottomColor: "rgba(29, 62, 110, 0.16)", lineColor: "rgba(0,0,0,0)" });
+  rsiZoneBearLo.applyOptions({ topColor: paper, bottomColor: paper, lineColor: "rgba(0,0,0,0)" });
+  rsiZoneBullLo.applyOptions({ topColor: paper, bottomColor: paper, lineColor: "rgba(0,0,0,0)" });
   const closes = bars.map((b) => b.close);
   const rsi = rsiWilder(closes, 14);
   const rsiSma9 = sma(rsi, 9);
@@ -1647,6 +2249,10 @@ function applyRsiStochPanel(bars) {
   let note = "";
   let lastIdx = bars.length - 1;
   if (rsiStochMode === "rsi") {
+    rsiZoneBearHi.setData(lvl(rsi, 60));
+    rsiZoneBearLo.setData(lvl(rsi, 20));
+    rsiZoneBullHi.setData(lvl(rsi, 80));
+    rsiZoneBullLo.setData(lvl(rsi, 40));
     rsiStochMain.setData(linePoints(bars, rsi));
     rsiStochSec.setData(linePoints(bars, rsiSma9));
     rsiStochThird.setData(linePoints(bars, rsiEma45));
@@ -1665,15 +2271,23 @@ function applyRsiStochPanel(bars) {
     if (fan) note += " · бычий веер RSI > SMA9 > EMA45";
     else if (r != null && s9 != null && e45 != null && r < s9 && s9 < e45) note += " · медвежий веер RSI < SMA9 < EMA45";
     else if (r != null && s9 != null) note += r > s9 ? " · RSI выше SMA9" : " · RSI ниже SMA9";
+    let zoneMode = "нет RSI";
+    if (r != null && r >= 50) zoneMode = "БЫЧИЙ 40–80";
+    else if (r != null && r < 50) zoneMode = "МЕДВЕЖИЙ 20–60";
     rsiStochStatusEl.innerHTML = `
       <h3 style="font-size:13px;margin:12px 0 6px">Панель RSI + Stoch · RSI</h3>
-      <p class="hint">Kennedy RSI/Stoch pane: RSI(14), SMA9 и EMA45 от RSI, уровни 70 / 50 / 25.</p>
+      <p class="hint">Kennedy RSI/Stoch pane: RSI(14), SMA9 и EMA45, уровни 70 / 50 / 25; заливка зон 40–80 (бычья) и 20–60 (медвежья).</p>
       <div class="scroll"><table class="grid">
         <tr><th>Параметр</th><th>Статус</th></tr>
         <tr><td>RSI / SMA9 / EMA45</td><td class="mono">${fmt(r, 2)} / ${fmt(s9, 2)} / ${fmt(e45, 2)}</td></tr>
         <tr><td>Диагностика</td><td>${esc(note)}</td></tr>
+        <tr><td>Режим зон RSI</td><td>${esc(zoneMode)}</td></tr>
       </table></div>`;
   } else {
+    rsiZoneBearHi.setData([]);
+    rsiZoneBearLo.setData([]);
+    rsiZoneBullHi.setData([]);
+    rsiZoneBullLo.setData([]);
     rsiStochMain.setData(linePoints(bars, stoch.k));
     rsiStochSec.setData(linePoints(bars, stoch.d));
     rsiStochThird.setData([]);
@@ -1707,6 +2321,436 @@ function applyRsiStochPanel(bars) {
     const range = priceChart.timeScale().getVisibleRange();
     if (range) rsiStochChart.timeScale().setVisibleRange(range);
   } catch (e) {}
+}
+
+function ensureHaChart() {
+  if (haChart) return;
+  haChart = LightweightCharts.createChart(haChartEl, Object.assign(chartBase(220), { height: 220 }));
+  haCandleSeries = haChart.addCandlestickSeries(candleOptions());
+  haEmaCloseLine = haChart.addLineSeries({
+    color: getComputedStyle(root).getPropertyValue("--blue").trim() || "#1D3E6E",
+    lineWidth: 2,
+    title: "EMA9 HA_Close",
+  });
+  haEmaOpenLine = haChart.addLineSeries({
+    color: "#1C1915",
+    lineWidth: 2,
+    title: "EMA9 HA_Open",
+  });
+  priceChart.timeScale().subscribeVisibleTimeRangeChange((range) => {
+    if (!haOn || !range || !haChart) return;
+    try { haChart.timeScale().setVisibleRange(range); } catch (e) {}
+  });
+}
+
+function applyHaPanel(bars) {
+  haStatusEl.innerHTML = "";
+  haBox.classList.remove("ha-bull", "ha-bear");
+  if (!haOn || !bars.length) {
+    haBox.style.display = "none";
+    return;
+  }
+  haBox.style.display = "block";
+  ensureHaChart();
+  const blue = getComputedStyle(root).getPropertyValue("--blue").trim() || "#1D3E6E";
+  const ink = getComputedStyle(root).getPropertyValue("--ink").trim() || "#1C1915";
+  haChart.applyOptions(Object.assign(chartBase(220), { height: 220 }));
+  haCandleSeries.applyOptions(candleOptions());
+  haEmaCloseLine.applyOptions({ color: blue, lineWidth: 2 });
+  haEmaOpenLine.applyOptions({ color: ink, lineWidth: 2 });
+  const ha = heikinAshi(bars);
+  const haOpen = ha.map((b) => b.open);
+  const haClose = ha.map((b) => b.close);
+  const emaClose = ema(haClose, 9);
+  const emaOpen = ema(haOpen, 9);
+  haCandleSeries.setData(ha.map((b) => ({
+    time: b.time,
+    open: b.open,
+    high: b.high,
+    low: b.low,
+    close: b.close,
+  })));
+  haEmaCloseLine.setData(linePoints(ha, emaClose));
+  haEmaOpenLine.setData(linePoints(ha, emaOpen));
+  haChart.timeScale().applyOptions({ barSpacing: 18, rightOffset: 6 });
+  try {
+    const range = priceChart.timeScale().getVisibleRange();
+    if (range) haChart.timeScale().setVisibleRange(range);
+  } catch (e) {}
+  const last = ha.length - 1;
+  let i = last;
+  while (i >= 0 && (emaClose[i] == null || emaOpen[i] == null)) i -= 1;
+  const ribbonBull = i >= 0 && emaClose[i] > emaOpen[i];
+  const ribbonBear = i >= 0 && emaClose[i] < emaOpen[i];
+  if (ribbonBull) haBox.classList.add("ha-bull");
+  if (ribbonBear) haBox.classList.add("ha-bear");
+  const ribbonText = ribbonBull
+    ? "бычья лента: EMA9(HA_Close) > EMA9(HA_Open)"
+    : (ribbonBear ? "медвежья лента: EMA9(HA_Close) < EMA9(HA_Open)" : "лента плоская / мало данных");
+  document.getElementById("haRibbonHint").textContent = ribbonText;
+  haStatusEl.innerHTML = `
+    <h3 style="font-size:13px;margin:12px 0 6px">Heikin-Ashi + EMA9</h3>
+    <p class="hint">Усреднённые свечи HA_Open/High/Low/Close и лента EMA(9) от HA_Close (синяя) и HA_Open (чёрная).</p>
+    <div class="scroll"><table class="grid">
+      <tr><th>Параметр</th><th>Статус</th></tr>
+      <tr><td>HA close</td><td class="mono">${fmt(i >= 0 ? ha[i].close : null, 4)}</td></tr>
+      <tr><td>EMA9 HA_Close / HA_Open</td><td class="mono">${fmt(i >= 0 ? emaClose[i] : null, 4)} / ${fmt(i >= 0 ? emaOpen[i] : null, 4)}</td></tr>
+      <tr><td>Режим ленты</td><td class="${ribbonBull ? "up" : (ribbonBear ? "down" : "flat")}">${esc(ribbonText)}</td></tr>
+    </table></div>`;
+}
+
+function ensureRsxChart() {
+  if (rsxChart) return;
+  rsxChart = LightweightCharts.createChart(rsxChartEl, Object.assign(chartBase(160), {
+    height: 160,
+    rightPriceScale: {
+      borderColor: getComputedStyle(root).getPropertyValue("--rule").trim() || "#B89856",
+      scaleMargins: { top: 0.08, bottom: 0.08 },
+    },
+  }));
+  rsxBreakHist = rsxChart.addHistogramSeries({
+    priceFormat: { type: "price", precision: 1, minMove: 0.1 },
+    base: 50,
+    autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 100 } }),
+  });
+  rsxLine = rsxChart.addLineSeries({
+    color: getComputedStyle(root).getPropertyValue("--blue").trim() || "#1D3E6E",
+    lineWidth: 2,
+    priceLineVisible: false,
+  });
+  rsxLevel50 = rsxChart.addLineSeries({
+    color: getComputedStyle(root).getPropertyValue("--muted").trim() || "#5C4F38",
+    lineWidth: 1,
+    lineStyle: 2,
+    lastValueVisible: false,
+    priceLineVisible: false,
+    crosshairMarkerVisible: false,
+  });
+  priceChart.timeScale().subscribeVisibleTimeRangeChange((range) => {
+    if (!rsxOn || !range || !rsxChart) return;
+    try { rsxChart.timeScale().setVisibleRange(range); } catch (e) {}
+  });
+}
+
+function computeRsxPack(bars) {
+  const closes = bars.map((b) => b.close);
+  const rsx = jurikRsx(closes, 14);
+  const breaks = [];
+  const tint = new Array(bars.length).fill(null);
+  for (let i = 2; i < bars.length; i++) {
+    const r = rsx[i], r1 = rsx[i - 1], r2 = rsx[i - 2];
+    if (r == null || r1 == null || r2 == null) continue;
+    if (r > r1 && r1 <= r2) {
+      breaks.push({ time: bars[i].time, side: "up", index: i });
+      for (let k = 0; k < 5 && i + k < bars.length; k++) {
+        if (rsx[i + k] != null) tint[i + k] = "up";
+      }
+    } else if (r < r1 && r1 >= r2) {
+      breaks.push({ time: bars[i].time, side: "down", index: i });
+      for (let k = 0; k < 5 && i + k < bars.length; k++) {
+        if (rsx[i + k] != null) tint[i + k] = "down";
+      }
+    }
+  }
+  let last = bars.length - 1;
+  while (last >= 0 && rsx[last] == null) last -= 1;
+  const r = last >= 0 ? rsx[last] : null;
+  const r1 = last >= 1 ? rsx[last - 1] : null;
+  const r2 = last >= 2 ? rsx[last - 2] : null;
+  let hod = "нет данных";
+  let konets = "—";
+  if (r != null && r1 != null && r2 != null) {
+    const d1 = r - r1;
+    const d2 = r1 - r2;
+    if (d1 > 0 && d2 > 0) hod = "рост";
+    else if (d1 > 0 && d2 <= 0) { hod = "падение слабеет"; konets = "падение может кончаться"; }
+    else if (d1 < 0 && d2 < 0) hod = "падение";
+    else if (d1 < 0 && d2 >= 0) { hod = "рост слабеет"; konets = "рост может кончаться"; }
+    else hod = "плоский";
+  } else if (r != null && r1 != null) {
+    hod = r > r1 ? "рост" : (r < r1 ? "падение" : "плоский");
+  }
+  const sila = r != null && Math.abs(r - 50) >= 15 ? "сильный" : "обычный";
+  return { rsx, breaks, tint, status: { value: r, hod, sila, konets, time: last >= 0 ? bars[last].time : null } };
+}
+
+function applyRsxPanel(bars, eventMarkers) {
+  rsxStatusEl.innerHTML = "";
+  if (!rsxOn || !bars.length) {
+    rsxBox.style.display = "none";
+    return eventMarkers;
+  }
+  rsxBox.style.display = "block";
+  ensureRsxChart();
+  const blue = getComputedStyle(root).getPropertyValue("--blue").trim() || "#1D3E6E";
+  const up = getComputedStyle(root).getPropertyValue("--up").trim() || "#1B6B3A";
+  const down = getComputedStyle(root).getPropertyValue("--down").trim() || "#A62626";
+  const muted = getComputedStyle(root).getPropertyValue("--muted").trim() || "#5C4F38";
+  rsxChart.applyOptions(Object.assign(chartBase(160), { height: 160 }));
+  rsxLine.applyOptions({ color: blue, lineWidth: 2 });
+  rsxLevel50.applyOptions({ color: muted, lineStyle: 2 });
+  const pack = computeRsxPack(bars);
+  rsxLine.setData(linePoints(bars, pack.rsx));
+  rsxLevel50.setData(bars.map((b, i) => (pack.rsx[i] == null ? null : { time: b.time, value: 50 })).filter(Boolean));
+  const hist = [];
+  for (let i = 0; i < bars.length; i++) {
+    if (pack.rsx[i] == null || !pack.tint[i]) continue;
+    hist.push({
+      time: bars[i].time,
+      value: pack.rsx[i],
+      color: pack.tint[i] === "up" ? "rgba(27, 107, 58, 0.35)" : "rgba(166, 38, 38, 0.35)",
+    });
+  }
+  rsxBreakHist.setData(hist);
+  rsxChart.timeScale().applyOptions({ barSpacing: 18, rightOffset: 6 });
+  try {
+    const range = priceChart.timeScale().getVisibleRange();
+    if (range) rsxChart.timeScale().setVisibleRange(range);
+  } catch (e) {}
+  const st = pack.status;
+  const hodCls = st.hod.indexOf("рост") >= 0 ? "up" : (st.hod.indexOf("падение") >= 0 ? "down" : "flat");
+  document.getElementById("rsxHint").textContent = `RSX ${fmt(st.value, 1)} · ${st.hod} · ${st.sila}`;
+  rsxStatusEl.innerHTML = `
+    <h3 style="font-size:13px;margin:12px 0 6px">Jurik RSX (14) · Ход / Сила / Слом</h3>
+    <p class="hint">Тройное сглаживание Jurik RSX(14), ось 50. Зелёный/красный сегмент — слом наклона на 5 баров. Памятка: <strong>слом без свечи не вход</strong>.</p>
+    <div class="scroll"><table class="grid">
+      <tr><th>Параметр</th><th>Статус</th></tr>
+      <tr><td>RSX</td><td class="mono">${fmt(st.value, 2)}</td></tr>
+      <tr><td>Ход</td><td class="${hodCls}">${esc(st.hod)}</td></tr>
+      <tr><td>Сила</td><td>${esc(st.sila)}</td></tr>
+      <tr><td>Конец</td><td>${esc(st.konets)}</td></tr>
+      <tr><td>Сломов ↑ / ↓</td><td class="mono">${pack.breaks.filter((b) => b.side === "up").length} / ${pack.breaks.filter((b) => b.side === "down").length}</td></tr>
+      <tr><td>Памятка</td><td>слом без свечи не вход</td></tr>
+    </table></div>`;
+  const markers = pack.breaks.map((sig) => ({
+    time: sig.time,
+    position: sig.side === "up" ? "belowBar" : "aboveBar",
+    color: sig.side === "up" ? up : down,
+    shape: sig.side === "up" ? "arrowUp" : "arrowDown",
+    text: sig.side === "up" ? "RSX↑" : "RSX↓",
+  }));
+  return eventMarkers.concat(markers).sort((a, b) => String(a.time).localeCompare(String(b.time)));
+}
+
+function findPivotsHill(bars, left = 10, right = 5) {
+  const out = [];
+  for (let i = left; i < bars.length - right; i++) {
+    let isHigh = true;
+    let isLow = true;
+    for (let j = i - left; j <= i + right; j++) {
+      if (j === i) continue;
+      if (bars[j].high > bars[i].high) isHigh = false;
+      if (bars[j].low < bars[i].low) isLow = false;
+      if (!isHigh && !isLow) break;
+    }
+    if (isHigh) out.push({ time: bars[i].time, price: bars[i].high, side: "H", index: i });
+    if (isLow) out.push({ time: bars[i].time, price: bars[i].low, side: "L", index: i });
+  }
+  return out;
+}
+
+function applyHillCloud(bars, eventMarkers) {
+  hillStatusEl.innerHTML = "";
+  if (!hillOn || !bars.length) return eventMarkers;
+  const closes = bars.map((b) => b.close);
+  const sma5 = sma(closes, 5);
+  const sma200 = sma(closes, 200);
+  const paper = getComputedStyle(root).getPropertyValue("--chart-bg").trim()
+    || getComputedStyle(root).getPropertyValue("--card").trim()
+    || "#FCF8E3";
+  const purple = "rgba(92, 55, 140, 0.28)";
+  const red = "rgba(166, 38, 38, 0.28)";
+  const muted = getComputedStyle(root).getPropertyValue("--muted").trim() || "#5C4F38";
+  const up = getComputedStyle(root).getPropertyValue("--up").trim() || "#1B6B3A";
+  const down = getComputedStyle(root).getPropertyValue("--down").trim() || "#A62626";
+
+  const addCloud = (from, to, bull) => {
+    if (to < from) return;
+    const fill = bull ? purple : red;
+    const hiSer = priceChart.addAreaSeries({
+      lineColor: "rgba(0,0,0,0)",
+      topColor: fill,
+      bottomColor: fill,
+      lineWidth: 1,
+      priceLineVisible: false,
+      lastValueVisible: false,
+      crosshairMarkerVisible: false,
+    });
+    const loSer = priceChart.addAreaSeries({
+      lineColor: "rgba(0,0,0,0)",
+      topColor: paper,
+      bottomColor: paper,
+      lineWidth: 1,
+      priceLineVisible: false,
+      lastValueVisible: false,
+      crosshairMarkerVisible: false,
+    });
+    const hiData = [];
+    const loData = [];
+    for (let i = from; i <= to; i++) {
+      if (sma5[i] == null || sma200[i] == null) continue;
+      hiData.push({ time: bars[i].time, value: Math.max(sma5[i], sma200[i]) });
+      loData.push({ time: bars[i].time, value: Math.min(sma5[i], sma200[i]) });
+    }
+    if (hiData.length) {
+      hiSer.setData(hiData);
+      loSer.setData(loData);
+      hillSeries.clouds.push(hiSer, loSer);
+    } else {
+      try { priceChart.removeSeries(hiSer); } catch (e) {}
+      try { priceChart.removeSeries(loSer); } catch (e) {}
+    }
+  };
+
+  let segStart = -1;
+  let segBull = null;
+  for (let i = 0; i < bars.length; i++) {
+    if (sma5[i] == null || sma200[i] == null) {
+      if (segStart >= 0) {
+        addCloud(segStart, i - 1, segBull);
+        segStart = -1;
+        segBull = null;
+      }
+      continue;
+    }
+    const bull = sma5[i] > sma200[i];
+    if (segStart < 0) {
+      segStart = i;
+      segBull = bull;
+    } else if (bull !== segBull) {
+      addCloud(segStart, i - 1, segBull);
+      segStart = i;
+      segBull = bull;
+    }
+  }
+  if (segStart >= 0) addCloud(segStart, bars.length - 1, segBull);
+
+  hillSeries.sma5 = priceChart.addLineSeries({ color: "#5C378C", lineWidth: 2, title: "SMA5" });
+  hillSeries.sma200 = priceChart.addLineSeries({ color: muted, lineWidth: 2, title: "SMA200" });
+  hillSeries.sma5.setData(linePoints(bars, sma5));
+  hillSeries.sma200.setData(linePoints(bars, sma200));
+
+  const pctAbove = bars.map((_, i) => {
+    if (sma5[i] == null || sma200[i] == null || sma200[i] === 0) return null;
+    return ((sma5[i] - sma200[i]) / sma200[i]) * 100;
+  });
+  const markers = [];
+  for (let i = 1; i < bars.length; i++) {
+    if (pctAbove[i] == null) continue;
+    const prev = pctAbove[i - 1];
+    if (pctAbove[i] >= 1.0 && (prev == null || prev < 1.0)) {
+      markers.push({
+        time: bars[i].time,
+        position: "belowBar",
+        color: up,
+        shape: "arrowUp",
+        text: "ЛОНГ",
+      });
+    }
+    if (pctAbove[i] <= -1.0 && (prev == null || prev > -1.0)) {
+      markers.push({
+        time: bars[i].time,
+        position: "aboveBar",
+        color: down,
+        shape: "arrowDown",
+        text: "ВЫХОД",
+      });
+    }
+  }
+  findPivotsHill(bars, 10, 5).forEach((pv) => {
+    markers.push({
+      time: pv.time,
+      position: pv.side === "H" ? "aboveBar" : "belowBar",
+      color: pv.side === "H" ? down : up,
+      shape: "circle",
+      text: fmt(pv.price, 2),
+    });
+  });
+
+  let last = bars.length - 1;
+  while (last >= 0 && (sma5[last] == null || sma200[last] == null)) last -= 1;
+  const s5 = last >= 0 ? sma5[last] : null;
+  const s200 = last >= 0 ? sma200[last] : null;
+  const gap = last >= 0 ? pctAbove[last] : null;
+  let mode = "нет SMA200";
+  let modeCls = "flat";
+  if (gap != null) {
+    if (gap >= 1.0) {
+      mode = "БЫЧИЙ тренд: держать по тренду";
+      modeCls = "up";
+    } else if (gap <= -1.0) {
+      mode = "МЕДВЕЖИЙ тренд: вне рынка";
+      modeCls = "down";
+    } else {
+      mode = "НЕЙТРАЛЬНО ±1%: ждать ясности";
+      modeCls = "flat";
+    }
+  }
+  hillStatusEl.innerHTML = `
+    <h3 style="font-size:13px;margin:12px 0 6px">Облако 5 vs 200 · Arthur Hill</h3>
+    <p class="hint">SMA(5) / SMA(200), облако фиолетовое при SMA5&gt;SMA200 и красное при SMA5&lt;SMA200. ЛОНГ при разрыве ≥ +1%, ВЫХОД при ≤ −1%. Пивоты: 10 баров влево / 5 вправо.</p>
+    <div class="scroll"><table class="grid">
+      <tr><th>Параметр</th><th>Статус</th></tr>
+      <tr><td>SMA5 / SMA200</td><td class="mono">${fmt(s5, 4)} / ${fmt(s200, 4)}</td></tr>
+      <tr><td>Разрыв pctAbove</td><td class="mono">${fmt(gap, 2)}%</td></tr>
+      <tr><td>Режим 5 vs 200</td><td class="${modeCls}"><strong>${esc(mode)}</strong></td></tr>
+      <tr><td>Сигналов ЛОНГ / ВЫХОД</td><td class="mono">${markers.filter((m) => m.text === "ЛОНГ").length} / ${markers.filter((m) => m.text === "ВЫХОД").length}</td></tr>
+    </table></div>`;
+  return eventMarkers.concat(markers).sort((a, b) => String(a.time).localeCompare(String(b.time)));
+}
+
+function applyFairRange(bars) {
+  fairStatusEl.innerHTML = "";
+  if (!fairOn || !bars.length) return;
+  const down = getComputedStyle(root).getPropertyValue("--down").trim() || "#A62626";
+  const blue = getComputedStyle(root).getPropertyValue("--blue").trim() || "#1D3E6E";
+  const highs = bars.map((b) => b.high);
+  const lows = bars.map((b) => b.low);
+  let avgHi;
+  let avgLo;
+  let modeLabel;
+  if (fairMode === "sma20") {
+    avgHi = sma(highs, 20);
+    avgLo = sma(lows, 20);
+    modeLabel = "SMA(20) High / Low";
+  } else {
+    avgHi = new Array(bars.length).fill(null);
+    avgLo = new Array(bars.length).fill(null);
+    let sumH = 0, sumL = 0;
+    for (let i = 0; i < bars.length; i++) {
+      sumH += highs[i];
+      sumL += lows[i];
+      avgHi[i] = sumH / (i + 1);
+      avgLo[i] = sumL / (i + 1);
+    }
+    modeLabel = "накопленное среднее cum(High)/N · cum(Low)/N";
+  }
+  fairSeries.hi = priceChart.addLineSeries({ color: down, lineWidth: 2, title: "Avg High" });
+  fairSeries.lo = priceChart.addLineSeries({ color: blue, lineWidth: 2, title: "Avg Low" });
+  fairSeries.hi.setData(linePoints(bars, avgHi));
+  fairSeries.lo.setData(linePoints(bars, avgLo));
+  let i = bars.length - 1;
+  while (i >= 0 && (avgHi[i] == null || avgLo[i] == null)) i -= 1;
+  const close = i >= 0 ? bars[i].close : null;
+  const hi = i >= 0 ? avgHi[i] : null;
+  const lo = i >= 0 ? avgLo[i] : null;
+  let where = "нет данных";
+  let whereCls = "flat";
+  if (close != null && hi != null && lo != null) {
+    if (close > hi) { where = "выше среднего High"; whereCls = "down"; }
+    else if (close < lo) { where = "ниже среднего Low"; whereCls = "up"; }
+    else { where = "внутри коридора"; whereCls = "flat"; }
+  }
+  fairStatusEl.innerHTML = `
+    <h3 style="font-size:13px;margin:12px 0 6px">Диапазон справедливости · Avg High / Low</h3>
+    <p class="hint">Красная — средний High, синяя — средний Low. Режим: ${esc(modeLabel)}.</p>
+    <div class="scroll"><table class="grid">
+      <tr><th>Параметр</th><th>Статус</th></tr>
+      <tr><td>Режим</td><td>${esc(modeLabel)}</td></tr>
+      <tr><td>Avg High / Avg Low</td><td class="mono">${fmt(hi, 4)} / ${fmt(lo, 4)}</td></tr>
+      <tr><td>Close</td><td class="mono">${fmt(close, 4)}</td></tr>
+      <tr><td>Положение цены</td><td class="${whereCls}"><strong>${esc(where)}</strong></td></tr>
+    </table></div>`;
 }
 
 function ensurePctRChart() {
@@ -2086,8 +3130,13 @@ function showTicker(ticker) {
   priceSeries.setData(kind === "candle" ? bars : bars.map((bar) => ({ time: bar.time, value: bar.close })));
   markers = applyKennedy(bars, markers);
   markers = applyDonch(bars, markers);
+  markers = applyHillCloud(bars, markers);
+  applyFairRange(bars);
+  markers = applyPlummer(bars, markers);
   applyPctRPanel(bars);
   applyRsiStochPanel(bars);
+  markers = applyRsxPanel(bars, markers);
+  applyHaPanel(bars);
   renderKennedySummary(bars);
   refreshExplainVisibility();
   if (typeof priceSeries.setMarkers === "function") priceSeries.setMarkers(markers);
@@ -2241,7 +3290,52 @@ function renderPsTable() {
   document.getElementById("psTable").innerHTML = head + (body || `<tr><td colspan="8">Нет строк скринера</td></tr>`);
 }
 
+let stovallHorizon = (DATA.stovall && DATA.stovall.default_horizon) || "cycle";
+
+function renderStovall() {
+  const pack = DATA.stovall || null;
+  const cycleEl = document.getElementById("stovallCycle");
+  const tableEl = document.getElementById("stovallTable");
+  const noteEl = document.getElementById("stovallNote");
+  if (!pack || !pack.cycle) {
+    cycleEl.innerHTML = `<p class="hint">Нет данных RUSFAR / отраслей для модели Стовалла.</p>`;
+    tableEl.innerHTML = "";
+    noteEl.textContent = "";
+    return;
+  }
+  const c = pack.cycle;
+  const favored = (c.favored || []).join(", ") || "—";
+  const posPct = c.cycle_pos == null ? "нет" : (100 * c.cycle_pos).toFixed(0) + "%";
+  const dirCls = c.delta_dir === "СНИЖЕНИЕ" ? "up" : (c.delta_dir === "ПОВЫШЕНИЕ" ? "down" : "flat");
+  cycleEl.innerHTML = `
+    <div class="cell phase"><span class="k">Фаза цикла</span><span class="v">${esc(c.phase || "нет")}</span></div>
+    <div class="cell"><span class="k">RUSFAR</span><span class="v mono">${fmt(c.rate, 2)}% · ${esc(c.asof || "")}</span></div>
+    <div class="cell"><span class="k">cycle_pos (2г)</span><span class="v mono">${esc(posPct)} · [${fmt(c.corridor_low, 2)}; ${fmt(c.corridor_high, 2)}]</span></div>
+    <div class="cell"><span class="k">Δ 60 сессий</span><span class="v mono ${dirCls}">${fmt(c.delta_60, 2)} п.п. · ${esc(c.delta_dir || "")}</span></div>
+    <div class="cell"><span class="k">Макро-бонус фазы</span><span class="v">${esc(favored)}</span></div>`;
+  const horizon = pack.horizons[stovallHorizon] || pack.horizons.cycle || { rows: [], label: "" };
+  document.querySelectorAll("#stovallHorizon button").forEach((btn) => {
+    btn.classList.toggle("active", btn.getAttribute("data-horizon") === stovallHorizon);
+  });
+  const head = `<tr><th>#</th><th>Сектор</th><th>Код</th><th class="num">Score</th><th class="num">Z(RS)</th><th class="num">Z(Mom)</th><th class="num">Z(Acc)</th><th class="num">RS %</th><th class="num">Mom %</th><th>Макро-бонус</th></tr>`;
+  const body = (horizon.rows || []).map((row) => {
+    const boost = row.macro_boost ? "macro-boost" : "";
+    const scoreCls = row.score == null ? "flat" : (row.score >= 0 ? "up" : "down");
+    return `<tr class="${boost}"><td>${esc(row.rank)}</td><td>${esc(row.title)}</td><td>${esc(row.code)}</td><td class="num ${scoreCls}"><strong>${fmt(row.score, 2)}</strong></td><td class="num">${fmt(row.z_rs, 2)}</td><td class="num">${fmt(row.z_momentum, 2)}</td><td class="num">${fmt(row.z_acceleration, 2)}</td><td class="num ${clsPct(row.rs)}">${fmt(row.rs, 2)}</td><td class="num ${clsPct(row.momentum)}">${fmt(row.momentum, 2)}</td><td>${esc(row.boost_note)}</td></tr>`;
+  }).join("");
+  tableEl.innerHTML = head + (body || `<tr><td colspan="10">Нет строк рейтинга</td></tr>`);
+  noteEl.textContent = `${pack.model || ""} · горизонт ${horizon.label || stovallHorizon}. ${pack.note || ""} Сектора с макро-бонусом отмечены синей полосой.`;
+}
+
+document.getElementById("stovallHorizon").addEventListener("click", (event) => {
+  const btn = event.target.closest("button[data-horizon]");
+  if (!btn) return;
+  stovallHorizon = btn.getAttribute("data-horizon") || "cycle";
+  renderStovall();
+});
+
 function renderFractions() {
+  renderStovall();
   const rows = DATA.fractions || [];
   const head = `<tr><th>Дробь</th><th>5 сессий</th><th>20 сессий</th><th class="num">5с %</th><th class="num">20с %</th></tr>`;
   const body = rows.map((row) => (
@@ -2278,6 +3372,8 @@ window.addEventListener("resize", () => {
   lowerChart.applyOptions({ width: lowerEl.clientWidth });
   if (pctRChart) pctRChart.applyOptions({ width: pctRChartEl.clientWidth });
   if (rsiStochChart) rsiStochChart.applyOptions({ width: rsiStochChartEl.clientWidth });
+  if (rsxChart) rsxChart.applyOptions({ width: rsxChartEl.clientWidth });
+  if (haChart) haChart.applyOptions({ width: haChartEl.clientWidth });
   if (curveChart) curveChart.applyOptions({ width: document.getElementById("curveChart").clientWidth });
   if (psChartObj) psChartObj.applyOptions({ width: document.getElementById("psChart").clientWidth });
 });
