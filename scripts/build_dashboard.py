@@ -975,6 +975,13 @@ header.app .note { margin: 6px 0 0; font-size: 12px; color: var(--muted); max-wi
 .chart { height: 420px; border: 1px solid var(--rule); background: var(--chart-bg); }
 .chart.small { height: 260px; }
 #lower { height: 150px; margin-top: 8px; border: 1px solid var(--rule); background: var(--chart-bg); }
+#pctRBox { display: none; margin-top: 8px; border: 1px solid var(--rule); background: var(--card); padding: 8px; }
+#pctRBox .pct-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+#pctRBox .pct-head h3 { margin: 0; font-size: 13px; }
+#pctRSpeed { display: flex; gap: 4px; }
+#pctRSpeed button { font-family: "JetBrains Mono", Consolas, monospace; font-size: 10px; padding: 4px 8px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); cursor: pointer; }
+#pctRSpeed button.active { background: var(--ink); color: var(--paper); }
+#pctRChart { height: 160px; border: 1px solid var(--rule); background: var(--chart-bg); }
 #tip {
   display: none; position: absolute; z-index: 5; max-width: 340px;
   background: var(--card); border: 1px solid var(--rule); padding: 8px 10px;
@@ -1013,6 +1020,19 @@ tr.anomaly { background: rgba(138, 90, 18, 0.12); }
   text-align: center;
 }
 .scroll { overflow: auto; max-height: 520px; }
+.modes { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 8px; }
+.modes button {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  padding: 5px 8px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+.modes button.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+#explainBoard { margin-top: 10px; }
+#explainBoard table.grid td:first-child { color: var(--muted); width: 38%; }
 footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
 @media (max-width: 720px) {
   .chart { height: 320px; }
@@ -1040,14 +1060,37 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
 
 <section class="panel active" id="tab-candles">
   <div class="board">
-    <h2>Свечи и события</h2>
-    <p class="hint">TradingView Lightweight Charts. Флажки — строки <span class="mono">radar_events.csv</span>. У индекса без OHLC — линия по close.</p>
+    <h2>Свечи, Kennedy и нарративы</h2>
+    <p class="hint">TradingView Lightweight Charts. Флажки — <span class="mono">radar_events.csv</span>. Три модуля Kennedy: Trend, Donchian DC20, панель %R.</p>
     <div class="tickers" id="tickers"></div>
+    <div class="modes" id="modeButtons">
+      <button type="button" data-mode="kennedy" id="btnKennedy">Kennedy Trend (MA + HA + Сигналы L/S)</button>
+      <button type="button" data-mode="donch" id="btnDonch">Kennedy Donchian + Поглощения (DC20)</button>
+      <button type="button" data-mode="pctr" id="btnPctR">Панель %R (5 / 20)</button>
+      <button type="button" data-mode="clear" id="btnClearModes">Очистить график</button>
+    </div>
     <div class="wrap">
       <div class="chart" id="price"></div>
       <div id="tip"></div>
     </div>
     <div id="lower"></div>
+    <div id="pctRBox">
+      <div class="pct-head">
+        <h3 id="pctRTitle">Панель %R · быстрый (5)</h3>
+        <div id="pctRSpeed">
+          <button type="button" data-speed="5" class="active">Быстрый %R(5)</button>
+          <button type="button" data-speed="20">Медленный %R(20)</button>
+        </div>
+      </div>
+      <div id="pctRChart"></div>
+    </div>
+    <div class="board" id="explainBoard" style="display:none;margin-top:10px;padding:10px;">
+      <h2 id="explainTitle">Пояснения · Kennedy</h2>
+      <div id="kennedySummary"></div>
+      <div id="kennedyStatus"></div>
+      <div id="donchStatus"></div>
+      <div id="pctRStatus"></div>
+    </div>
     <div id="eventList"></div>
   </div>
   <div class="board">
@@ -1268,13 +1311,589 @@ function markerColor(toneValue) {
   return getComputedStyle(root).getPropertyValue("--muted").trim();
 }
 
+let kennedyOn = false;
+let donchOn = false;
+let pctROn = false;
+let pctRPeriod = 5;
+const kennedySeries = { ema5: null, sma10: null, sma30: null, haOpen: null, haClose: null };
+const donchSeries = { hh: null, mid: null, ll: null };
+const explainBoard = document.getElementById("explainBoard");
+const explainTitle = document.getElementById("explainTitle");
+const kennedySummaryEl = document.getElementById("kennedySummary");
+const kennedyStatusEl = document.getElementById("kennedyStatus");
+const donchStatusEl = document.getElementById("donchStatus");
+const pctRStatusEl = document.getElementById("pctRStatus");
+const pctRBox = document.getElementById("pctRBox");
+const pctRChartEl = document.getElementById("pctRChart");
+let pctRChart = null;
+let pctRHist = null;
+let pctRSmaLine = null;
+let pctRLevel80 = null;
+let pctRLevel50 = null;
+let pctRLevel20 = null;
+document.getElementById("btnKennedy").addEventListener("click", () => {
+  kennedyOn = !kennedyOn;
+  document.getElementById("btnKennedy").classList.toggle("active", kennedyOn);
+  if (currentTicker) showTicker(currentTicker);
+});
+document.getElementById("btnDonch").addEventListener("click", () => {
+  donchOn = !donchOn;
+  document.getElementById("btnDonch").classList.toggle("active", donchOn);
+  if (currentTicker) showTicker(currentTicker);
+});
+document.getElementById("btnPctR").addEventListener("click", () => {
+  pctROn = !pctROn;
+  document.getElementById("btnPctR").classList.toggle("active", pctROn);
+  if (currentTicker) showTicker(currentTicker);
+});
+document.getElementById("pctRSpeed").addEventListener("click", (event) => {
+  const btn = event.target.closest("button[data-speed]");
+  if (!btn) return;
+  pctRPeriod = Number(btn.getAttribute("data-speed")) || 5;
+  document.querySelectorAll("#pctRSpeed button").forEach((el) => el.classList.toggle("active", el === btn));
+  document.getElementById("pctRTitle").textContent = pctRPeriod === 5
+    ? "Панель %R · быстрый (5)"
+    : "Панель %R · медленный (20)";
+  if (pctROn && currentTicker) applyPctRPanel(candleData.bars[currentTicker] || []);
+});
+document.getElementById("btnClearModes").addEventListener("click", () => {
+  kennedyOn = false;
+  donchOn = false;
+  pctROn = false;
+  document.getElementById("btnKennedy").classList.remove("active");
+  document.getElementById("btnDonch").classList.remove("active");
+  document.getElementById("btnPctR").classList.remove("active");
+  if (currentTicker) showTicker(currentTicker);
+});
+
+function sma(values, period) {
+  const out = new Array(values.length).fill(null);
+  let sum = 0;
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    if (v == null || Number.isNaN(v)) { sum = 0; continue; }
+    sum += v;
+    if (i >= period) {
+      const old = values[i - period];
+      if (old != null) sum -= old;
+    }
+    if (i >= period - 1) {
+      let ok = true;
+      for (let j = i - period + 1; j <= i; j++) if (values[j] == null) { ok = false; break; }
+      out[i] = ok ? sum / period : null;
+    }
+  }
+  return out;
+}
+
+function ema(values, period) {
+  const out = new Array(values.length).fill(null);
+  const k = 2 / (period + 1);
+  let prev = null;
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    if (v == null || Number.isNaN(v)) continue;
+    if (prev == null) {
+      if (i < period - 1) continue;
+      let sum = 0;
+      let ok = true;
+      for (let j = i - period + 1; j <= i; j++) {
+        if (values[j] == null) { ok = false; break; }
+        sum += values[j];
+      }
+      if (!ok) continue;
+      prev = sum / period;
+      out[i] = prev;
+      continue;
+    }
+    prev = v * k + prev * (1 - k);
+    out[i] = prev;
+  }
+  return out;
+}
+
+function heikinAshi(bars) {
+  const ha = [];
+  for (let i = 0; i < bars.length; i++) {
+    const b = bars[i];
+    const haClose = (b.open + b.high + b.low + b.close) / 4;
+    const haOpen = i === 0 ? (b.open + b.close) / 2 : (ha[i - 1].open + ha[i - 1].close) / 2;
+    ha.push({
+      time: b.time,
+      open: haOpen,
+      close: haClose,
+      high: Math.max(b.high, haOpen, haClose),
+      low: Math.min(b.low, haOpen, haClose),
+    });
+  }
+  return ha;
+}
+
+function rsiWilder(closes, period = 14) {
+  const out = new Array(closes.length).fill(null);
+  if (closes.length <= period) return out;
+  let avgGain = 0;
+  let avgLoss = 0;
+  for (let i = 1; i <= period; i++) {
+    const ch = closes[i] - closes[i - 1];
+    if (ch >= 0) avgGain += ch; else avgLoss -= ch;
+  }
+  avgGain /= period;
+  avgLoss /= period;
+  out[period] = avgLoss === 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss));
+  for (let i = period + 1; i < closes.length; i++) {
+    const ch = closes[i] - closes[i - 1];
+    const gain = ch > 0 ? ch : 0;
+    const loss = ch < 0 ? -ch : 0;
+    avgGain = (avgGain * (period - 1) + gain) / period;
+    avgLoss = (avgLoss * (period - 1) + loss) / period;
+    out[i] = avgLoss === 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss));
+  }
+  return out;
+}
+
+function stochastic(bars, kPeriod = 8, kSmooth = 5, dPeriod = 3) {
+  const rawK = bars.map((_, i) => {
+    if (i < kPeriod - 1) return null;
+    let hi = -Infinity, lo = Infinity;
+    for (let j = i - kPeriod + 1; j <= i; j++) {
+      hi = Math.max(hi, bars[j].high);
+      lo = Math.min(lo, bars[j].low);
+    }
+    if (hi === lo) return 50;
+    return 100 * ((bars[i].close - lo) / (hi - lo));
+  });
+  const k = sma(rawK, kSmooth);
+  const d = sma(k, dPeriod);
+  return { k, d };
+}
+
+function linePoints(bars, values) {
+  const out = [];
+  for (let i = 0; i < bars.length; i++) {
+    if (values[i] == null || Number.isNaN(values[i])) continue;
+    out.push({ time: bars[i].time, value: values[i] });
+  }
+  return out;
+}
+
+function clearIndicatorOverlays() {
+  Object.keys(kennedySeries).forEach((key) => {
+    if (kennedySeries[key]) {
+      try { priceChart.removeSeries(kennedySeries[key]); } catch (e) {}
+      kennedySeries[key] = null;
+    }
+  });
+  Object.keys(donchSeries).forEach((key) => {
+    if (donchSeries[key]) {
+      try { priceChart.removeSeries(donchSeries[key]); } catch (e) {}
+      donchSeries[key] = null;
+    }
+  });
+  explainBoard.style.display = "none";
+  kennedySummaryEl.innerHTML = "";
+  kennedyStatusEl.innerHTML = "";
+  donchStatusEl.innerHTML = "";
+  pctRStatusEl.innerHTML = "";
+  pctRBox.style.display = "none";
+}
+
+function refreshExplainVisibility() {
+  const any = kennedyOn || donchOn || pctROn;
+  explainBoard.style.display = any ? "block" : "none";
+  const titles = [];
+  if (kennedyOn) titles.push("Trend");
+  if (donchOn) titles.push("Donchian DC20");
+  if (pctROn) titles.push("%R");
+  explainTitle.textContent = titles.length ? ("Пояснения · Kennedy · " + titles.join(" · ")) : "Пояснения · Kennedy";
+}
+
+function renderKennedySummary(bars) {
+  kennedySummaryEl.innerHTML = "";
+  if (!bars.length || !(kennedyOn || donchOn || pctROn)) return;
+  const trend = computeKennedy(bars);
+  const donch = computeDonch(bars);
+  const pr5 = percentR(bars, 5);
+  const pr20 = percentR(bars, 20);
+  const last = bars.length - 1;
+  let active = "нет";
+  if (trend && trend.status && trend.status.signal && trend.status.signal !== "Ожидание") active = "Trend: " + trend.status.signal;
+  if (donch && donch.signals.length) {
+    const lastSig = donch.signals[donch.signals.length - 1];
+    if (lastSig.index >= last - 3) active = lastSig.side;
+  }
+  const maTrend = trend ? trend.status.maTrend : "нет";
+  const posPct = donch ? donch.status.posPct : null;
+  const zone = donch ? donch.status.zone : "нет";
+  kennedySummaryEl.innerHTML = `
+    <h3 style="font-size:13px;margin:0 0 6px">Сводка статуса · ${esc(currentTicker)}</h3>
+    <div class="scroll"><table class="grid">
+      <tr><th>Параметр</th><th>Значение</th></tr>
+      <tr><td>Тренд МА</td><td class="${maTrend === "Бычий" ? "up" : (maTrend === "Медвежий" ? "down" : "flat")}">${esc(maTrend)}</td></tr>
+      <tr><td>Позиция в Donchian %</td><td class="mono">${fmt(posPct, 1)}% · ${esc(zone)}</td></tr>
+      <tr><td>%R(5)</td><td class="mono">${fmt(pr5[last], 2)}</td></tr>
+      <tr><td>%R(20)</td><td class="mono">${fmt(pr20[last], 2)}</td></tr>
+      <tr><td>Активный сигнал</td><td><strong>${esc(active)}</strong></td></tr>
+    </table></div>`;
+}
+
+function ensurePctRChart() {
+  if (pctRChart) return;
+  pctRChart = LightweightCharts.createChart(pctRChartEl, Object.assign(chartBase(160), {
+    height: 160,
+    rightPriceScale: {
+      borderColor: getComputedStyle(root).getPropertyValue("--rule").trim() || "#B89856",
+      scaleMargins: { top: 0.08, bottom: 0.08 },
+    },
+  }));
+  pctRHist = pctRChart.addHistogramSeries({
+    priceFormat: { type: "price", precision: 1, minMove: 0.1 },
+    base: 50,
+    autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 100 } }),
+  });
+  pctRSmaLine = pctRChart.addLineSeries({
+    color: "#1C1915",
+    lineWidth: 2,
+    priceLineVisible: false,
+  });
+  const dash = (value) => pctRChart.addLineSeries({
+    color: getComputedStyle(root).getPropertyValue("--muted").trim() || "#5C4F38",
+    lineWidth: 1,
+    lineStyle: 2,
+    lastValueVisible: false,
+    priceLineVisible: false,
+    crosshairMarkerVisible: false,
+  });
+  pctRLevel80 = dash(80);
+  pctRLevel50 = dash(50);
+  pctRLevel20 = dash(20);
+  priceChart.timeScale().subscribeVisibleTimeRangeChange((range) => {
+    if (!pctROn || !range || !pctRChart) return;
+    try { pctRChart.timeScale().setVisibleRange(range); } catch (e) {}
+  });
+}
+
+function applyPctRPanel(bars) {
+  pctRStatusEl.innerHTML = "";
+  if (!pctROn || !bars.length) {
+    pctRBox.style.display = "none";
+    return;
+  }
+  pctRBox.style.display = "block";
+  ensurePctRChart();
+  const up = getComputedStyle(root).getPropertyValue("--up").trim() || "#1B6B3A";
+  const down = getComputedStyle(root).getPropertyValue("--down").trim() || "#A62626";
+  const ink = getComputedStyle(root).getPropertyValue("--ink").trim() || "#1C1915";
+  const muted = getComputedStyle(root).getPropertyValue("--muted").trim() || "#5C4F38";
+  pctRChart.applyOptions(Object.assign(chartBase(160), { height: 160 }));
+  pctRSmaLine.applyOptions({ color: ink });
+  [pctRLevel80, pctRLevel50, pctRLevel20].forEach((series) => series.applyOptions({ color: muted, lineStyle: 2 }));
+  const values = percentR(bars, pctRPeriod);
+  const avg = sma(values, 10);
+  const hist = [];
+  const smaPts = [];
+  const lvl = (level) => bars.map((b, i) => (values[i] == null ? null : { time: b.time, value: level })).filter(Boolean);
+  for (let i = 0; i < bars.length; i++) {
+    if (values[i] == null) continue;
+    hist.push({ time: bars[i].time, value: values[i], color: values[i] >= 50 ? up : down });
+    if (avg[i] != null) smaPts.push({ time: bars[i].time, value: avg[i] });
+  }
+  pctRHist.setData(hist);
+  pctRSmaLine.setData(smaPts);
+  pctRLevel80.setData(lvl(80));
+  pctRLevel50.setData(lvl(50));
+  pctRLevel20.setData(lvl(20));
+  pctRChart.timeScale().applyOptions({ barSpacing: 18, rightOffset: 6 });
+  try {
+    const range = priceChart.timeScale().getVisibleRange();
+    if (range) pctRChart.timeScale().setVisibleRange(range);
+  } catch (e) {}
+  const last = bars.length - 1;
+  let i = last;
+  while (i >= 0 && values[i] == null) i -= 1;
+  const v = i >= 0 ? values[i] : null;
+  const s = i >= 0 ? avg[i] : null;
+  const prevV = i > 0 ? values[i - 1] : null;
+  const prevS = i > 0 ? avg[i - 1] : null;
+  let note = "данных %R пока мало";
+  if (v != null) {
+    if (v > 80) note = `зона силы (> 80): %R(${pctRPeriod}) = ${fmt(v, 1)}`;
+    else if (v < 20) note = `зона слабости (< 20): %R(${pctRPeriod}) = ${fmt(v, 1)}`;
+    else if (v >= 50) note = `выше середины (50–80): %R(${pctRPeriod}) = ${fmt(v, 1)}`;
+    else note = `ниже середины (20–50): %R(${pctRPeriod}) = ${fmt(v, 1)}`;
+    if (prevV != null && prevS != null && s != null) {
+      if (prevV <= prevS && v > s) note += ` · пересечение SMA10 снизу вверх`;
+      else if (prevV >= prevS && v < s) note += ` · пересечение SMA10 сверху вниз`;
+      else if (v > s) note += ` · %R выше своей SMA10`;
+      else if (v < s) note += ` · %R ниже своей SMA10`;
+    }
+  }
+  pctRStatusEl.innerHTML = `
+    <h3 style="font-size:13px;margin:12px 0 6px">Панель %R (${pctRPeriod})</h3>
+    <p class="hint">Формула Kennedy PercentR: <span class="mono">100 * (Close − LL(N)) / (HH(N) − LL(N))</span>, линия — SMA(10).</p>
+    <div class="scroll"><table class="grid">
+      <tr><th>Параметр</th><th>Статус</th></tr>
+      <tr><td>Режим</td><td>${pctRPeriod === 5 ? "Быстрый %R(5)" : "Медленный %R(20)"}</td></tr>
+      <tr><td>%R / SMA10</td><td class="mono">${fmt(v, 2)} / ${fmt(s, 2)}</td></tr>
+      <tr><td>Интерпретация</td><td>${esc(note)}</td></tr>
+    </table></div>`;
+}
+
+function computeKennedy(bars) {
+  if (!bars.length) return null;
+  const closes = bars.map((b) => b.close);
+  const ha = heikinAshi(bars);
+  const haOpen = ha.map((b) => b.open);
+  const haClose = ha.map((b) => b.close);
+  const ema5 = ema(closes, 5);
+  const sma10 = sma(closes, 10);
+  const sma30 = sma(closes, 30);
+  const haEmaOpen = ema(haOpen, 9);
+  const haEmaClose = ema(haClose, 9);
+  const rsi = rsiWilder(closes, 14);
+  const rsiSma9 = sma(rsi, 9);
+  const rsiEma45 = ema(rsi, 45);
+  const stoch = stochastic(bars, 8, 5, 3);
+  const signals = [];
+  for (let i = 1; i < bars.length; i++) {
+    const k0 = stoch.k[i - 1], d0 = stoch.d[i - 1], k1 = stoch.k[i], d1 = stoch.d[i];
+    if ([k0, d0, k1, d1, sma10[i], haEmaOpen[i], haEmaClose[i], rsi[i]].some((v) => v == null)) continue;
+    const crossUp = k0 <= d0 && k1 > d1;
+    const crossDown = k0 >= d0 && k1 < d1;
+    if (bars[i].close > sma10[i] && haEmaClose[i] > haEmaOpen[i] && rsi[i] < 70 && crossUp) {
+      signals.push({ time: bars[i].time, side: "L", index: i });
+    }
+    if (bars[i].close < sma10[i] && haEmaClose[i] < haEmaOpen[i] && rsi[i] > 25 && crossDown) {
+      signals.push({ time: bars[i].time, side: "S", index: i });
+    }
+  }
+  const last = bars.length - 1;
+  let maTrend = "Боковик";
+  if (ema5[last] != null && sma10[last] != null && sma30[last] != null) {
+    if (ema5[last] > sma10[last] && sma10[last] > sma30[last]) maTrend = "Бычий";
+    else if (ema5[last] < sma10[last] && sma10[last] < sma30[last]) maTrend = "Медвежий";
+  }
+  let priceVsSma10 = "нет";
+  if (sma10[last] != null) priceVsSma10 = bars[last].close > sma10[last] ? "выше SMA10" : (bars[last].close < sma10[last] ? "ниже SMA10" : "на SMA10");
+  let haBand = "нет";
+  if (haEmaClose[last] != null && haEmaOpen[last] != null) {
+    haBand = haEmaClose[last] > haEmaOpen[last] ? "HA_EMA_Close > HA_EMA_Open (бычья лента)" : (haEmaClose[last] < haEmaOpen[last] ? "HA_EMA_Close < HA_EMA_Open (медвежья лента)" : "HA лента плоская");
+  }
+  let signal = "Ожидание";
+  const lastSig = signals.length ? signals[signals.length - 1] : null;
+  if (lastSig && lastSig.index >= last - 3) signal = lastSig.side === "L" ? "LONG" : "SHORT";
+  else if (
+    sma10[last] != null && haEmaClose[last] != null && haEmaOpen[last] != null && rsi[last] != null &&
+    stoch.k[last] != null && stoch.d[last] != null
+  ) {
+    if (bars[last].close > sma10[last] && haEmaClose[last] > haEmaOpen[last] && rsi[last] < 70 && stoch.k[last] > stoch.d[last]) signal = "LONG";
+    else if (bars[last].close < sma10[last] && haEmaClose[last] < haEmaOpen[last] && rsi[last] > 25 && stoch.k[last] < stoch.d[last]) signal = "SHORT";
+  }
+  return {
+    ema5, sma10, sma30, haEmaOpen, haEmaClose, rsi, rsiSma9, rsiEma45, stoch, signals,
+    status: {
+      maTrend, priceVsSma10, haBand,
+      rsi: rsi[last], rsiSma9: rsiSma9[last], rsiEma45: rsiEma45[last],
+      stochK: stoch.k[last], stochD: stoch.d[last],
+      signal, close: bars[last].close, time: bars[last].time,
+    },
+  };
+}
+
+function applyKennedy(bars, eventMarkers) {
+  if (!kennedyOn || !bars.length) {
+    return eventMarkers;
+  }
+  const pack = computeKennedy(bars);
+  if (!pack) return eventMarkers;
+  const up = getComputedStyle(root).getPropertyValue("--up").trim();
+  const down = getComputedStyle(root).getPropertyValue("--down").trim();
+  const blue = getComputedStyle(root).getPropertyValue("--blue").trim();
+  const warn = getComputedStyle(root).getPropertyValue("--warn").trim();
+  const muted = getComputedStyle(root).getPropertyValue("--muted").trim();
+  kennedySeries.ema5 = priceChart.addLineSeries({ color: blue, lineWidth: 2, title: "EMA5" });
+  kennedySeries.sma10 = priceChart.addLineSeries({ color: warn, lineWidth: 2, title: "SMA10" });
+  kennedySeries.sma30 = priceChart.addLineSeries({ color: muted, lineWidth: 2, title: "SMA30" });
+  kennedySeries.haOpen = priceChart.addLineSeries({ color: down, lineWidth: 1, lineStyle: 2, title: "HA EMA9 Open" });
+  kennedySeries.haClose = priceChart.addLineSeries({ color: up, lineWidth: 1, lineStyle: 2, title: "HA EMA9 Close" });
+  kennedySeries.ema5.setData(linePoints(bars, pack.ema5));
+  kennedySeries.sma10.setData(linePoints(bars, pack.sma10));
+  kennedySeries.sma30.setData(linePoints(bars, pack.sma30));
+  kennedySeries.haOpen.setData(linePoints(bars, pack.haEmaOpen));
+  kennedySeries.haClose.setData(linePoints(bars, pack.haEmaClose));
+  const sigMarkers = pack.signals.map((sig) => ({
+    time: sig.time,
+    position: sig.side === "L" ? "belowBar" : "aboveBar",
+    color: sig.side === "L" ? up : down,
+    shape: sig.side === "L" ? "arrowUp" : "arrowDown",
+    text: sig.side,
+  }));
+  const st = pack.status;
+  const toneCls = st.signal === "LONG" ? "up" : (st.signal === "SHORT" ? "down" : "flat");
+  kennedyStatusEl.innerHTML = `
+    <h3 style="font-size:13px;margin:0 0 6px">Kennedy Trend</h3>
+    <p class="hint">Тикер <span class="mono">${esc(currentTicker)}</span> · бар ${esc(st.time)} · close ${fmt(st.close, 4)}. EMA5 / SMA10 / SMA30 + лента EMA(9) Heikin-Ashi, RSI(14)+SMA9/EMA45, Stochastic(8,5,3).</p>
+    <div class="scroll"><table class="grid">
+      <tr><th>Параметр</th><th>Статус</th></tr>
+      <tr><td>Тренд МА</td><td class="${st.maTrend === "Бычий" ? "up" : (st.maTrend === "Медвежий" ? "down" : "flat")}">${esc(st.maTrend)}</td></tr>
+      <tr><td>Цена vs SMA10</td><td>${esc(st.priceVsSma10)}</td></tr>
+      <tr><td>HA лента EMA9</td><td>${esc(st.haBand)}</td></tr>
+      <tr><td>RSI(14)</td><td class="mono">${fmt(st.rsi, 2)}</td></tr>
+      <tr><td>RSI SMA9 / EMA45</td><td class="mono">${fmt(st.rsiSma9, 2)} / ${fmt(st.rsiEma45, 2)}</td></tr>
+      <tr><td>Stoch %K / %D</td><td class="mono">${fmt(st.stochK, 2)} / ${fmt(st.stochD, 2)}</td></tr>
+      <tr><td>Текущий сигнал</td><td class="${toneCls}"><strong>${esc(st.signal)}</strong></td></tr>
+      <tr><td>Сигналов L/S на ряде</td><td class="mono">${pack.signals.filter((s) => s.side === "L").length} / ${pack.signals.filter((s) => s.side === "S").length}</td></tr>
+    </table></div>`;
+  return eventMarkers.concat(sigMarkers).sort((a, b) => String(a.time).localeCompare(String(b.time)));
+}
+
+function highestLowest(bars, i, period) {
+  const from = Math.max(0, i - period + 1);
+  let hi = -Infinity, lo = Infinity;
+  for (let j = from; j <= i; j++) {
+    hi = Math.max(hi, bars[j].high);
+    lo = Math.min(lo, bars[j].low);
+  }
+  return { hi, lo };
+}
+
+function percentR(bars, period) {
+  return bars.map((_, i) => {
+    if (i < period - 1) return null;
+    const { hi, lo } = highestLowest(bars, i, period);
+    if (hi === lo) return 50;
+    return 100 * ((bars[i].close - lo) / (hi - lo));
+  });
+}
+
+function bodyEngulfing(prev, curr) {
+  if (!prev || !curr) return null;
+  const prevBear = prev.close < prev.open;
+  const prevBull = prev.close > prev.open;
+  const currBull = curr.close > curr.open;
+  const currBear = curr.close < curr.open;
+  const prevTop = Math.max(prev.open, prev.close);
+  const prevBot = Math.min(prev.open, prev.close);
+  const currTop = Math.max(curr.open, curr.close);
+  const currBot = Math.min(curr.open, curr.close);
+  if (prevBear && currBull && currBot <= prevBot && currTop >= prevTop) return "EB";
+  if (prevBull && currBear && currBot <= prevBot && currTop >= prevTop) return "ES";
+  return null;
+}
+
+function computeDonch(bars) {
+  if (!bars.length) return null;
+  const period = 20;
+  const hh = new Array(bars.length).fill(null);
+  const ll = new Array(bars.length).fill(null);
+  const mid = new Array(bars.length).fill(null);
+  for (let i = 0; i < bars.length; i++) {
+    if (i < period - 1) continue;
+    const range = highestLowest(bars, i, period);
+    hh[i] = range.hi;
+    ll[i] = range.lo;
+    mid[i] = (range.hi + range.lo) / 2;
+  }
+  const pr5 = percentR(bars, 5);
+  const pr20 = percentR(bars, 20);
+  const pr5Sma = sma(pr5, 10);
+  const pr20Sma = sma(pr20, 10);
+  const signals = [];
+  const engulf = [];
+  for (let i = 1; i < bars.length; i++) {
+    const kind = bodyEngulfing(bars[i - 1], bars[i]);
+    if (kind) engulf.push({ time: bars[i].time, side: kind, index: i });
+    if (hh[i] == null || ll[i] == null) continue;
+    const touchLow = bars[i].low <= ll[i] * 1.002;
+    const touchHigh = bars[i].high >= hh[i] * 0.998;
+    const crossUp = pr5[i - 1] != null && pr5Sma[i - 1] != null && pr5[i] != null && pr5Sma[i] != null
+      && pr5[i - 1] <= pr5Sma[i - 1] && pr5[i] > pr5Sma[i];
+    const crossDown = pr5[i - 1] != null && pr5Sma[i - 1] != null && pr5[i] != null && pr5Sma[i] != null
+      && pr5[i - 1] >= pr5Sma[i - 1] && pr5[i] < pr5Sma[i];
+    if (touchLow && (kind === "EB" || (crossUp && pr20[i] != null && pr20[i] < 50))) {
+      signals.push({ time: bars[i].time, side: "DC+", index: i });
+    }
+    if (touchHigh && (kind === "ES" || (crossDown && pr20[i] != null && pr20[i] > 50))) {
+      signals.push({ time: bars[i].time, side: "DC-", index: i });
+    }
+  }
+  const last = bars.length - 1;
+  const width = hh[last] != null && ll[last] != null ? (hh[last] - ll[last]) : null;
+  const posPct = width && width > 0 ? 100 * ((bars[last].close - ll[last]) / width) : null;
+  let zone = "середина канала";
+  if (posPct != null) {
+    if (posPct >= 80) zone = "верх канала / зона силы";
+    else if (posPct <= 20) zone = "низ канала / зона слабости";
+    else if (posPct >= 50) zone = "выше середины";
+    else zone = "ниже середины";
+  }
+  return {
+    hh, mid, ll, pr5, pr20, pr5Sma, pr20Sma, signals, engulf,
+    status: {
+      hh: hh[last], mid: mid[last], ll: ll[last], posPct, zone,
+      pr5: pr5[last], pr5Sma: pr5Sma[last], pr20: pr20[last], pr20Sma: pr20Sma[last],
+      close: bars[last].close, time: bars[last].time,
+    },
+  };
+}
+
+function applyDonch(bars, eventMarkers) {
+  if (!donchOn || !bars.length) return eventMarkers;
+  const pack = computeDonch(bars);
+  if (!pack) return eventMarkers;
+  const up = getComputedStyle(root).getPropertyValue("--up").trim();
+  const down = getComputedStyle(root).getPropertyValue("--down").trim();
+  const blue = getComputedStyle(root).getPropertyValue("--blue").trim();
+  const muted = getComputedStyle(root).getPropertyValue("--muted").trim();
+  donchSeries.hh = priceChart.addLineSeries({ color: down, lineWidth: 2, title: "Donch HH" });
+  donchSeries.mid = priceChart.addLineSeries({ color: blue, lineWidth: 1, lineStyle: 2, title: "Donch Mid" });
+  donchSeries.ll = priceChart.addLineSeries({ color: up, lineWidth: 2, title: "Donch LL" });
+  donchSeries.hh.setData(linePoints(bars, pack.hh));
+  donchSeries.mid.setData(linePoints(bars, pack.mid));
+  donchSeries.ll.setData(linePoints(bars, pack.ll));
+  const markers = [];
+  pack.engulf.forEach((sig) => {
+    markers.push({
+      time: sig.time,
+      position: sig.side === "EB" ? "belowBar" : "aboveBar",
+      color: sig.side === "EB" ? up : down,
+      shape: "circle",
+      text: sig.side,
+    });
+  });
+  pack.signals.forEach((sig) => {
+    markers.push({
+      time: sig.time,
+      position: sig.side === "DC+" ? "belowBar" : "aboveBar",
+      color: sig.side === "DC+" ? up : down,
+      shape: sig.side === "DC+" ? "arrowUp" : "arrowDown",
+      text: sig.side,
+    });
+  });
+  const st = pack.status;
+  donchStatusEl.innerHTML = `
+    <h3 style="font-size:13px;margin:12px 0 6px">Donchian + %R</h3>
+    <p class="hint">Тикер <span class="mono">${esc(currentTicker)}</span> · бар ${esc(st.time)}. Канал 20 + поглощения EB/ES и сигналы DC± у границ.</p>
+    <div class="scroll"><table class="grid">
+      <tr><th>Параметр</th><th>Статус</th></tr>
+      <tr><td>HH / Mid / LL</td><td class="mono">${fmt(st.hh, 4)} / ${fmt(st.mid, 4)} / ${fmt(st.ll, 4)}</td></tr>
+      <tr><td>Позиция в канале</td><td class="mono">${fmt(st.posPct, 1)}% · ${esc(st.zone)}</td></tr>
+      <tr><td>%R(5) / SMA10</td><td class="mono">${fmt(st.pr5, 2)} / ${fmt(st.pr5Sma, 2)}</td></tr>
+      <tr><td>%R(20) / SMA10</td><td class="mono">${fmt(st.pr20, 2)} / ${fmt(st.pr20Sma, 2)}</td></tr>
+      <tr><td>Сигналов DC+ / DC−</td><td class="mono">${pack.signals.filter((s) => s.side === "DC+").length} / ${pack.signals.filter((s) => s.side === "DC-").length}</td></tr>
+      <tr><td>Поглощений EB / ES</td><td class="mono">${pack.engulf.filter((s) => s.side === "EB").length} / ${pack.engulf.filter((s) => s.side === "ES").length}</td></tr>
+    </table></div>`;
+  return eventMarkers.concat(markers).sort((a, b) => String(a.time).localeCompare(String(b.time)));
+}
+
 function showTicker(ticker) {
   currentTicker = ticker;
   Object.entries(buttons).forEach(([name, button]) => button.classList.toggle("active", name === ticker));
+  clearIndicatorOverlays();
   const bars = candleData.bars[ticker] || [];
   const rows = eventsOf(ticker);
   const barDays = new Set(bars.map((bar) => bar.time));
-  const markers = rows.filter((row) => barDays.has(row.date)).map((row) => ({
+  let markers = rows.filter((row) => barDays.has(row.date)).map((row) => ({
     time: row.date,
     position: row.tone < 0 ? "aboveBar" : "belowBar",
     color: markerColor(row.tone),
@@ -1293,7 +1912,12 @@ function showTicker(ticker) {
     priceSeries.applyOptions(candleOptions());
   }
   priceSeries.setData(kind === "candle" ? bars : bars.map((bar) => ({ time: bar.time, value: bar.close })));
-  priceSeries.setMarkers(markers);
+  markers = applyKennedy(bars, markers);
+  markers = applyDonch(bars, markers);
+  applyPctRPanel(bars);
+  renderKennedySummary(bars);
+  refreshExplainVisibility();
+  if (typeof priceSeries.setMarkers === "function") priceSeries.setMarkers(markers);
   const panel = dayPanel(rows);
   heat.setData(panel.map((row) => ({
     time: row.date,
@@ -1479,6 +2103,7 @@ if (currentTicker) showTicker(currentTicker);
 window.addEventListener("resize", () => {
   priceChart.applyOptions({ width: priceEl.clientWidth });
   lowerChart.applyOptions({ width: lowerEl.clientWidth });
+  if (pctRChart) pctRChart.applyOptions({ width: pctRChartEl.clientWidth });
   if (curveChart) curveChart.applyOptions({ width: document.getElementById("curveChart").clientWidth });
   if (psChartObj) psChartObj.applyOptions({ width: document.getElementById("psChart").clientWidth });
 });
