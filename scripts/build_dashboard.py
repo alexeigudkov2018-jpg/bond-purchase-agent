@@ -3896,7 +3896,7 @@ function showTicker(ticker) {
   )).join("") || `<p class="hint">Событий нет.</p>`;
 }
 
-priceChart.subscribeCrosshairMovepriceChart.subscribeCrosshairMove((event) => {
+priceChart.subscribeCrosshairMove((event) => {
   if (!event.time || !event.point) { tipEl.style.display = "none"; return; }
   const day = typeof event.time === "string" ? event.time : "";
   const rows = eventsOf(currentTicker).filter((row) => row.date === day);
