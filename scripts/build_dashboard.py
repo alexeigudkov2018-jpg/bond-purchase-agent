@@ -1272,30 +1272,39 @@ def _iss_history_urls(secid: str) -> list[str]:
     ]
 
 
-def _http_get_json(url: str) -> dict | None:
-    """GET JSON: curl -k (обход SSL-цепочки среды) с пагинацией start=."""
+def _curl_json(url: str, timeout: int = 40, attempts: int = 3) -> dict | None:
     import subprocess
+    import time
 
-    rows_all: list = []
-    columns: list = []
-    start = 0
-    while True:
-        page_url = url + (f"&start={start}" if "start=" not in url else "")
+    for attempt in range(attempts):
         try:
             proc = subprocess.run(
-                ["curl", "-k", "-sS", "-m", "45", "-A", "AlmanacCollector/0.1", page_url],
+                ["curl", "-k", "-sS", "-m", str(timeout), "-A", "AlmanacCollector/0.1", url],
                 capture_output=True,
                 text=True,
                 check=False,
             )
         except OSError:
+            proc = None
+        if proc and proc.returncode == 0 and (proc.stdout or "").strip():
+            try:
+                return json.loads(proc.stdout)
+            except json.JSONDecodeError:
+                pass
+        time.sleep(0.4 * (attempt + 1))
+    return None
+
+
+def _http_get_json(url: str) -> dict | None:
+    """GET JSON history: curl -k с пагинацией start=. Обрыв страницы не сохраняем как полный ряд."""
+    rows_all: list = []
+    columns: list = []
+    start = 0
+    while True:
+        page_url = url + (f"&start={start}" if "start=" not in url else "")
+        payload = _curl_json(page_url)
+        if not payload:
             return None
-        if proc.returncode != 0 or not (proc.stdout or "").strip():
-            break
-        try:
-            payload = json.loads(proc.stdout)
-        except json.JSONDecodeError:
-            break
         hist = payload.get("history") or {}
         if not columns:
             columns = list(hist.get("columns") or [])
@@ -1315,6 +1324,63 @@ def _http_get_json(url: str) -> dict | None:
     if not rows_all or not columns:
         return None
     return {"columns": columns, "data": rows_all}
+
+
+def _iss_candle_url(secid: str) -> str:
+    """Дневные свечи одним ответом. Быстрее постраничного history и не обрывается на 100 барах."""
+    end = now_msk().date()
+    start = end.fromordinal(end.toordinal() - 400)
+    window = f"interval=24&from={start.isoformat()}&till={end.isoformat()}&iss.meta=off"
+    if secid in INDEX_UNIVERSE:
+        return f"https://iss.moex.com/iss/engines/stock/markets/index/securities/{secid}/candles.json?{window}"
+    if secid in METAL_UNIVERSE or secid in FX_UNIVERSE or secid in OIL_UNIVERSE:
+        return f"https://iss.moex.com/iss/engines/futures/markets/forts/securities/{secid}/candles.json?{window}"
+    return (
+        f"https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/{secid}/candles.json?{window}"
+    )
+
+
+def _rows_from_iss_candles(ticker: str, payload: dict) -> list[dict]:
+    block = payload.get("candles") or {}
+    cols = block.get("columns") or []
+    idx = {name: i for i, name in enumerate(cols)}
+
+    def cell(row, name):
+        i = idx.get(name)
+        return row[i] if i is not None and i < len(row) else None
+
+    out = []
+    for row in block.get("data") or []:
+        begin = cell(row, "begin") or ""
+        close = _num(cell(row, "close"))
+        if not begin or close is None:
+            continue
+        out.append(
+            {
+                "ticker": ticker,
+                "date": str(begin)[:10],
+                "open": _num(cell(row, "open")),
+                "high": _num(cell(row, "high")),
+                "low": _num(cell(row, "low")),
+                "close": close,
+                "volume": _num(cell(row, "value") or cell(row, "volume")),
+                "source": "iss.moex.com",
+            }
+        )
+    return out
+
+
+def _bars_fresh(rows: list[dict]) -> bool:
+    if len(rows) < 80:
+        return False
+    last = str(rows[-1].get("time") or "")
+    try:
+        from datetime import date
+
+        last_ord = date.fromisoformat(last).toordinal()
+    except ValueError:
+        return False
+    return last_ord >= now_msk().date().toordinal() - 12
 
 
 def _rows_from_iss_history(secid: str, payload: dict) -> list[dict]:
@@ -1352,19 +1418,29 @@ def ensure_iss_candles(needed: list[str], min_bars: int = 120) -> dict[str, int]
     fetched: dict[str, int] = {}
     new_rows: list[dict] = []
     for ticker in needed:
-        have = len(existing.get(ticker, []))
-        if have >= min_bars:
+        have_rows = existing.get(ticker, [])
+        if _bars_fresh(have_rows) and len(have_rows) >= min_bars:
+            continue
+        if _bars_fresh(have_rows) and len(have_rows) >= 80:
             continue
         candidates = TICKER_FETCH_ALIASES.get(ticker, (ticker,))
         got: list[dict] = []
         used = ticker
         for secid in candidates:
+            candle_payload = _curl_json(_iss_candle_url(secid))
+            if candle_payload:
+                rows = _rows_from_iss_candles(ticker, candle_payload)
+                if len(rows) >= 15:
+                    got = rows
+                    used = secid
+                    break
             for url in _iss_history_urls(secid):
                 payload = _http_get_json(url)
                 if not payload:
                     continue
                 rows = _rows_from_iss_history(ticker, payload)  # store under button ticker
-                if len(rows) >= max(20, min_bars // 3):
+                # Короткий листинг тоже кладём: пустой график хуже 15 сессий.
+                if len(rows) >= 15:
                     got = rows
                     used = secid
                     break
@@ -1810,6 +1886,38 @@ def build_kpi(series, curve, ps_history, extras) -> dict:
     }
 
 
+# Тикеры шкалы P/S, у которых свечи уже лежат под другим кодом кнопки.
+PS_BAR_ALIAS = {"X5": "FIVE", "SNGS": "SURG"}
+
+
+def ps_floor_tickers() -> list[str]:
+    if not PS_FLOOR.exists():
+        return []
+    raw = json.loads(PS_FLOOR.read_text(encoding="utf-8"))
+    names: list[str] = []
+    seen: set[str] = set()
+    for item in raw.get("papers") or []:
+        ticker = str(item.get("t") or "").upper()
+        if not ticker or ticker in seen:
+            continue
+        seen.add(ticker)
+        names.append(ticker)
+    return names
+
+
+def chart_universe() -> list[str]:
+    """Кнопки терминала плюс бумаги шкалы P/S, чтобы у каждой был ряд свечей."""
+    names = list(TICKER_ORDER)
+    seen = set(names)
+    for ticker in ps_floor_tickers():
+        canon = PS_BAR_ALIAS.get(ticker, ticker)
+        if canon in seen:
+            continue
+        names.append(canon)
+        seen.add(canon)
+    return names
+
+
 def build_payload() -> dict:
     series = load_index_series()
     curve = load_curve()
@@ -1817,8 +1925,12 @@ def build_payload() -> dict:
     ps_history = parse_ps_history()
     events = load_events()
     # Сначала читаем локальный кэш, затем добираем дыры с ISS (best-effort).
-    ensure_iss_candles(list(TICKER_ORDER), min_bars=120)
-    bars = load_bars(list(TICKER_ORDER))
+    universe = chart_universe()
+    ensure_iss_candles(universe, min_bars=120)
+    bars = load_bars(universe)
+    ps_names = ps_floor_tickers()
+    ps_missing = [name for name in ps_names if PS_BAR_ALIAS.get(name, name) not in bars]
+    print(f"ps charts {len(ps_names) - len(ps_missing)}/{len(ps_names)}" + (f" missing={','.join(ps_missing)}" if ps_missing else ""))
     # Порядок кнопок: вселенная TICKER_ORDER, у которых есть свечи.
     tickers = [name for name in TICKER_ORDER if name in bars] or ticker_list(events, bars)
     bonds = ensure_bonds_tuesday()
@@ -6056,7 +6168,16 @@ safeRun("renderKpi", renderKpi);
 safeRun("renderBonds", renderBonds);
 safeRun("bindPsFloor", bindPsFloor);
 safeRun("renderPsFloor", renderPsFloor);
-if (location.hash === "#ps") {
+if (location.hash.indexOf("#ps") === 0) {
+  const psHashTicker = (location.hash.match(/^#ps(?:=|-)([A-Za-z0-9]+)$/) || [])[1];
+  if (psHashTicker) {
+    const psHashPaper = psFind(psHashTicker.toUpperCase());
+    if (psHashPaper) {
+      psFloorBasket = psHashPaper.basket;
+      psSelected = psHashPaper.t;
+      renderPsFloor();
+    }
+  }
   const psTabBtn = document.querySelector('button[data-tab="ps"]');
   if (psTabBtn) psTabBtn.click();
 }
