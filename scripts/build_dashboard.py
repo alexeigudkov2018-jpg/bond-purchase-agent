@@ -57,7 +57,27 @@ BONDS_CSV = ROOT / "data" / "bonds_tuesday_latest.csv"
 PS_CSV = ROOT / "data" / "ps_screener_latest.csv"
 MACRO_MD = ROOT / "data" / "macro_ofz_latest.md"
 LWC_VENDOR = Path(__file__).resolve().parent / "vendor" / "lightweight-charts.standalone.production.js"
-TICKER_ORDER = ("IMOEX", "SMLT", "KLVZ", "EUTR", "MGKL", "SELG", "TATN", "OZON", "GAZP")
+CANDLES_EXTRA = CLEAN / "candles_extra_daily.csv"
+# Полный рабочий список: индексы, акции, вечные фьючерсы металлов/FX, нефть BR.
+TICKER_ORDER = (
+    "IMOEX",
+    "RGBI",
+    "SMLT",
+    "KLVZ",
+    "EUTR",
+    "MGKL",
+    "SELG",
+    "TATN",
+    "OZON",
+    "GAZP",
+    "GLDRUBF",
+    "SLVRUBF",
+    "PLTRUBF",
+    "PLDRUBF",
+    "USDRUBF",
+    "CNYRUBF",
+    "BR",
+)
 SECTOR_INDICES = (
     ("MOEXOG", "Нефтегаз"),
     ("MOEXMM", "Металлы и добыча"),
@@ -722,48 +742,117 @@ def load_finradar_extras() -> dict:
     return {"rvi": rvi, "cnyrub": cny, "source": str(path.relative_to(ROOT)), "as_of": path.stem[:10]}
 
 
+def _ingest_bar_row(
+    store: dict[str, dict[str, dict]],
+    ticker: str,
+    stamp: str,
+    open_: float | None,
+    high: float | None,
+    low: float | None,
+    close: float | None,
+    volume: float | None = None,
+) -> None:
+    if not ticker or not stamp or close is None:
+        return
+    prev = store.get(ticker, {}).get(stamp)
+    # Полный OHLC из ISS/prices имеет приоритет над close-only индексом.
+    if prev and prev.get("_full") and not (open_ is not None and high is not None and low is not None):
+        return
+    full = open_ is not None and high is not None and low is not None and open_ != 0
+    store.setdefault(ticker, {})[stamp] = {
+        "time": stamp,
+        "open": open_,
+        "high": high,
+        "low": low,
+        "close": close,
+        "volume": volume,
+        "_full": full,
+    }
+
+
+def synthesize_candles(raw_rows: list[dict]) -> list[dict]:
+    """Гарантирует валидные свечи: open=prev close при отсутствии OPEN."""
+    out: list[dict] = []
+    prev_close: float | None = None
+    for row in raw_rows:
+        close = row.get("close")
+        if close is None:
+            continue
+        open_ = row.get("open")
+        high = row.get("high")
+        low = row.get("low")
+        if open_ is None or open_ == 0:
+            open_ = prev_close if prev_close is not None else close
+        if high is None or high == 0:
+            high = max(float(open_), float(close))
+        if low is None or low == 0:
+            low = min(float(open_), float(close))
+        high = max(float(high), float(open_), float(close))
+        low = min(float(low), float(open_), float(close))
+        item = {
+            "time": row["time"],
+            "open": float(open_),
+            "high": float(high),
+            "low": float(low),
+            "close": float(close),
+        }
+        if row.get("volume") is not None:
+            item["volume"] = float(row["volume"])
+        out.append(item)
+        prev_close = float(close)
+    # Окно ~1 год для терминала (если ряд длиннее).
+    if len(out) > 270:
+        out = out[-270:]
+    return out
+
+
 def load_bars(tickers: list[str]) -> dict[str, list[dict]]:
-    wanted = set(tickers)
+    wanted = set(tickers) | set(TICKER_ORDER)
     bars: dict[str, dict[str, dict]] = {}
-    with (CLEAN / "prices_daily.csv").open(encoding="utf-8", newline="") as handle:
-        for row in csv.DictReader(handle):
-            ticker = row.get("ticker") or ""
-            if ticker not in wanted:
-                continue
-            stamp = row.get("date") or ""
-            open_, high, low, close = (_num(row.get(name)) for name in ("open", "high", "low", "close"))
-            if not stamp or close is None:
-                continue
-            bars.setdefault(ticker, {})[stamp] = {
-                "time": stamp,
-                "open": open_ if open_ is not None else close,
-                "high": high if high is not None else close,
-                "low": low if low is not None else close,
-                "close": close,
-            }
-    # Индексы не подмешиваем к тикерам, уже взятым из prices_daily.
-    share_tickers = set(bars)
+
+    def read_ohlc_csv(path: Path, ticker_field: str) -> None:
+        if not path.exists():
+            return
+        with path.open(encoding="utf-8", newline="") as handle:
+            for row in csv.DictReader(handle):
+                ticker = row.get(ticker_field) or ""
+                if ticker not in wanted:
+                    continue
+                stamp = row.get("date") or ""
+                open_, high, low, close = (_num(row.get(name)) for name in ("open", "high", "low", "close"))
+                volume = _num(row.get("volume_rub") or row.get("volume"))
+                _ingest_bar_row(bars, ticker, stamp, open_, high, low, close, volume)
+
+    read_ohlc_csv(CLEAN / "prices_daily.csv", "ticker")
+    read_ohlc_csv(CANDLES_EXTRA, "ticker")
+
     with (CLEAN / "indices_daily.csv").open(encoding="utf-8", newline="") as handle:
         for row in csv.DictReader(handle):
             ticker = row.get("index") or ""
-            if ticker not in wanted or ticker in share_tickers:
+            if ticker not in wanted:
                 continue
             stamp = row.get("date") or ""
             close = _num(row.get("close"))
-            if not stamp or close is None:
-                continue
-            bars.setdefault(ticker, {})[stamp] = {
-                "time": stamp,
-                "open": close,
-                "high": close,
-                "low": close,
-                "close": close,
-            }
-    return {
-        ticker: [bars[ticker][stamp] for stamp in sorted(bars[ticker])]
-        for ticker in tickers
-        if ticker in bars
-    }
+            open_ = _num(row.get("open"))
+            high = _num(row.get("high"))
+            low = _num(row.get("low"))
+            _ingest_bar_row(bars, ticker, stamp, open_, high, low, close, None)
+
+    result: dict[str, list[dict]] = {}
+    for ticker in sorted(bars):
+        raw = [bars[ticker][stamp] for stamp in sorted(bars[ticker])]
+        candles = synthesize_candles(raw)
+        if candles:
+            result[ticker] = candles
+    # Стабильный порядок по TICKER_ORDER + хвост.
+    ordered: dict[str, list[dict]] = {}
+    for ticker in TICKER_ORDER:
+        if ticker in result:
+            ordered[ticker] = result[ticker]
+    for ticker in sorted(result):
+        if ticker not in ordered:
+            ordered[ticker] = result[ticker]
+    return ordered
 
 
 def load_events() -> list[dict]:
@@ -792,11 +881,12 @@ def load_events() -> list[dict]:
     return rows
 
 
-def ticker_list(events: list[dict]) -> list[str]:
-    found = {row["ticker"] for row in events}
-    ordered = [name for name in TICKER_ORDER if name in found]
-    ordered.extend(sorted(found - set(ordered)))
-    return ordered or ["IMOEX"]
+def ticker_list(events: list[dict], bars: dict[str, list[dict]]) -> list[str]:
+    available = set(bars)
+    ordered = [name for name in TICKER_ORDER if name in available]
+    extras = sorted(available - set(ordered))
+    # Событийные тикеры без бара не показываем — иначе пустой график.
+    return ordered + extras or ["IMOEX"]
 
 
 def parse_soros_loops() -> list[dict]:
@@ -958,8 +1048,8 @@ def build_payload() -> dict:
     extras = load_finradar_extras()
     ps_history = parse_ps_history()
     events = load_events()
-    tickers = ticker_list(events)
-    bars = load_bars(tickers)
+    bars = load_bars(list(TICKER_ORDER))
+    tickers = ticker_list(events, bars)
     bonds = ensure_bonds_tuesday()
     ps_rows = ensure_ps_screener()
     ensure_macro_md(series, curve)
@@ -1191,18 +1281,73 @@ header.app .note { margin: 6px 0 0; font-size: 12px; color: var(--muted); max-wi
   cursor: pointer;
 }
 .tickers button.active { background: var(--ink); color: var(--paper); }
+.chart-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; }
+.chart-head h2 { margin: 0 0 4px; }
+.fs-btn {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 14px;
+  border: 2px solid var(--ink);
+  background: #F2C94C;
+  color: var(--ink);
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  box-shadow: 2px 2px 0 rgba(28, 25, 21, 0.18);
+  white-space: nowrap;
+}
+.fs-btn:hover { filter: brightness(0.97); }
+.fs-btn.active { background: var(--ink); color: #F2C94C; }
+.mode-block { margin: 8px 0 4px; }
+.mode-label {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 4px;
+}
+.active-badges { display: flex; flex-wrap: wrap; gap: 4px; min-height: 0; margin: 2px 0 6px; }
+.active-badges .badge {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  padding: 2px 7px;
+  border: 1px solid var(--rule);
+  background: rgba(242, 201, 76, 0.35);
+  color: var(--ink);
+}
+.chart-workspace { position: relative; }
+.chart-workspace.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  overflow: auto;
+  padding: 12px 14px 18px;
+  background:
+    linear-gradient(rgba(184, 152, 86, 0.22) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(184, 152, 86, 0.22) 1px, transparent 1px),
+    #FCF8E3;
+  background-size: 8px 8px, 8px 8px, auto;
+}
+.chart-workspace.is-fullscreen .chart { height: min(52vh, 560px); }
+.chart-workspace.is-fullscreen #haChart { height: 240px; }
+.chart-workspace.is-fullscreen #pctRChart,
+.chart-workspace.is-fullscreen #rsiStochChart,
+.chart-workspace.is-fullscreen #rsxChart,
+.chart-workspace.is-fullscreen #optChart { height: 170px; }
+.explain-compact { border-style: dashed; }
 .wrap { position: relative; }
 .chart { height: 420px; border: 1px solid var(--rule); background: var(--chart-bg); }
 .chart.small { height: 260px; }
 #lower { height: 150px; margin-top: 8px; border: 1px solid var(--rule); background: var(--chart-bg); }
-#pctRBox, #rsiStochBox, #haBox, #rsxBox { display: none; margin-top: 8px; border: 1px solid var(--rule); background: var(--card); padding: 8px; }
-#pctRBox .pct-head, #rsiStochBox .pct-head, #haBox .pct-head, #rsxBox .pct-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-#pctRBox .pct-head h3, #rsiStochBox .pct-head h3, #haBox .pct-head h3, #rsxBox .pct-head h3 { margin: 0; font-size: 13px; }
+#optBox, #pctRBox, #rsiStochBox, #haBox, #rsxBox { display: none; margin-top: 8px; border: 1px solid var(--rule); background: var(--card); padding: 8px; }
+#optBox .pct-head, #pctRBox .pct-head, #rsiStochBox .pct-head, #haBox .pct-head, #rsxBox .pct-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+#optBox .pct-head h3, #pctRBox .pct-head h3, #rsiStochBox .pct-head h3, #haBox .pct-head h3, #rsxBox .pct-head h3 { margin: 0; font-size: 13px; }
 #pctRSpeed, #rsiStochMode { display: flex; gap: 4px; }
 #fairMode { display: none; gap: 4px; flex-wrap: wrap; align-items: center; margin: 6px 0 0; }
 #pctRSpeed button, #rsiStochMode button, #fairMode button { font-family: "JetBrains Mono", Consolas, monospace; font-size: 10px; padding: 4px 8px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); cursor: pointer; }
 #pctRSpeed button.active, #rsiStochMode button.active, #fairMode button.active { background: var(--ink); color: var(--paper); }
-#pctRChart, #rsiStochChart, #rsxChart { height: 160px; border: 1px solid var(--rule); background: var(--chart-bg); }
+#pctRChart, #rsiStochChart, #rsxChart, #optChart { height: 160px; border: 1px solid var(--rule); background: var(--chart-bg); }
 #haChart { height: 220px; border: 1px solid var(--rule); background: var(--chart-bg); }
 #haBox.ha-bull { box-shadow: inset 0 0 0 9999px rgba(27, 107, 58, 0.06); }
 #haBox.ha-bear { box-shadow: inset 0 0 0 9999px rgba(166, 38, 38, 0.06); }
@@ -1259,17 +1404,22 @@ tr.anomaly { background: rgba(138, 90, 18, 0.12); }
   text-align: center;
 }
 .scroll { overflow: auto; max-height: 520px; }
-.modes { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 8px; }
+.modes { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 6px; }
 .modes button {
   font-family: "JetBrains Mono", Consolas, monospace;
   font-size: 10px;
-  padding: 5px 8px;
+  padding: 5px 9px;
   border: 1px solid var(--rule);
-  background: var(--paper);
+  background:
+    linear-gradient(rgba(184, 152, 86, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(184, 152, 86, 0.12) 1px, transparent 1px),
+    var(--paper);
+  background-size: 6px 6px, 6px 6px, auto;
   color: var(--ink);
   cursor: pointer;
 }
 .modes button.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.modes button[data-mode="clear"] { border-style: dashed; }
 #explainBoard { margin-top: 10px; }
 #explainBoard table.grid td:first-child { color: var(--muted); width: 38%; }
 footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
@@ -1299,77 +1449,109 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
 
 <section class="panel active" id="tab-candles">
   <div class="board">
-    <h2>Свечи, Kennedy и нарративы</h2>
-    <p class="hint">TradingView Lightweight Charts. Флажки — <span class="mono">radar_events.csv</span>. Модули: Kennedy, RSX, HA, 5 vs 200, Fair Range, Канал Пламмера.</p>
-    <div class="tickers" id="tickers"></div>
-    <div class="modes" id="modeButtons">
-      <button type="button" data-mode="kennedy" id="btnKennedy">Kennedy Trend (MA + HA + Сигналы L/S)</button>
-      <button type="button" data-mode="donch" id="btnDonch">Kennedy Donchian + Поглощения (DC20)</button>
-      <button type="button" data-mode="pctr" id="btnPctR">Панель %R (5 / 20)</button>
-      <button type="button" data-mode="rsistoch" id="btnRsiStoch">Панель RSI + Stoch (Kennedy)</button>
-      <button type="button" data-mode="rsx" id="btnRsx">Панель Jurik RSX (Ход, Сила, Слом)</button>
-      <button type="button" data-mode="ha" id="btnHa">Панель свечей Heikin-Ashi + EMA9</button>
-      <button type="button" data-mode="hill" id="btnHill">Облако 5 vs 200 + Пивоты (Arthur Hill)</button>
-      <button type="button" data-mode="fair" id="btnFair">Средний High / Low (Диапазон справедливости)</button>
-      <button type="button" data-mode="plummer" id="btnPlummer">Вибрация Тони Пламмера</button>
-      <button type="button" data-mode="clear" id="btnClearModes">Очистить график</button>
+    <div class="chart-head">
+      <div>
+        <h2>Свечи, уровни и индикаторы</h2>
+        <p class="hint">Полные дневные свечи (~1 год). Все панели синхронизированы по времени. Флажки — <span class="mono">radar_events.csv</span>.</p>
+      </div>
+      <button type="button" id="btnFullscreen" class="fs-btn" title="Развернуть график">⛶ На весь экран</button>
     </div>
+    <div class="tickers" id="tickers"></div>
+    <div class="mode-block">
+      <div class="mode-label">Строка 1 · Уровни, Циклы и Волны (наложения)</div>
+      <div class="modes" id="modeRowLevels">
+        <button type="button" data-mode="gann9" id="btnGann9">Квадрат 9 Ганна (Углы)</button>
+        <button type="button" data-mode="gann18" id="btnGann18">Сетка Ганна 1/8 (50%)</button>
+        <button type="button" data-mode="boroden" id="btnBoroden">Кластеры и Время Кэролайн Бороден</button>
+        <button type="button" data-mode="elliott" id="btnElliott">Волны Эллиотта (1-2-3-4-5)</button>
+        <button type="button" data-mode="plummer" id="btnPlummer">Канал Вибрации Пламмера</button>
+      </div>
+    </div>
+    <div class="mode-block">
+      <div class="mode-label">Строка 2 · Трендовые наложения и Нижние подвалы</div>
+      <div class="modes" id="modeRowTrend">
+        <button type="button" data-mode="kennedy" id="btnKennedy">Kennedy Trend (MA+HA)</button>
+        <button type="button" data-mode="donch" id="btnDonch">Donchian 20 + Поглощения</button>
+        <button type="button" data-mode="hill" id="btnHill">5 vs 200 (Arthur Hill)</button>
+        <button type="button" data-mode="fair" id="btnFair">Средний High/Low</button>
+        <button type="button" data-mode="opt" id="btnOpt">Подвал: Опционы Put/Call</button>
+        <button type="button" data-mode="pctr" id="btnPctR">Подвал: %R (5/20)</button>
+        <button type="button" data-mode="rsistoch" id="btnRsiStoch">Подвал: RSI + Stoch</button>
+        <button type="button" data-mode="rsx" id="btnRsx">Подвал: Jurik RSX</button>
+        <button type="button" data-mode="ha" id="btnHa">Подвал: Heikin-Ashi</button>
+        <button type="button" data-mode="clear" id="btnClearModes">Очистить всё</button>
+      </div>
+    </div>
+    <div id="activeBadges" class="active-badges"></div>
     <div id="fairMode">
       <span class="meta" style="margin-right:4px">Режим коридора:</span>
       <button type="button" data-fair="cum" class="active">Накопленное среднее (вся история)</button>
       <button type="button" data-fair="sma20">Скользящий конверт SMA(20)</button>
     </div>
-    <div class="wrap">
-      <div class="chart" id="price"></div>
-      <div id="tip"></div>
-    </div>
-    <div id="lower"></div>
-    <div id="pctRBox">
-      <div class="pct-head">
-        <h3 id="pctRTitle">Панель %R · быстрый (5)</h3>
-        <div id="pctRSpeed">
-          <button type="button" data-speed="5" class="active">Быстрый %R(5)</button>
-          <button type="button" data-speed="20">Медленный %R(20)</button>
+    <div id="chartWorkspace" class="chart-workspace">
+      <div class="wrap">
+        <div class="chart" id="price"></div>
+        <div id="tip"></div>
+      </div>
+      <div id="lower"></div>
+      <div id="optBox">
+        <div class="pct-head">
+          <h3 id="optTitle">Подвал · Опционы Put/Call (прокси потока)</h3>
+          <span class="meta" id="optHint">PCR по объёму дня</span>
         </div>
+        <div id="optChart"></div>
       </div>
-      <div id="pctRChart"></div>
-    </div>
-    <div id="rsiStochBox">
-      <div class="pct-head">
-        <h3 id="rsiStochTitle">Панель RSI (14 / SMA9 / EMA45)</h3>
-        <div id="rsiStochMode">
-          <button type="button" data-pane="rsi" class="active">RSI (14 / SMA9 / EMA45)</button>
-          <button type="button" data-pane="stoch">Stochastic (8, 5, 3)</button>
+      <div id="pctRBox">
+        <div class="pct-head">
+          <h3 id="pctRTitle">Панель %R · быстрый (5)</h3>
+          <div id="pctRSpeed">
+            <button type="button" data-speed="5" class="active">Быстрый %R(5)</button>
+            <button type="button" data-speed="20">Медленный %R(20)</button>
+          </div>
         </div>
+        <div id="pctRChart"></div>
       </div>
-      <div id="rsiStochChart"></div>
-    </div>
-    <div id="rsxBox">
-      <div class="pct-head">
-        <h3 id="rsxTitle">Панель Jurik RSX (14) · Ход / Сила / Слом</h3>
-        <span class="meta" id="rsxHint">ось 50 · слом наклона</span>
+      <div id="rsiStochBox">
+        <div class="pct-head">
+          <h3 id="rsiStochTitle">Панель RSI (14 / SMA9 / EMA45)</h3>
+          <div id="rsiStochMode">
+            <button type="button" data-pane="rsi" class="active">RSI (14 / SMA9 / EMA45)</button>
+            <button type="button" data-pane="stoch">Stochastic (8, 5, 3)</button>
+          </div>
+        </div>
+        <div id="rsiStochChart"></div>
       </div>
-      <div id="rsxChart"></div>
-    </div>
-    <div id="haBox">
-      <div class="pct-head">
-        <h3 id="haTitle">Панель Heikin-Ashi + EMA9</h3>
-        <span class="meta" id="haRibbonHint">лента EMA9</span>
+      <div id="rsxBox">
+        <div class="pct-head">
+          <h3 id="rsxTitle">Панель Jurik RSX (14) · Ход / Сила / Слом</h3>
+          <span class="meta" id="rsxHint">ось 50 · слом наклона</span>
+        </div>
+        <div id="rsxChart"></div>
       </div>
-      <div id="haChart"></div>
-    </div>
-    <div class="board" id="explainBoard" style="display:none;margin-top:10px;padding:10px;">
-      <h2 id="explainTitle">Пояснения · Kennedy</h2>
-      <div id="kennedySummary"></div>
-      <div id="kennedyStatus"></div>
-      <div id="donchStatus"></div>
-      <div id="pctRStatus"></div>
-      <div id="rsiStochStatus"></div>
-      <div id="rsxStatus"></div>
-      <div id="haStatus"></div>
-      <div id="hillStatus"></div>
-      <div id="fairStatus"></div>
-      <div id="plummerStatus"></div>
+      <div id="haBox">
+        <div class="pct-head">
+          <h3 id="haTitle">Панель Heikin-Ashi + EMA9</h3>
+          <span class="meta" id="haRibbonHint">лента EMA9</span>
+        </div>
+        <div id="haChart"></div>
+      </div>
+      <div class="board explain-compact" id="explainBoard" style="display:none;margin-top:10px;padding:10px;">
+        <h2 id="explainTitle">Пояснения · индикаторы</h2>
+        <div id="kennedySummary"></div>
+        <div id="gannStatus"></div>
+        <div id="borodenStatus"></div>
+        <div id="elliottStatus"></div>
+        <div id="kennedyStatus"></div>
+        <div id="donchStatus"></div>
+        <div id="optStatus"></div>
+        <div id="pctRStatus"></div>
+        <div id="rsiStochStatus"></div>
+        <div id="rsxStatus"></div>
+        <div id="haStatus"></div>
+        <div id="hillStatus"></div>
+        <div id="fairStatus"></div>
+        <div id="plummerStatus"></div>
+      </div>
     </div>
     <div id="eventList"></div>
   </div>
@@ -1511,6 +1693,7 @@ document.getElementById("tabs").addEventListener("click", (event) => {
 });
 
 function chartBase(height) {
+  const rule = getComputedStyle(root).getPropertyValue("--rule").trim() || "#B89856";
   return {
     height,
     layout: { background: { color: getComputedStyle(root).getPropertyValue("--chart-bg").trim() || "#FCF8E3" }, textColor: getComputedStyle(root).getPropertyValue("--chart-text").trim() || "#1C1915", fontSize: 11, fontFamily: "JetBrains Mono, Consolas, monospace" },
@@ -1518,8 +1701,8 @@ function chartBase(height) {
       vertLines: { color: getComputedStyle(root).getPropertyValue("--chart-grid").trim() || "rgba(160,125,58,0.35)" },
       horzLines: { color: getComputedStyle(root).getPropertyValue("--chart-grid").trim() || "rgba(160,125,58,0.35)" },
     },
-    rightPriceScale: { borderColor: getComputedStyle(root).getPropertyValue("--rule").trim() || "#B89856" },
-    timeScale: { borderColor: getComputedStyle(root).getPropertyValue("--rule").trim() || "#B89856" },
+    rightPriceScale: { borderColor: rule, minimumWidth: 75 },
+    timeScale: { borderColor: rule },
     crosshair: { mode: 0 },
   };
 }
@@ -1529,6 +1712,9 @@ const lowerEl = document.getElementById("lower");
 const tipEl = document.getElementById("tip");
 const listEl = document.getElementById("eventList");
 const buttonRow = document.getElementById("tickers");
+const chartWorkspace = document.getElementById("chartWorkspace");
+const activeBadgesEl = document.getElementById("activeBadges");
+const btnFullscreen = document.getElementById("btnFullscreen");
 let priceChart = LightweightCharts.createChart(priceEl, chartBase(420));
 let lowerChart = LightweightCharts.createChart(lowerEl, Object.assign(chartBase(150), { height: 150 }));
 const candleOptions = () => ({
@@ -1566,13 +1752,63 @@ lowerChart.priceScale("heat").applyOptions({ scaleMargins: { top: 0.12, bottom: 
 lowerChart.priceScale("left").applyOptions({ visible: true, scaleMargins: { top: 0.12, bottom: 0.12 } });
 lowerChart.priceScale("axis").applyOptions({ visible: false, autoScale: false });
 
-let syncing = false;
-priceChart.timeScale().subscribeVisibleTimeRangeChange((range) => {
-  if (syncing || !range) return;
-  syncing = true;
-  try { lowerChart.timeScale().setVisibleRange(range); } catch (e) {}
-  syncing = false;
-});
+let syncingRange = false;
+let syncingCrosshair = false;
+function paneCharts() {
+  return [priceChart, lowerChart, optChart, pctRChart, rsiStochChart, rsxChart, haChart].filter(Boolean);
+}
+function paneSeriesOf(chart) {
+  if (chart === priceChart) return priceSeries;
+  if (chart === lowerChart) return heat;
+  if (chart === optChart) return optPcrLine || optCallHist;
+  if (chart === pctRChart) return pctRHist || pctRSmaLine;
+  if (chart === rsiStochChart) return rsiStochMain;
+  if (chart === rsxChart) return rsxLine;
+  if (chart === haChart) return haCandleSeries;
+  return null;
+}
+function syncLogicalRange(source, range) {
+  if (syncingRange || !range) return;
+  syncingRange = true;
+  paneCharts().forEach((chart) => {
+    if (chart === source) return;
+    try { chart.timeScale().setVisibleLogicalRange(range); } catch (e) {}
+  });
+  syncingRange = false;
+}
+function bindRangeSync(chart) {
+  if (!chart || chart.__rangeBound) return;
+  chart.__rangeBound = true;
+  chart.timeScale().subscribeVisibleLogicalRangeChange((range) => syncLogicalRange(chart, range));
+}
+function syncCrosshair(source, param) {
+  if (syncingCrosshair) return;
+  syncingCrosshair = true;
+  paneCharts().forEach((chart) => {
+    if (chart === source) return;
+    try {
+      if (!param || param.time == null) {
+        chart.clearCrosshairPosition();
+        return;
+      }
+      const series = paneSeriesOf(chart);
+      if (!series) return;
+      chart.setCrosshairPosition(0, param.time, series);
+    } catch (e) {
+      try { if (!param || param.time == null) chart.clearCrosshairPosition(); } catch (e2) {}
+    }
+  });
+  syncingCrosshair = false;
+}
+function bindCrosshairSync(chart) {
+  if (!chart || chart.__xhBound) return;
+  chart.__xhBound = true;
+  chart.subscribeCrosshairMove((param) => syncCrosshair(chart, param));
+}
+bindRangeSync(priceChart);
+bindRangeSync(lowerChart);
+bindCrosshairSync(priceChart);
+bindCrosshairSync(lowerChart);
 
 const candleData = DATA.candles || { tickers: [], bars: {}, events: [] };
 let currentTicker = candleData.tickers[0] || "";
@@ -1615,6 +1851,12 @@ let hillOn = false;
 let fairOn = false;
 let fairMode = "cum";
 let plummerOn = false;
+let gann9On = false;
+let gann18On = false;
+let borodenOn = false;
+let elliottOn = false;
+let optOn = false;
+let fullscreenOn = false;
 const kennedySeries = { ema5: null, sma10: null, sma30: null, haOpen: null, haClose: null };
 const donchSeries = { hh: null, mid: null, ll: null };
 const fairSeries = { hi: null, lo: null };
@@ -1623,8 +1865,65 @@ const plummerSeries = {
   basis: null, upperIn: null, lowerIn: null, upperEx: null, lowerEx: null,
   fillInnerHi: null, fillInnerLo: null, fillUpHi: null, fillUpLo: null, fillDnHi: null, fillDnLo: null,
 };
+const gann9Series = { lines: [] };
+const gann18Series = { lines: [] };
+const borodenSeries = { clusters: [], swings: [], timeMarks: [] };
+const elliottSeries = { lines: [], labels: [] };
 const explainBoard = document.getElementById("explainBoard");
 const explainTitle = document.getElementById("explainTitle");
+const gannStatusEl = document.getElementById("gannStatus");
+const borodenStatusEl = document.getElementById("borodenStatus");
+const elliottStatusEl = document.getElementById("elliottStatus");
+const optStatusEl = document.getElementById("optStatus");
+const optBox = document.getElementById("optBox");
+const optChartEl = document.getElementById("optChart");
+let optChart = null;
+let optPcrLine = null;
+let optCallHist = null;
+let optPutHist = null;
+let optLevel1 = null;
+const MODE_BADGES = [
+  ["gann9", () => gann9On, "Gann Sq9"],
+  ["gann18", () => gann18On, "Gann 1/8"],
+  ["boroden", () => borodenOn, "Boroden"],
+  ["elliott", () => elliottOn, "Elliott"],
+  ["plummer", () => plummerOn, "Пламмер"],
+  ["kennedy", () => kennedyOn, "Kennedy"],
+  ["donch", () => donchOn, "Donchian"],
+  ["hill", () => hillOn, "5 vs 200"],
+  ["fair", () => fairOn, "Fair Range"],
+  ["opt", () => optOn, "Put/Call"],
+  ["pctr", () => pctROn, "%R"],
+  ["rsistoch", () => rsiStochOn, "RSI/Stoch"],
+  ["rsx", () => rsxOn, "RSX"],
+  ["ha", () => haOn, "Heikin-Ashi"],
+];
+function refreshActiveBadges() {
+  if (!activeBadgesEl) return;
+  activeBadgesEl.innerHTML = MODE_BADGES.filter((row) => row[1]()).map((row) =>
+    `<span class="badge">${esc(row[2])}</span>`
+  ).join("");
+}
+function anyIndicatorOn() {
+  return kennedyOn || donchOn || pctROn || rsiStochOn || rsxOn || haOn || hillOn || fairOn || plummerOn
+    || gann9On || gann18On || borodenOn || elliottOn || optOn;
+}
+function toggleFullscreen(force) {
+  fullscreenOn = typeof force === "boolean" ? force : !fullscreenOn;
+  if (chartWorkspace) chartWorkspace.classList.toggle("is-fullscreen", fullscreenOn);
+  if (btnFullscreen) {
+    btnFullscreen.classList.toggle("active", fullscreenOn);
+    btnFullscreen.textContent = fullscreenOn ? "⛶ Свернуть" : "⛶ На весь экран";
+  }
+  requestAnimationFrame(() => {
+    resizeAllCharts();
+    window.dispatchEvent(new Event("resize"));
+  });
+}
+if (btnFullscreen) btnFullscreen.addEventListener("click", () => toggleFullscreen());
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && fullscreenOn) toggleFullscreen(false);
+});
 const kennedySummaryEl = document.getElementById("kennedySummary");
 const kennedyStatusEl = document.getElementById("kennedyStatus");
 const donchStatusEl = document.getElementById("donchStatus");
@@ -1715,6 +2014,31 @@ document.getElementById("btnPlummer").addEventListener("click", () => {
   document.getElementById("btnPlummer").classList.toggle("active", plummerOn);
   if (currentTicker) showTicker(currentTicker);
 });
+document.getElementById("btnGann9").addEventListener("click", () => {
+  gann9On = !gann9On;
+  document.getElementById("btnGann9").classList.toggle("active", gann9On);
+  if (currentTicker) showTicker(currentTicker);
+});
+document.getElementById("btnGann18").addEventListener("click", () => {
+  gann18On = !gann18On;
+  document.getElementById("btnGann18").classList.toggle("active", gann18On);
+  if (currentTicker) showTicker(currentTicker);
+});
+document.getElementById("btnBoroden").addEventListener("click", () => {
+  borodenOn = !borodenOn;
+  document.getElementById("btnBoroden").classList.toggle("active", borodenOn);
+  if (currentTicker) showTicker(currentTicker);
+});
+document.getElementById("btnElliott").addEventListener("click", () => {
+  elliottOn = !elliottOn;
+  document.getElementById("btnElliott").classList.toggle("active", elliottOn);
+  if (currentTicker) showTicker(currentTicker);
+});
+document.getElementById("btnOpt").addEventListener("click", () => {
+  optOn = !optOn;
+  document.getElementById("btnOpt").classList.toggle("active", optOn);
+  if (currentTicker) showTicker(currentTicker);
+});
 document.getElementById("fairMode").addEventListener("click", (event) => {
   const btn = event.target.closest("button[data-fair]");
   if (!btn) return;
@@ -1752,15 +2076,15 @@ document.getElementById("btnClearModes").addEventListener("click", () => {
   hillOn = false;
   fairOn = false;
   plummerOn = false;
-  document.getElementById("btnKennedy").classList.remove("active");
-  document.getElementById("btnDonch").classList.remove("active");
-  document.getElementById("btnPctR").classList.remove("active");
-  document.getElementById("btnRsiStoch").classList.remove("active");
-  document.getElementById("btnRsx").classList.remove("active");
-  document.getElementById("btnHa").classList.remove("active");
-  document.getElementById("btnHill").classList.remove("active");
-  document.getElementById("btnFair").classList.remove("active");
-  document.getElementById("btnPlummer").classList.remove("active");
+  gann9On = false;
+  gann18On = false;
+  borodenOn = false;
+  elliottOn = false;
+  optOn = false;
+  ["btnKennedy","btnDonch","btnPctR","btnRsiStoch","btnRsx","btnHa","btnHill","btnFair","btnPlummer","btnGann9","btnGann18","btnBoroden","btnElliott","btnOpt"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("active");
+  });
   fairModeEl.style.display = "none";
   if (currentTicker) showTicker(currentTicker);
 });
@@ -2116,6 +2440,19 @@ function clearIndicatorOverlays() {
       plummerSeries[key] = null;
     }
   });
+  (gann9Series.lines || []).forEach((series) => { try { priceChart.removeSeries(series); } catch (e) {} });
+  gann9Series.lines = [];
+  (gann18Series.lines || []).forEach((series) => { try { priceChart.removeSeries(series); } catch (e) {} });
+  gann18Series.lines = [];
+  (borodenSeries.clusters || []).forEach((series) => { try { priceChart.removeSeries(series); } catch (e) {} });
+  (borodenSeries.swings || []).forEach((series) => { try { priceChart.removeSeries(series); } catch (e) {} });
+  (borodenSeries.timeMarks || []).forEach((series) => { try { priceChart.removeSeries(series); } catch (e) {} });
+  borodenSeries.clusters = [];
+  borodenSeries.swings = [];
+  borodenSeries.timeMarks = [];
+  (elliottSeries.lines || []).forEach((series) => { try { priceChart.removeSeries(series); } catch (e) {} });
+  elliottSeries.lines = [];
+  elliottSeries.labels = [];
   explainBoard.style.display = "none";
   kennedySummaryEl.innerHTML = "";
   kennedyStatusEl.innerHTML = "";
@@ -2127,33 +2464,30 @@ function clearIndicatorOverlays() {
   hillStatusEl.innerHTML = "";
   fairStatusEl.innerHTML = "";
   plummerStatusEl.innerHTML = "";
+  if (gannStatusEl) gannStatusEl.innerHTML = "";
+  if (borodenStatusEl) borodenStatusEl.innerHTML = "";
+  if (elliottStatusEl) elliottStatusEl.innerHTML = "";
+  if (optStatusEl) optStatusEl.innerHTML = "";
   pctRBox.style.display = "none";
   rsiStochBox.style.display = "none";
   rsxBox.style.display = "none";
   haBox.style.display = "none";
+  if (optBox) optBox.style.display = "none";
   haBox.classList.remove("ha-bull", "ha-bear");
   fairModeEl.style.display = fairOn ? "flex" : "none";
 }
 
 function refreshExplainVisibility() {
-  const any = kennedyOn || donchOn || pctROn || rsiStochOn || rsxOn || haOn || hillOn || fairOn || plummerOn;
+  const any = anyIndicatorOn();
   explainBoard.style.display = any ? "block" : "none";
-  const titles = [];
-  if (kennedyOn) titles.push("Trend");
-  if (donchOn) titles.push("Donchian DC20");
-  if (pctROn) titles.push("%R");
-  if (rsiStochOn) titles.push("RSI/Stoch");
-  if (rsxOn) titles.push("RSX");
-  if (haOn) titles.push("Heikin-Ashi");
-  if (hillOn) titles.push("5 vs 200");
-  if (fairOn) titles.push("Диапазон справедливости");
-  if (plummerOn) titles.push("Пламмер");
-  explainTitle.textContent = titles.length ? ("Пояснения · Kennedy · " + titles.join(" · ")) : "Пояснения · Kennedy";
+  const titles = MODE_BADGES.filter((row) => row[1]()).map((row) => row[2]);
+  explainTitle.textContent = titles.length ? ("Пояснения · " + titles.join(" · ")) : "Пояснения · индикаторы";
+  refreshActiveBadges();
 }
 
 function renderKennedySummary(bars) {
   kennedySummaryEl.innerHTML = "";
-  if (!bars.length || !(kennedyOn || donchOn || pctROn || rsiStochOn || rsxOn || haOn || hillOn || fairOn || plummerOn)) return;
+  if (!bars.length || !anyIndicatorOn()) return;
   const trend = computeKennedy(bars);
   const donch = computeDonch(bars);
   const pr5 = percentR(bars, 5);
@@ -2229,10 +2563,7 @@ function ensureRsiStochChart() {
   rsiStochLvlA = dash();
   rsiStochLvlB = dash();
   rsiStochLvlC = dash();
-  priceChart.timeScale().subscribeVisibleTimeRangeChange((range) => {
-    if (!rsiStochOn || !range || !rsiStochChart) return;
-    try { rsiStochChart.timeScale().setVisibleRange(range); } catch (e) {}
-  });
+  bindRangeSync(rsiStochChart); bindCrosshairSync(rsiStochChart);
 }
 
 function applyRsiStochPanel(bars) {
@@ -2334,8 +2665,8 @@ function applyRsiStochPanel(bars) {
   }
   rsiStochChart.timeScale().applyOptions({ barSpacing: 18, rightOffset: 6 });
   try {
-    const range = priceChart.timeScale().getVisibleRange();
-    if (range) rsiStochChart.timeScale().setVisibleRange(range);
+    const range = priceChart.timeScale().getVisibleLogicalRange();
+    if (range) rsiStochChart.timeScale().setVisibleLogicalRange(range);
   } catch (e) {}
 }
 
@@ -2353,10 +2684,7 @@ function ensureHaChart() {
     lineWidth: 2,
     title: "EMA9 HA_Open",
   });
-  priceChart.timeScale().subscribeVisibleTimeRangeChange((range) => {
-    if (!haOn || !range || !haChart) return;
-    try { haChart.timeScale().setVisibleRange(range); } catch (e) {}
-  });
+  bindRangeSync(haChart); bindCrosshairSync(haChart);
 }
 
 function applyHaPanel(bars) {
@@ -2390,8 +2718,8 @@ function applyHaPanel(bars) {
   haEmaOpenLine.setData(linePoints(ha, emaOpen));
   haChart.timeScale().applyOptions({ barSpacing: 18, rightOffset: 6 });
   try {
-    const range = priceChart.timeScale().getVisibleRange();
-    if (range) haChart.timeScale().setVisibleRange(range);
+    const range = priceChart.timeScale().getVisibleLogicalRange();
+    if (range) haChart.timeScale().setVisibleLogicalRange(range);
   } catch (e) {}
   const last = ha.length - 1;
   let i = last;
@@ -2442,10 +2770,7 @@ function ensureRsxChart() {
     priceLineVisible: false,
     crosshairMarkerVisible: false,
   });
-  priceChart.timeScale().subscribeVisibleTimeRangeChange((range) => {
-    if (!rsxOn || !range || !rsxChart) return;
-    try { rsxChart.timeScale().setVisibleRange(range); } catch (e) {}
-  });
+  bindRangeSync(rsxChart); bindCrosshairSync(rsxChart);
 }
 
 function computeRsxPack(bars) {
@@ -2520,8 +2845,8 @@ function applyRsxPanel(bars, eventMarkers) {
   rsxBreakHist.setData(hist);
   rsxChart.timeScale().applyOptions({ barSpacing: 18, rightOffset: 6 });
   try {
-    const range = priceChart.timeScale().getVisibleRange();
-    if (range) rsxChart.timeScale().setVisibleRange(range);
+    const range = priceChart.timeScale().getVisibleLogicalRange();
+    if (range) rsxChart.timeScale().setVisibleLogicalRange(range);
   } catch (e) {}
   const st = pack.status;
   const hodCls = st.hod.indexOf("рост") >= 0 ? "up" : (st.hod.indexOf("падение") >= 0 ? "down" : "flat");
@@ -2799,10 +3124,7 @@ function ensurePctRChart() {
   pctRLevel80 = dash(80);
   pctRLevel50 = dash(50);
   pctRLevel20 = dash(20);
-  priceChart.timeScale().subscribeVisibleTimeRangeChange((range) => {
-    if (!pctROn || !range || !pctRChart) return;
-    try { pctRChart.timeScale().setVisibleRange(range); } catch (e) {}
-  });
+  bindRangeSync(pctRChart); bindCrosshairSync(pctRChart);
 }
 
 function applyPctRPanel(bars) {
@@ -2837,8 +3159,8 @@ function applyPctRPanel(bars) {
   pctRLevel20.setData(lvl(20));
   pctRChart.timeScale().applyOptions({ barSpacing: 18, rightOffset: 6 });
   try {
-    const range = priceChart.timeScale().getVisibleRange();
-    if (range) pctRChart.timeScale().setVisibleRange(range);
+    const range = priceChart.timeScale().getVisibleLogicalRange();
+    if (range) pctRChart.timeScale().setVisibleLogicalRange(range);
   } catch (e) {}
   const last = bars.length - 1;
   let i = last;
@@ -3118,6 +3440,387 @@ function applyDonch(bars, eventMarkers) {
   return eventMarkers.concat(markers).sort((a, b) => String(a.time).localeCompare(String(b.time)));
 }
 
+
+function levelLine(times, value, color, width, style) {
+  const series = priceChart.addLineSeries({
+    color,
+    lineWidth: width || 1,
+    lineStyle: style == null ? 2 : style,
+    lastValueVisible: false,
+    priceLineVisible: false,
+    crosshairMarkerVisible: false,
+  });
+  series.setData(times.map((time) => ({ time, value })));
+  return series;
+}
+
+function findPivotSwings(bars, left, right) {
+  const swings = [];
+  for (let i = left; i < bars.length - right; i++) {
+    let isHigh = true, isLow = true;
+    for (let j = i - left; j <= i + right; j++) {
+      if (j === i) continue;
+      if (bars[j].high >= bars[i].high) isHigh = false;
+      if (bars[j].low <= bars[i].low) isLow = false;
+    }
+    if (isHigh) swings.push({ index: i, time: bars[i].time, price: bars[i].high, kind: "H" });
+    if (isLow) swings.push({ index: i, time: bars[i].time, price: bars[i].low, kind: "L" });
+  }
+  return swings;
+}
+
+function pickMajorSwings(bars, count) {
+  const raw = findPivotSwings(bars, 3, 3);
+  if (!raw.length) return [];
+  const span = Math.max(...bars.map((b) => b.high)) - Math.min(...bars.map((b) => b.low)) || 1;
+  const scored = raw.map((s) => {
+    const neighbors = raw.filter((o) => o !== s).slice(-6);
+    let prominence = 0;
+    neighbors.forEach((o) => { prominence = Math.max(prominence, Math.abs(s.price - o.price)); });
+    return Object.assign({}, s, { score: prominence / span });
+  }).sort((a, b) => b.score - a.score);
+  const chosen = scored.slice(0, Math.max(count * 2, count)).sort((a, b) => a.index - b.index);
+  // keep alternating kinds, take last `count`
+  const alt = [];
+  chosen.forEach((s) => {
+    if (!alt.length || alt[alt.length - 1].kind !== s.kind) alt.push(s);
+    else if (Math.abs(s.price - alt[alt.length - 1].price) > Math.abs(alt[alt.length - 1].price) * 0.002) alt[alt.length - 1] = s;
+  });
+  return alt.slice(-count);
+}
+
+function applyGannSquare9(bars) {
+  if (gannStatusEl) gannStatusEl.innerHTML = "";
+  if (!gann9On || !bars.length) return;
+  const pivot = pickMajorSwings(bars, 1)[0] || { price: bars[bars.length - 1].close, time: bars[bars.length - 1].time, kind: "C" };
+  const root = Math.sqrt(Math.max(pivot.price, 1e-9));
+  const times = bars.map((b) => b.time);
+  const angles = [
+    { deg: 45, step: 0.125, color: "#8A5A12" },
+    { deg: 90, step: 0.25, color: "#1D3E6E" },
+    { deg: 180, step: 0.5, color: "#A62626" },
+    { deg: 360, step: 1.0, color: "#1C1915" },
+  ];
+  const levels = [];
+  angles.forEach((ang) => {
+    for (let k = -4; k <= 4; k++) {
+      if (k === 0) continue;
+      const lvl = Math.pow(root + k * ang.step, 2);
+      if (lvl <= 0) continue;
+      gann9Series.lines.push(levelLine(times, lvl, ang.color, k === 1 || k === -1 ? 2 : 1, 2));
+      levels.push({ deg: ang.deg, k, value: lvl });
+    }
+  });
+  // cardinal pivot
+  gann9Series.lines.push(levelLine(times, pivot.price, "#F2C94C", 2, 0));
+  if (gannStatusEl) {
+    gannStatusEl.innerHTML = `
+      <h3 style="font-size:13px;margin:12px 0 6px">Квадрат 9 Ганна (Углы)</h3>
+      <p class="hint">Пивот ${esc(pivot.kind)} @ <span class="mono">${fmt(pivot.price, 4)}</span> (${esc(pivot.time)}). Уровни (√P ± n·δ)², δ=0.125/0.25/0.5/1.</p>
+      <div class="scroll"><table class="grid"><tr><th>Угол</th><th>n</th><th>Уровень</th></tr>
+      ${levels.filter((l) => Math.abs(l.k) <= 2).slice(0, 16).map((l) => `<tr><td>${l.deg}°</td><td class="mono">${l.k > 0 ? "+" : ""}${l.k}</td><td class="mono">${fmt(l.value, 4)}</td></tr>`).join("")}
+      </table></div>`;
+  }
+}
+
+function applyGannGrid18(bars) {
+  if (!gann18On || !bars.length) {
+    if (!gann9On && gannStatusEl && !gannStatusEl.innerHTML) gannStatusEl.innerHTML = "";
+    return;
+  }
+  const windowBars = bars.slice(-120);
+  let hi = -Infinity, lo = Infinity, hiT = "", loT = "";
+  windowBars.forEach((b) => {
+    if (b.high >= hi) { hi = b.high; hiT = b.time; }
+    if (b.low <= lo) { lo = b.low; loT = b.time; }
+  });
+  const times = bars.map((b) => b.time);
+  const span = hi - lo || 1;
+  const fracs = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1];
+  fracs.forEach((f) => {
+    const v = lo + span * f;
+    const isMid = Math.abs(f - 0.5) < 1e-9;
+    const isEdge = f === 0 || f === 1;
+    gann18Series.lines.push(levelLine(times, v, isMid ? "#A62626" : (isEdge ? "#1C1915" : "#8A5A12"), isMid ? 2 : 1, isMid ? 0 : 2));
+  });
+  const extra = `
+    <h3 style="font-size:13px;margin:12px 0 6px">Сетка Ганна 1/8 (50%)</h3>
+    <p class="hint">Диапазон ${esc(loT)}→${esc(hiT)}: Low <span class="mono">${fmt(lo, 4)}</span> … High <span class="mono">${fmt(hi, 4)}</span>. Красная — 4/8 (50%).</p>`;
+  if (gannStatusEl) gannStatusEl.innerHTML = (gannStatusEl.innerHTML || "") + extra;
+}
+
+function applyBoroden(bars, eventMarkers) {
+  if (borodenStatusEl) borodenStatusEl.innerHTML = "";
+  if (!borodenOn || bars.length < 30) return eventMarkers;
+  const swings = pickMajorSwings(bars, 3);
+  if (swings.length < 2) return eventMarkers;
+  const times = bars.map((b) => b.time);
+  const fibs = [0.382, 0.5, 0.618, 0.786, 1.0, 1.272, 1.618];
+  const allLevels = [];
+  for (let i = 1; i < swings.length; i++) {
+    const a = swings[i - 1], b = swings[i];
+    const series = priceChart.addLineSeries({
+      color: "#1D3E6E", lineWidth: 2, lastValueVisible: false, priceLineVisible: false, crosshairMarkerVisible: false,
+    });
+    series.setData([{ time: a.time, value: a.price }, { time: b.time, value: b.price }]);
+    borodenSeries.swings.push(series);
+    fibs.forEach((f) => {
+      const value = a.price + (b.price - a.price) * f;
+      allLevels.push({ value, fib: f, from: a.index, to: b.index });
+    });
+  }
+  // price clusters: 3+ fib levels within 0.35% of mid
+  const tol = (Math.max(...bars.map((b) => b.high)) - Math.min(...bars.map((b) => b.low))) * 0.0035;
+  const used = new Array(allLevels.length).fill(false);
+  const clusters = [];
+  for (let i = 0; i < allLevels.length; i++) {
+    if (used[i]) continue;
+    const group = [allLevels[i]];
+    used[i] = true;
+    for (let j = i + 1; j < allLevels.length; j++) {
+      if (used[j]) continue;
+      if (Math.abs(allLevels[j].value - allLevels[i].value) <= tol) {
+        group.push(allLevels[j]);
+        used[j] = true;
+      }
+    }
+    if (group.length >= 3) {
+      const mid = group.reduce((s, g) => s + g.value, 0) / group.length;
+      clusters.push({ mid, count: group.length, fibs: group.map((g) => g.fib) });
+      borodenSeries.clusters.push(levelLine(times, mid, "#A62626", 2, 0));
+    }
+  }
+  // time clusters from swing durations
+  const markers = [];
+  if (swings.length >= 3) {
+    const d1 = swings[1].index - swings[0].index;
+    const d2 = swings[2].index - swings[1].index;
+    const base = swings[2].index;
+    [0.382, 0.5, 0.618, 1.0, 1.618].forEach((f) => {
+      const idx = Math.round(base + (d1 + d2) * 0.5 * f);
+      if (idx >= 0 && idx < bars.length) {
+        markers.push({
+          time: bars[idx].time,
+          position: "aboveBar",
+          color: "#8A5A12",
+          shape: "square",
+          text: "T" + f,
+        });
+        const mark = priceChart.addLineSeries({
+          color: "rgba(138,90,18,0.55)", lineWidth: 1, lineStyle: 3,
+          lastValueVisible: false, priceLineVisible: false, crosshairMarkerVisible: false,
+        });
+        // vertical proxy: tiny segment at mid price — LWC has no vline; use markers primarily
+        mark.setData([
+          { time: bars[idx].time, value: bars[idx].low },
+          { time: bars[idx].time, value: bars[idx].high },
+        ]);
+        borodenSeries.timeMarks.push(mark);
+      }
+    });
+  }
+  if (borodenStatusEl) {
+    borodenStatusEl.innerHTML = `
+      <h3 style="font-size:13px;margin:12px 0 6px">Кластеры и Время · Кэролайн Бороден</h3>
+      <p class="hint">3 свинга → Fib 0.382…1.618. Кластер = ≥3 уровней в узком коридоре. T* — временные проекции.</p>
+      <div class="scroll"><table class="grid">
+        <tr><th>Свинг</th><th>Дата</th><th>Цена</th></tr>
+        ${swings.map((s, i) => `<tr><td>${i + 1} · ${s.kind}</td><td class="mono">${esc(s.time)}</td><td class="mono">${fmt(s.price, 4)}</td></tr>`).join("")}
+        <tr><td colspan="3">Кластеров цены: <span class="mono">${clusters.length}</span>${clusters.length ? " · " + clusters.map((c) => fmt(c.mid, 2) + "×" + c.count).join(", ") : ""}</td></tr>
+      </table></div>`;
+  }
+  return eventMarkers.concat(markers).sort((a, b) => String(a.time).localeCompare(String(b.time)));
+}
+
+function applyElliott(bars, eventMarkers) {
+  if (elliottStatusEl) elliottStatusEl.innerHTML = "";
+  if (!elliottOn || bars.length < 40) return eventMarkers;
+  // zigzag with ATR-like threshold
+  const ranges = bars.map((b) => b.high - b.low);
+  const avg = ranges.slice(-40).reduce((s, v) => s + v, 0) / Math.min(40, ranges.length) || 1;
+  const thr = avg * 1.8;
+  const pivots = [];
+  let mode = null; // H seeking high, L seeking low
+  let extreme = bars[0];
+  let extremeIdx = 0;
+  for (let i = 1; i < bars.length; i++) {
+    const b = bars[i];
+    if (mode == null) {
+      if (b.high - extreme.low >= thr) { mode = "H"; extreme = b; extremeIdx = i; }
+      else if (extreme.high - b.low >= thr) { mode = "L"; extreme = b; extremeIdx = i; }
+      continue;
+    }
+    if (mode === "H") {
+      if (b.high >= extreme.high) { extreme = b; extremeIdx = i; }
+      else if (extreme.high - b.low >= thr) {
+        pivots.push({ index: extremeIdx, time: extreme.time, price: extreme.high, kind: "H" });
+        mode = "L"; extreme = b; extremeIdx = i;
+      }
+    } else {
+      if (b.low <= extreme.low) { extreme = b; extremeIdx = i; }
+      else if (b.high - extreme.low >= thr) {
+        pivots.push({ index: extremeIdx, time: extreme.time, price: extreme.low, kind: "L" });
+        mode = "H"; extreme = b; extremeIdx = i;
+      }
+    }
+  }
+  const wave = pivots.slice(-6);
+  if (wave.length < 5) {
+    if (elliottStatusEl) elliottStatusEl.innerHTML = `<h3 style="font-size:13px;margin:12px 0 6px">Волны Эллиотта</h3><p class="hint">Недостаточно свингов для 1-2-3-4-5 (найдено ${wave.length}).</p>`;
+    return eventMarkers;
+  }
+  const five = wave.slice(-5);
+  const labels = ["1", "2", "3", "4", "5"];
+  const markers = [];
+  for (let i = 0; i < five.length; i++) {
+    markers.push({
+      time: five[i].time,
+      position: five[i].kind === "H" ? "aboveBar" : "belowBar",
+      color: "#1D3E6E",
+      shape: "circle",
+      text: labels[i],
+    });
+    if (i > 0) {
+      const series = priceChart.addLineSeries({
+        color: i === 3 ? "#A62626" : "#1D3E6E",
+        lineWidth: 2,
+        lastValueVisible: false,
+        priceLineVisible: false,
+        crosshairMarkerVisible: false,
+      });
+      series.setData([
+        { time: five[i - 1].time, value: five[i - 1].price },
+        { time: five[i].time, value: five[i].price },
+      ]);
+      elliottSeries.lines.push(series);
+    }
+  }
+  elliottSeries.labels = labels;
+  if (elliottStatusEl) {
+    elliottStatusEl.innerHTML = `
+      <h3 style="font-size:13px;margin:12px 0 6px">Волны Эллиотта (1-2-3-4-5)</h3>
+      <p class="hint">Импульс по зигзагу (порог ~1.8×ATR окна). Точки 1…5 на последних свингах.</p>
+      <div class="scroll"><table class="grid"><tr><th>Волна</th><th>Дата</th><th>Цена</th></tr>
+      ${five.map((p, i) => `<tr><td>${labels[i]} · ${p.kind}</td><td class="mono">${esc(p.time)}</td><td class="mono">${fmt(p.price, 4)}</td></tr>`).join("")}
+      </table></div>`;
+  }
+  return eventMarkers.concat(markers).sort((a, b) => String(a.time).localeCompare(String(b.time)));
+}
+
+function ensureOptChart() {
+  if (optChart) return;
+  optChart = LightweightCharts.createChart(optChartEl, Object.assign(chartBase(160), {
+    height: 160,
+    rightPriceScale: {
+      borderColor: getComputedStyle(root).getPropertyValue("--rule").trim() || "#B89856",
+      minimumWidth: 75,
+      scaleMargins: { top: 0.08, bottom: 0.08 },
+    },
+  }));
+  optCallHist = optChart.addHistogramSeries({
+    priceScaleId: "vol",
+    priceFormat: { type: "volume" },
+    base: 0,
+  });
+  optPutHist = optChart.addHistogramSeries({
+    priceScaleId: "vol",
+    priceFormat: { type: "volume" },
+    base: 0,
+  });
+  optPcrLine = optChart.addLineSeries({
+    priceScaleId: "right",
+    color: getComputedStyle(root).getPropertyValue("--ink").trim() || "#1C1915",
+    lineWidth: 2,
+    priceFormat: { type: "price", precision: 2, minMove: 0.01 },
+  });
+  optLevel1 = optChart.addLineSeries({
+    priceScaleId: "right",
+    color: getComputedStyle(root).getPropertyValue("--muted").trim() || "#5C4F38",
+    lineWidth: 1,
+    lineStyle: 2,
+    lastValueVisible: false,
+    priceLineVisible: false,
+    crosshairMarkerVisible: false,
+  });
+  optChart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.55, bottom: 0.05 } });
+  bindRangeSync(optChart);
+  bindCrosshairSync(optChart);
+}
+
+function applyOptPanel(bars) {
+  if (optStatusEl) optStatusEl.innerHTML = "";
+  if (!optOn || !bars.length) {
+    if (optBox) optBox.style.display = "none";
+    return;
+  }
+  optBox.style.display = "block";
+  ensureOptChart();
+  const up = getComputedStyle(root).getPropertyValue("--up").trim() || "#1B6B3A";
+  const down = getComputedStyle(root).getPropertyValue("--down").trim() || "#A62626";
+  const ink = getComputedStyle(root).getPropertyValue("--ink").trim() || "#1C1915";
+  optChart.applyOptions(Object.assign(chartBase(160), { height: 160 }));
+  optPcrLine.applyOptions({ color: ink });
+  // proxy: up-day volume = Call, down-day = Put; PCR = SMA(Put)/SMA(Call)
+  const call = [];
+  const put = [];
+  const pcr = [];
+  let sumC = 0, sumP = 0;
+  const win = 10;
+  const qC = [], qP = [];
+  for (let i = 0; i < bars.length; i++) {
+    const vol = bars[i].volume != null ? bars[i].volume : Math.abs(bars[i].close - bars[i].open) * 1000;
+    const isUp = bars[i].close >= bars[i].open;
+    const c = isUp ? vol : 0;
+    const p = isUp ? 0 : vol;
+    call.push({ time: bars[i].time, value: c, color: "rgba(27,107,58,0.35)" });
+    put.push({ time: bars[i].time, value: -p, color: "rgba(166,38,38,0.35)" });
+    qC.push(c); qP.push(p); sumC += c; sumP += p;
+    if (qC.length > win) { sumC -= qC.shift(); sumP -= qP.shift(); }
+    const ratio = sumC > 0 ? sumP / sumC : (sumP > 0 ? 2 : 1);
+    pcr.push({ time: bars[i].time, value: ratio });
+  }
+  optCallHist.setData(call);
+  optPutHist.setData(put);
+  optPcrLine.setData(pcr);
+  optLevel1.setData(bars.map((b) => ({ time: b.time, value: 1 })));
+  optChart.timeScale().applyOptions({ barSpacing: 18, rightOffset: 6 });
+  try {
+    const range = priceChart.timeScale().getVisibleLogicalRange();
+    if (range) optChart.timeScale().setVisibleLogicalRange(range);
+  } catch (e) {}
+  const last = pcr[pcr.length - 1];
+  let note = "нейтрально";
+  if (last) {
+    if (last.value > 1.2) note = "Put-перевес (PCR > 1.2) — давление продавцов";
+    else if (last.value < 0.8) note = "Call-перевес (PCR < 0.8) — спрос покупателей";
+    else note = "баланс Put/Call около 1";
+  }
+  document.getElementById("optHint").textContent = note;
+  if (optStatusEl) {
+    optStatusEl.innerHTML = `
+      <h3 style="font-size:13px;margin:12px 0 6px">Подвал · Опционы Put/Call</h3>
+      <p class="hint">Прокси потока: объём растущих дней = Call, падающих = Put. Линия — SMA(10) PCR.</p>
+      <div class="scroll"><table class="grid">
+        <tr><th>Параметр</th><th>Значение</th></tr>
+        <tr><td>PCR (10)</td><td class="mono">${fmt(last ? last.value : null, 2)}</td></tr>
+        <tr><td>Интерпретация</td><td>${esc(note)}</td></tr>
+      </table></div>`;
+  }
+}
+
+function resizeAllCharts() {
+  const mainH = fullscreenOn ? Math.min(window.innerHeight * 0.52, 560) : 420;
+  const paneH = fullscreenOn ? 170 : 160;
+  const haH = fullscreenOn ? 240 : 220;
+  if (priceEl) priceChart.applyOptions(Object.assign(chartBase(mainH), { width: priceEl.clientWidth, height: priceEl.clientHeight || mainH }));
+  if (lowerEl) lowerChart.applyOptions(Object.assign(chartBase(150), { width: lowerEl.clientWidth, height: lowerEl.clientHeight || 150 }));
+  if (optChart && optChartEl) optChart.applyOptions(Object.assign(chartBase(paneH), { width: optChartEl.clientWidth, height: optChartEl.clientHeight || paneH }));
+  if (pctRChart && pctRChartEl) pctRChart.applyOptions(Object.assign(chartBase(paneH), { width: pctRChartEl.clientWidth, height: pctRChartEl.clientHeight || paneH }));
+  if (rsiStochChart && rsiStochChartEl) rsiStochChart.applyOptions(Object.assign(chartBase(paneH), { width: rsiStochChartEl.clientWidth, height: rsiStochChartEl.clientHeight || paneH }));
+  if (rsxChart && rsxChartEl) rsxChart.applyOptions(Object.assign(chartBase(paneH), { width: rsxChartEl.clientWidth, height: rsxChartEl.clientHeight || paneH }));
+  if (haChart && haChartEl) haChart.applyOptions(Object.assign(chartBase(haH), { width: haChartEl.clientWidth, height: haChartEl.clientHeight || haH }));
+}
+
 function showTicker(ticker) {
   currentTicker = ticker;
   Object.entries(buttons).forEach(([name, button]) => button.classList.toggle("active", name === ticker));
@@ -3132,23 +3835,25 @@ function showTicker(ticker) {
     shape: row.tone < 0 ? "arrowDown" : "circle",
     text: row.short_label,
   }));
-  const ranged = bars.some((bar) => bar.high !== bar.low || bar.open !== bar.close);
-  const kind = ranged ? "candle" : "line";
-  if (kind !== priceKind) {
+  // Всегда свечи: синтез OHLC уже в DATA.
+  if (priceKind !== "candle") {
     priceChart.removeSeries(priceSeries);
-    priceSeries = kind === "candle"
-      ? priceChart.addCandlestickSeries(candleOptions())
-      : priceChart.addLineSeries({ color: getComputedStyle(root).getPropertyValue("--ink").trim(), lineWidth: 2 });
-    priceKind = kind;
-  } else if (kind === "candle") {
+    priceSeries = priceChart.addCandlestickSeries(candleOptions());
+    priceKind = "candle";
+  } else {
     priceSeries.applyOptions(candleOptions());
   }
-  priceSeries.setData(kind === "candle" ? bars : bars.map((bar) => ({ time: bar.time, value: bar.close })));
+  priceSeries.setData(bars);
+  applyGannSquare9(bars);
+  applyGannGrid18(bars);
+  markers = applyBoroden(bars, markers);
+  markers = applyElliott(bars, markers);
   markers = applyKennedy(bars, markers);
   markers = applyDonch(bars, markers);
   markers = applyHillCloud(bars, markers);
   applyFairRange(bars);
   markers = applyPlummer(bars, markers);
+  applyOptPanel(bars);
   applyPctRPanel(bars);
   applyRsiStochPanel(bars);
   markers = applyRsxPanel(bars, markers);
@@ -3164,20 +3869,25 @@ function showTicker(ticker) {
   })));
   tone.applyOptions({ color: getComputedStyle(root).getPropertyValue("--blue").trim() });
   tone.setData(panel.map((row) => ({ time: row.date, value: row.tone })));
-  axis.setData((bars.length ? bars.map((bar) => bar.time) : ["2026-11-01","2026-11-25"]).map((time) => ({ time, value: 0 })));
+  // Общая временная ось на всех панелях — полный массив time свечей.
+  const axisTimes = bars.length ? bars.map((bar) => bar.time) : ["2026-11-01","2026-11-25"];
+  axis.setData(axisTimes.map((time) => ({ time, value: 0 })));
   const focus = () => {
-    syncing = true;
+    syncingRange = true;
     if (bars.length) {
       const i0 = bars.findIndex((item) => item.time >= "2026-10-01");
       const logical = { from: i0 < 0 ? 0 : i0, to: bars.length + 5 };
-      priceChart.timeScale().applyOptions({ barSpacing: 18, rightOffset: 6 });
-      lowerChart.timeScale().applyOptions({ barSpacing: 18, rightOffset: 6 });
-      priceChart.timeScale().setVisibleLogicalRange(logical);
-      lowerChart.timeScale().setVisibleLogicalRange(logical);
+      paneCharts().forEach((chart) => {
+        try {
+          chart.timeScale().applyOptions({ barSpacing: 18, rightOffset: 6 });
+          chart.timeScale().setVisibleLogicalRange(logical);
+        } catch (e) {}
+      });
     } else {
       lowerChart.timeScale().fitContent();
     }
-    syncing = false;
+    syncingRange = false;
+    resizeAllCharts();
   };
   focus();
   requestAnimationFrame(focus);
@@ -3186,7 +3896,7 @@ function showTicker(ticker) {
   )).join("") || `<p class="hint">Событий нет.</p>`;
 }
 
-priceChart.subscribeCrosshairMove((event) => {
+priceChart.subscribeCrosshairMovepriceChart.subscribeCrosshairMove((event) => {
   if (!event.time || !event.point) { tipEl.style.display = "none"; return; }
   const day = typeof event.time === "string" ? event.time : "";
   const rows = eventsOf(currentTicker).filter((row) => row.date === day);
@@ -3210,9 +3920,7 @@ document.getElementById("loops").innerHTML = (DATA.loops || []).map((loop) => (
 
 let curveChart, curveSeries, psChartObj, psSeries;
 function applyChartTheme() {
-  const base = chartBase(420);
-  priceChart.applyOptions(base);
-  lowerChart.applyOptions(Object.assign(chartBase(150), { height: 150 }));
+  resizeAllCharts();
   if (curveChart) curveChart.applyOptions(chartBase(260));
   if (psChartObj) psChartObj.applyOptions(chartBase(260));
 }
@@ -3382,19 +4090,20 @@ renderPsTable();
 renderFractions();
 renderDiff();
 document.getElementById("foot").textContent = DATA.disclaimer || "";
-if (currentTicker) showTicker(currentTicker);
 window.addEventListener("resize", () => {
-  priceChart.applyOptions({ width: priceEl.clientWidth });
-  lowerChart.applyOptions({ width: lowerEl.clientWidth });
-  if (pctRChart) pctRChart.applyOptions({ width: pctRChartEl.clientWidth });
-  if (rsiStochChart) rsiStochChart.applyOptions({ width: rsiStochChartEl.clientWidth });
-  if (rsxChart) rsxChart.applyOptions({ width: rsxChartEl.clientWidth });
-  if (haChart) haChart.applyOptions({ width: haChartEl.clientWidth });
+  resizeAllCharts();
   if (curveChart) curveChart.applyOptions({ width: document.getElementById("curveChart").clientWidth });
   if (psChartObj) psChartObj.applyOptions({ width: document.getElementById("psChart").clientWidth });
 });
-priceChart.applyOptions({ width: priceEl.clientWidth });
-lowerChart.applyOptions({ width: lowerEl.clientWidth });
+resizeAllCharts();
+if (currentTicker) {
+  showTicker(currentTicker);
+  // Повтор после layout: LWC иногда стартует с нулевой шириной контейнера.
+  requestAnimationFrame(() => {
+    resizeAllCharts();
+    showTicker(currentTicker);
+  });
+}
 </script>
 </body>
 </html>
