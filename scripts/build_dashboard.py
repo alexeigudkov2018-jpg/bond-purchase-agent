@@ -58,6 +58,7 @@ NARRATIVE = ROOT / "data" / "narrative"
 FINRADAR = ROOT / "data" / "finradar"
 BONDS_CSV = ROOT / "data" / "bonds_tuesday_latest.csv"
 PS_CSV = ROOT / "data" / "ps_screener_latest.csv"
+PS_FLOOR = ROOT / "data" / "ps_floor.json"
 MACRO_MD = ROOT / "data" / "macro_ofz_latest.md"
 LWC_VENDOR = Path(__file__).resolve().parent / "vendor" / "lightweight-charts.standalone.production.js"
 CANDLES_EXTRA = CLEAN / "candles_extra_daily.csv"
@@ -937,6 +938,60 @@ def ensure_ps_screener() -> list[dict]:
         material,
     )
     return material
+
+
+def build_ps_floor(ps_rows: list[dict]) -> dict:
+    """P/S к полу годового ряда. Пол зафиксирован срезом 18.11; точка — последний клиринг."""
+    empty = {"as_of_floor": "", "as_of_live": "", "scale": {"lo": -50, "hi": 45}, "band": {"lo": -12, "hi": 5}, "note": "", "papers": []}
+    if not PS_FLOOR.exists():
+        return empty
+    raw = json.loads(PS_FLOOR.read_text(encoding="utf-8"))
+    live: dict[str, float] = {}
+    as_of = ""
+    for row in ps_rows:
+        ticker = str(row.get("ticker") or "").upper()
+        ps = _num(row.get("ps"))
+        if ticker and ps is not None:
+            live[ticker] = ps
+        if row.get("as_of"):
+            as_of = str(row.get("as_of"))
+    papers = []
+    for item in raw.get("papers") or []:
+        floor = _num(item.get("floor"))
+        ps_snap = _num(item.get("ps"))
+        depth_snap = _num(item.get("depth")) if item.get("depth") is not None else None
+        ticker = str(item.get("t") or "").upper()
+        ps_live = live.get(ticker)
+        ps = ps_live if ps_live is not None else ps_snap
+        depth = depth_snap
+        if floor not in (None, 0) and ps is not None:
+            depth = (ps / floor - 1.0) * 100.0
+        papers.append(
+            {
+                "t": ticker,
+                "name": item.get("name") or ticker,
+                "basket": item.get("basket") or "imoex",
+                "kind": item.get("kind") or "none",
+                "note": item.get("note") or "",
+                "floor": floor,
+                "ps": ps,
+                "ps_snap": ps_snap,
+                "ps_live": ps_live,
+                "depth": depth,
+                "depth_snap": depth_snap,
+                "y0": item.get("y0"),
+                "y1": item.get("y1"),
+                "w": _num(item.get("w")) if item.get("w") is not None else None,
+            }
+        )
+    return {
+        "as_of_floor": raw.get("as_of") or "",
+        "as_of_live": as_of,
+        "scale": raw.get("scale") or {"lo": -50, "hi": 45},
+        "band": raw.get("band") or {"lo": -12, "hi": 5},
+        "note": raw.get("source") or "",
+        "papers": papers,
+    }
 
 
 def ensure_bonds_tuesday() -> list[dict]:
@@ -1835,6 +1890,7 @@ def build_payload() -> dict:
             for row in ps_rows
         ],
         "ps_history": ps_history,
+        "ps_floor": build_ps_floor(ps_rows),
         "fractions": build_fractions(series),
         "sectors": build_sectors(series),
         "stovall": stovall,
@@ -2400,6 +2456,79 @@ tr.anomaly { background: rgba(138, 90, 18, 0.12); }
   cursor: pointer;
 }
 .modes button.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.ps-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.ps-verdicts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 10px 0; }
+.ps-verdict {
+  text-align: left;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  padding: 8px 10px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.ps-verdict .k { font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.ps-verdict .n { font-family: "JetBrains Mono", Consolas, monospace; font-size: 22px; line-height: 1.2; margin: 2px 0; }
+.ps-verdict.best .n { color: #1b6b3a; }
+.ps-verdict.short .n { color: #8b1e12; }
+.ps-verdict.active { border-color: var(--ink); background: rgba(242, 201, 76, 0.28); }
+.ps-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.ps-chip {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  padding: 1px 5px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  cursor: pointer;
+}
+.ps-tickers button.best { border-color: #1b6b3a; }
+.ps-tickers button.short { border-color: #8b1e12; }
+.ps-screen { margin: 8px 0 14px; }
+.ps-screen-label {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+#psCandleChart { height: 380px; }
+#psStockChart { height: 210px; margin-top: 8px; }
+.ps-slider {
+  display: grid;
+  grid-template-columns: 176px minmax(90px, 1fr) 128px;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--rule);
+  cursor: pointer;
+}
+.ps-slider:hover { background: rgba(184, 152, 86, 0.12); }
+.ps-slider.active { background: rgba(242, 201, 76, 0.35); }
+.ps-slider .num { text-align: right; font-variant-numeric: tabular-nums; font-family: "JetBrains Mono", Consolas, monospace; font-size: 12px; }
+.ps-note { margin: 2px 0 0; font-size: 11px; color: var(--muted); }
+.ps-meter { position: relative; height: 18px; }
+.ps-meter .track { position: absolute; left: 0; right: 0; top: 6px; height: 6px; background: rgba(184, 152, 86, 0.35); }
+.ps-meter .band { position: absolute; top: 6px; height: 6px; background: rgba(27, 107, 58, 0.38); }
+.ps-meter .floor { position: absolute; top: 2px; width: 1px; height: 14px; background: var(--ink); }
+.ps-meter .dot { position: absolute; top: 2px; width: 8px; height: 14px; background: var(--ink); }
+.ps-meter .dot.best { background: #1b6b3a; }
+.ps-meter .dot.short { background: #8b1e12; }
+.ps-meter .dot.watch { background: var(--ink); }
+.ps-book { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0 8px; }
+.ps-book input {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  padding: 6px 8px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  width: 120px;
+}
+.ps-books { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 800px) {
+  .ps-verdicts, .ps-books { grid-template-columns: 1fr; }
+  .ps-slider { grid-template-columns: 1fr; }
+  #psCandleChart { height: 280px; }
+}
 .modes button[data-mode="clear"] { border-style: dashed; }
 #explainBoard { margin-top: 10px; }
 #explainBoard table.grid td:first-child { color: var(--muted); width: 38%; }
@@ -2574,6 +2703,37 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
 </section>
 
 <section class="panel" id="tab-ps">
+  <div class="board" id="psFloorBoard">
+    <div class="ps-head">
+      <div>
+        <h2>P/S к полу ряда</h2>
+        <p class="hint" id="psFloorHint">Переключатель тикера поднимает свечи и под ними P/S. Ползунок ниже делает то же на большом экране.</p>
+      </div>
+      <div class="modes" id="psFloorBasket">
+        <button type="button" data-basket="imoex" class="active">IMOEX</button>
+        <button type="button" data-basket="bmi">Вне IMOEX</button>
+      </div>
+    </div>
+    <div class="ps-verdicts" id="psVerdicts"></div>
+    <div class="modes ps-tickers" id="psTickerSwitch"></div>
+    <div class="ps-screen" id="psScreen">
+      <div class="ps-screen-label" id="psScreenLabel">Выберите тикер</div>
+      <div class="chart" id="psCandleChart"></div>
+      <div class="chart" id="psStockChart"></div>
+      <p class="hint" id="psScreenNote"></p>
+    </div>
+    <h3 style="margin:4px 0 2px">Ползунки к полу</h3>
+    <p class="hint">Зелёная полоса — от 12% под полом до 5% над ним. Чёрная черта — сам пол. Нажатие на ползунок открывает бумагу наверху.</p>
+    <div id="psFloorList"></div>
+    <h3 style="margin:14px 0 6px">Портфель</h3>
+    <div class="ps-book">
+      <input id="psFloorDraft" type="text" placeholder="Тикер" autocomplete="off">
+      <button type="button" id="psFloorBought">Куплено</button>
+      <button type="button" id="psFloorPlanned">Собираюсь купить</button>
+    </div>
+    <div class="ps-books" id="psFloorBooks"></div>
+    <div class="scroll" id="psFloorTableWrap"></div>
+  </div>
   <div class="board">
     <h2>Накопленный P/S IMOEX</h2>
     <p class="hint">Ряд из <span class="mono">almanac_ps_history.md</span>.</p>
@@ -2653,6 +2813,7 @@ const DATA = Object.assign({
   bonds: [],
   ps_screener: [],
   ps_history: [],
+  ps_floor: { papers: [] },
   fractions: [],
   sectors: [],
   stovall: null,
@@ -2750,7 +2911,10 @@ document.getElementById("tabs").addEventListener("click", (event) => {
   document.querySelectorAll(".tabs button").forEach((el) => el.classList.toggle("active", el === btn));
   document.querySelectorAll(".panel").forEach((el) => el.classList.toggle("active", el.id === "tab-" + id));
   if (id === "ofz") safeRun("drawCurve:tab", drawCurve);
-  if (id === "ps") safeRun("drawPs:tab", drawPs);
+  if (id === "ps") {
+    safeRun("drawPs:tab", drawPs);
+    requestAnimationFrame(() => safeRun("drawPsScreen:tab", drawPsScreen));
+  }
   if (id === "candles" && currentTicker) {
     requestAnimationFrame(() => {
       priceChart.applyOptions({ width: priceEl.clientWidth });
@@ -5341,6 +5505,8 @@ function drawPs() {
   const rows = (DATA.ps_history || []).filter((r) => r.ps != null);
   psSeries.setData(rows.map((r) => ({ time: r.date, value: r.ps })));
   psChartObj.timeScale().fitContent();
+  const psTab = document.getElementById("tab-ps");
+  if (psTab && psTab.classList.contains("active")) drawPsScreen();
 }
 
 function renderBonds() {
@@ -5351,6 +5517,355 @@ function renderBonds() {
     return `<tr class="${cls}"><td>${esc(row.status)}</td><td>${esc(row.shortname || row.secid)}</td><td>${esc(row.issuer)}</td><td>${esc(row.rating)}</td><td class="num">${fmt(row.ytm, 2)}</td><td class="num">${fmt(row.duration_years, 2)}</td><td class="num">${fmt(row.g_spread_bp, 1)}</td><td class="num">${fmt(row.price_pct, 2)}</td><td>${esc(row.reason)}${row.anomaly ? " · " + esc(row.anomaly) : ""}</td></tr>`;
   }).join("");
   document.getElementById("bondsTable").innerHTML = head + (body || `<tr><td colspan="9">Нет строк в bonds_tuesday_latest.csv</td></tr>`);
+}
+
+let psFloorBasket = "imoex";
+let psVerdictFilter = "";
+let psSelected = "";
+let psCandleChart = null;
+let psCandleSeries = null;
+let psStockChart = null;
+let psStockLine = null;
+let psFloorSeries = null;
+let psBandLo = null;
+let psBandHi = null;
+let psSyncing = false;
+
+function psComma(n, digits) {
+  if (n == null || Number.isNaN(Number(n))) return "—";
+  return Number(n).toFixed(digits).replace(".", ",");
+}
+function psSigned(n) {
+  if (n == null || Number.isNaN(Number(n))) return "нет шкалы";
+  const body = Math.abs(Number(n)).toFixed(1).replace(".", ",");
+  if (n > 0) return `+${body}%`;
+  if (n < 0) return `−${body}%`;
+  return "0%";
+}
+function psBook() {
+  try {
+    const raw = JSON.parse(localStorage.getItem("psFloorBook") || "");
+    return {
+      bought: Array.isArray(raw.bought) ? raw.bought : [],
+      planned: Array.isArray(raw.planned) ? raw.planned : [],
+    };
+  } catch (e) {
+    return { bought: [], planned: [] };
+  }
+}
+function psSaveBook(book) {
+  try { localStorage.setItem("psFloorBook", JSON.stringify(book)); } catch (e) {}
+}
+function psPlace(depth) {
+  const lo = -50;
+  const hi = 45;
+  const clamped = Math.max(lo, Math.min(hi, depth));
+  return ((clamped - lo) / (hi - lo)) * 100;
+}
+function psVerdict(paper) {
+  if (!paper || paper.depth == null) return "none";
+  if (paper.kind === "high") return "short";
+  if (paper.kind === "ban") return "watch";
+  if (paper.kind === "best" && paper.depth >= -12 && paper.depth <= 8) return "best";
+  return "watch";
+}
+function psVerdictWhy(paper, verdict) {
+  if (paper && paper.kind === "best" && verdict === "watch") {
+    return "18.11 была в лучших. Сейчас глубже 12% под полом — наблюдаем, в лучшие не держим.";
+  }
+  if (verdict === "best") return "Лучшая: точка у своего пола, в полосе −12%…+5%. Месяц ещё не закрыт.";
+  if (verdict === "short") return "Шорт: P/S выше потолка своего ряда.";
+  if (verdict === "watch") return "Наблюдаем: глубоко под полом, внутри ряда или запрет на долгий вход. Шорт отсюда не следует.";
+  return "Шкалы пола нет.";
+}
+function psMeter(depth, verdict) {
+  const dot = psPlace(depth);
+  const bandL = psPlace(-12);
+  const bandR = psPlace(5);
+  const floor = psPlace(0);
+  return `<div class="ps-meter" title="шкала от −50% до +45% к полу">
+    <div class="track"></div>
+    <div class="band" style="left:${bandL.toFixed(2)}%;width:${(bandR - bandL).toFixed(2)}%"></div>
+    <div class="floor" style="left:${floor.toFixed(2)}%"></div>
+    <div class="dot ${esc(verdict)}" style="left:calc(${dot.toFixed(2)}% - 4px)"></div>
+  </div>`;
+}
+function psFind(ticker) {
+  const key = String(ticker || "").trim().toUpperCase();
+  return ((DATA.ps_floor && DATA.ps_floor.papers) || []).find((paper) => paper.t === key);
+}
+function psPapers() {
+  return ((DATA.ps_floor && DATA.ps_floor.papers) || []).filter((paper) => paper.basket === psFloorBasket);
+}
+function psVisible() {
+  return psPapers().filter((paper) => !psVerdictFilter || psVerdict(paper) === psVerdictFilter);
+}
+function psBars(ticker) {
+  const bars = (DATA.candles && DATA.candles.bars) || {};
+  if (bars[ticker] && bars[ticker].length) return bars[ticker];
+  const alias = { X5: "FIVE", SNGS: "SURG" }[ticker];
+  return (alias && bars[alias]) || [];
+}
+function psFloorAdd(list) {
+  const input = document.getElementById("psFloorDraft");
+  const ticker = (input && input.value || "").trim().toUpperCase();
+  if (!ticker) return;
+  const book = psBook();
+  if (!book[list].includes(ticker)) book[list].push(ticker);
+  psSaveBook(book);
+  if (input) input.value = "";
+  renderPsFloor();
+}
+function psFloorRemove(list, ticker) {
+  const book = psBook();
+  book[list] = book[list].filter((item) => item !== ticker);
+  psSaveBook(book);
+  renderPsFloor();
+}
+function ensurePsScreen() {
+  const candleEl = document.getElementById("psCandleChart");
+  const stockEl = document.getElementById("psStockChart");
+  if (!candleEl || !stockEl || typeof LightweightCharts === "undefined") return false;
+  if (!psCandleChart) {
+    psCandleChart = LightweightCharts.createChart(candleEl, chartBase(380));
+    psCandleSeries = psCandleChart.addCandlestickSeries(candleOptions());
+    psStockChart = LightweightCharts.createChart(stockEl, chartBase(210));
+    const psFmt = { type: "price", precision: 3, minMove: 0.001 };
+    psStockLine = psStockChart.addLineSeries({ color: "#1d4ed8", lineWidth: 2, priceFormat: psFmt });
+    psFloorSeries = psStockChart.addLineSeries({ color: "#1C1915", lineWidth: 1, lineStyle: 2, priceFormat: psFmt });
+    psBandLo = psStockChart.addLineSeries({ color: "rgba(27,107,58,0.95)", lineWidth: 1, lineStyle: 2, priceFormat: psFmt });
+    psBandHi = psStockChart.addLineSeries({ color: "rgba(27,107,58,0.95)", lineWidth: 1, lineStyle: 2, priceFormat: psFmt });
+    const follow = (src, dst) => {
+      src.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+        if (!range || psSyncing) return;
+        psSyncing = true;
+        try { dst.timeScale().setVisibleLogicalRange(range); } catch (e) {}
+        psSyncing = false;
+      });
+    };
+    follow(psCandleChart, psStockChart);
+    follow(psStockChart, psCandleChart);
+  } else {
+    psCandleChart.applyOptions(chartBase(380));
+    psStockChart.applyOptions(chartBase(210));
+    psCandleSeries.applyOptions(candleOptions());
+  }
+  return true;
+}
+function drawPsScreen() {
+  const paper = psFind(psSelected);
+  const label = document.getElementById("psScreenLabel");
+  const note = document.getElementById("psScreenNote");
+  if (!paper) {
+    if (label) label.textContent = "Выберите тикер";
+    return;
+  }
+  const verdict = psVerdict(paper);
+  const title = { best: "Лучшая", watch: "Наблюдаем", short: "Шорт", none: "Без шкалы" }[verdict] || verdict;
+  if (label) {
+    label.textContent = `${paper.name} · ${paper.t} · ${title} · P/S ${psComma(paper.ps, 3)} · к полу ${psSigned(paper.depth)}`;
+  }
+  if (!ensurePsScreen()) return;
+  const candleHost = document.getElementById("psCandleChart");
+  const stockHost = document.getElementById("psStockChart");
+  const width = Math.max(candleHost.clientWidth || stockHost.clientWidth || 640, 280);
+  psCandleChart.applyOptions({ width, height: 380 });
+  psStockChart.applyOptions({ width: Math.max(stockHost.clientWidth || width, 280), height: 210 });
+  const raw = psBars(paper.t);
+  const candles = raw.map((bar) => ({
+    time: bar.time, open: bar.open, high: bar.high, low: bar.low, close: bar.close,
+  })).filter((bar) => bar.time && bar.open != null && bar.close != null);
+  psCandleSeries.setData(candles);
+  const last = candles.length ? candles[candles.length - 1].close : null;
+  const psPoints = (last && paper.ps != null)
+    ? candles.map((bar) => ({ time: bar.time, value: paper.ps * bar.close / last })).filter((point) => Number.isFinite(point.value))
+    : [];
+  psStockLine.setData(psPoints);
+  const span = psPoints.length ? psPoints : [];
+  const flat = (value) => span.map((point) => ({ time: point.time, value }));
+  psFloorSeries.setData(paper.floor != null && span.length ? flat(paper.floor) : []);
+  psBandLo.setData(paper.floor != null && span.length ? flat(paper.floor * 0.88) : []);
+  psBandHi.setData(paper.floor != null && span.length ? flat(paper.floor * 1.05) : []);
+  if (candles.length) {
+    const i0 = candles.findIndex((bar) => bar.time >= "2025-01-01");
+    const logical = { from: i0 < 0 ? Math.max(0, candles.length - 180) : i0, to: candles.length + 4 };
+    psSyncing = true;
+    try {
+      psCandleChart.timeScale().setVisibleLogicalRange(logical);
+      psStockChart.timeScale().setVisibleLogicalRange(logical);
+    } catch (e) {}
+    psSyncing = false;
+  }
+  if (note) {
+    const chartNote = candles.length
+      ? "Свечи дневные. Синяя линия — сегодняшний P/S, протянутый по цене (продажи года стоят). Чёрный пунктир — пол ряда, зелёный — края полосы −12% и +5%."
+      : "В кэше свечей этой бумаги нет.";
+    note.textContent = `${psVerdictWhy(paper, verdict)} ${paper.note || ""} ${chartNote}`;
+  }
+}
+function selectPs(ticker, scrollUp) {
+  const paper = psFind(ticker);
+  if (!paper) return;
+  psSelected = paper.t;
+  if (paper.basket && paper.basket !== psFloorBasket) {
+    psFloorBasket = paper.basket;
+    psVerdictFilter = "";
+    renderPsFloor();
+  }
+  document.querySelectorAll("#psFloorBoard [data-ps]").forEach((el) => {
+    el.classList.toggle("active", el.getAttribute("data-ps") === psSelected);
+  });
+  const tab = document.getElementById("tab-ps");
+  if (tab && tab.classList.contains("active")) drawPsScreen();
+  if (scrollUp) {
+    const screen = document.getElementById("psScreen");
+    if (screen) screen.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+function renderPsFloor() {
+  const pack = DATA.ps_floor || { papers: [] };
+  const hint = document.getElementById("psFloorHint");
+  if (hint) {
+    const live = pack.as_of_live ? ` Клиринг бумаг IMOEX ${pack.as_of_live}.` : "";
+    hint.textContent = `Пол ряда — срез ${pack.as_of_floor || "18.11.2026"}.${live} Переключатель и ползунок открывают свечи и P/S этой бумаги.`;
+  }
+  document.querySelectorAll("#psFloorBasket button").forEach((btn) => {
+    btn.classList.toggle("active", btn.getAttribute("data-basket") === psFloorBasket);
+  });
+  const basketPapers = psPapers();
+  if (!psFind(psSelected) || (psFind(psSelected) || {}).basket !== psFloorBasket) {
+    const preferred = basketPapers.find((paper) => psVerdict(paper) === "best") || basketPapers.find((paper) => paper.depth != null) || basketPapers[0];
+    psSelected = preferred ? preferred.t : "";
+  }
+  const groups = { best: [], watch: [], short: [] };
+  basketPapers.forEach((paper) => {
+    const verdict = psVerdict(paper);
+    if (groups[verdict]) groups[verdict].push(paper);
+  });
+  ["best", "watch", "short"].forEach((key) => {
+    groups[key].sort((a, b) => (a.depth == null ? 1 : a.depth) - (b.depth == null ? 1 : b.depth));
+  });
+  const verdictHost = document.getElementById("psVerdicts");
+  if (verdictHost) {
+    const card = (key, label, blurb) => {
+      const rows = groups[key];
+      const chips = rows.slice(0, 8).map((paper) => (
+        `<span class="ps-chip" data-ps="${esc(paper.t)}">${esc(paper.t)}</span>`
+      )).join("");
+      const more = rows.length > 8 ? `<span class="meta">+${rows.length - 8}</span>` : "";
+      return `<button type="button" class="ps-verdict ${key}${psVerdictFilter === key ? " active" : ""}" data-verdict="${key}">
+        <div class="k">${label}</div>
+        <div class="n">${rows.length}</div>
+        <div class="ps-note">${blurb}</div>
+        <div class="ps-chips">${chips}${more}</div>
+      </button>`;
+    };
+    verdictHost.innerHTML = card("best", "Лучшие", "У своего пола, полоса месяца")
+      + card("watch", "Наблюдаем", "Глубоко, внутри ряда или запрет")
+      + card("short", "Шорт", "Выше потолка своего ряда");
+  }
+  const shown = psVisible().slice().sort((a, b) => {
+    if (a.depth == null) return 1;
+    if (b.depth == null) return -1;
+    return a.depth - b.depth;
+  });
+  const switches = document.getElementById("psTickerSwitch");
+  if (switches) {
+    switches.innerHTML = shown.map((paper) => {
+      const verdict = psVerdict(paper);
+      const on = paper.t === psSelected ? " active" : "";
+      return `<button type="button" class="ps-pick ${verdict}${on}" data-ps="${esc(paper.t)}">${esc(paper.t)}</button>`;
+    }).join("") || `<span class="hint">Нет тикеров</span>`;
+  }
+  const list = document.getElementById("psFloorList");
+  if (list) {
+    list.innerHTML = shown.map((paper) => {
+      const verdict = psVerdict(paper);
+      const years = paper.y0 && paper.y1 ? `${String(paper.y0).slice(2)}–${String(paper.y1).slice(2)}` : "";
+      const meter = paper.depth == null ? `<span class="meta">Шкалы нет</span>` : psMeter(paper.depth, verdict);
+      const right = paper.depth == null ? psComma(paper.ps, 2) : `${psSigned(paper.depth)} <span class="meta">${psComma(paper.ps, 2)}${years ? " " + years : ""}</span>`;
+      const note = paper.note ? `<div class="ps-note">${esc(paper.note)}</div>` : "";
+      return `<div class="ps-slider ${verdict}${paper.t === psSelected ? " active" : ""}" data-ps="${esc(paper.t)}" role="button" tabindex="0">
+        <div><strong>${esc(paper.name)}</strong> <span class="meta">${esc(paper.t)}</span>${note}</div>
+        <div>${meter}</div>
+        <div class="num">${right}</div>
+      </div>`;
+    }).join("") || `<p class="hint">В этом выводе пусто.</p>`;
+  }
+  const book = psBook();
+  const books = document.getElementById("psFloorBooks");
+  if (books) {
+    const column = (titleText, key) => {
+      if (!book[key].length) return `<div><h3>${titleText}</h3><p class="hint">Пусто</p></div>`;
+      const rows = book[key].map((ticker) => {
+        const paper = psFind(ticker);
+        const label = paper ? `${esc(paper.name)} · ${esc(paper.t)} · ${psSigned(paper.depth)}` : `${esc(ticker)} нет в срезе`;
+        return `<div class="ps-slider" data-ps="${esc(ticker)}"><div>${label}</div><div></div><div><button type="button" data-list="${key}" data-remove="${esc(ticker)}">Убрать</button></div></div>`;
+      }).join("");
+      return `<div><h3>${titleText}</h3>${rows}</div>`;
+    };
+    books.innerHTML = column("Куплено", "bought") + column("Собираюсь купить", "planned");
+  }
+  const tableWrap = document.getElementById("psFloorTableWrap");
+  if (tableWrap) {
+    if (psFloorBasket !== "bmi") {
+      tableWrap.innerHTML = "";
+    } else {
+      const bmi = (pack.papers || []).filter((paper) => paper.basket === "bmi");
+      const head = `<tr><th>Бумага</th><th>Тикер</th><th class="num">Вес, %</th><th class="num">P/S</th><th class="num">К полу</th><th>Вывод</th></tr>`;
+      const body = bmi.map((paper) => {
+        const verdict = psVerdict(paper);
+        const name = { best: "лучшая", watch: "наблюдаем", short: "шорт", none: "нет шкалы" }[verdict];
+        return `<tr><td>${esc(paper.name)}</td><td>${esc(paper.t)}</td><td class="num">${paper.w == null ? "" : psComma(paper.w, 2)}</td><td class="num">${psComma(paper.ps, 3)}</td><td class="num">${paper.depth == null ? "нет шкалы" : psSigned(paper.depth)}</td><td>${name}</td></tr>`;
+      }).join("");
+      tableWrap.innerHTML = `<table class="grid">${head}${body}</table>`;
+    }
+  }
+  document.querySelectorAll("#psFloorBoard [data-ps]").forEach((el) => {
+    el.classList.toggle("active", el.getAttribute("data-ps") === psSelected);
+  });
+}
+function bindPsFloor() {
+  const board = document.getElementById("psFloorBoard");
+  if (!board || board.dataset.bound) return;
+  board.dataset.bound = "1";
+  board.addEventListener("click", (event) => {
+    const remove = event.target.closest("button[data-remove]");
+    if (remove) {
+      event.stopPropagation();
+      psFloorRemove(remove.getAttribute("data-list"), remove.getAttribute("data-remove"));
+      return;
+    }
+    const pick = event.target.closest("[data-ps]");
+    if (pick && pick.getAttribute("data-ps")) {
+      selectPs(pick.getAttribute("data-ps"), pick.classList.contains("ps-slider"));
+      return;
+    }
+    const basket = event.target.closest("button[data-basket]");
+    if (basket) {
+      psFloorBasket = basket.getAttribute("data-basket");
+      psVerdictFilter = "";
+      psSelected = "";
+      renderPsFloor();
+      const tab = document.getElementById("tab-ps");
+      if (tab && tab.classList.contains("active")) drawPsScreen();
+      return;
+    }
+    const verdict = event.target.closest("button[data-verdict]");
+    if (verdict) {
+      const key = verdict.getAttribute("data-verdict");
+      psVerdictFilter = psVerdictFilter === key ? "" : key;
+      renderPsFloor();
+    }
+  });
+  const bought = document.getElementById("psFloorBought");
+  const planned = document.getElementById("psFloorPlanned");
+  if (bought) bought.addEventListener("click", () => psFloorAdd("bought"));
+  if (planned) planned.addEventListener("click", () => psFloorAdd("planned"));
+  const draft = document.getElementById("psFloorDraft");
+  if (draft) draft.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") psFloorAdd("bought");
+  });
 }
 
 function renderPsTable() {
@@ -5539,6 +6054,12 @@ function renderDiff() {
 
 safeRun("renderKpi", renderKpi);
 safeRun("renderBonds", renderBonds);
+safeRun("bindPsFloor", bindPsFloor);
+safeRun("renderPsFloor", renderPsFloor);
+if (location.hash === "#ps") {
+  const psTabBtn = document.querySelector('button[data-tab="ps"]');
+  if (psTabBtn) psTabBtn.click();
+}
 safeRun("renderPsTable", renderPsTable);
 safeRun("renderFractions", renderFractions);
 safeRun("renderDiff", renderDiff);
@@ -5550,6 +6071,10 @@ window.addEventListener("resize", () => {
   const psHost = document.getElementById("psChart");
   if (curveChart && curveHost) curveChart.applyOptions({ width: curveHost.clientWidth });
   if (psChartObj && psHost) psChartObj.applyOptions({ width: psHost.clientWidth });
+  const psCandleHost = document.getElementById("psCandleChart");
+  const psStockHost = document.getElementById("psStockChart");
+  if (psCandleChart && psCandleHost) psCandleChart.applyOptions({ width: psCandleHost.clientWidth });
+  if (psStockChart && psStockHost) psStockChart.applyOptions({ width: psStockHost.clientWidth });
 });
 safeRun("resizeAllCharts:boot", resizeAllCharts);
 safeRun("applyInteractionMode:cursor", () => applyInteractionMode("cursor"));
