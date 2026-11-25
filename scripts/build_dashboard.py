@@ -1701,22 +1701,43 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
 <footer id="foot"></footer>
 
 <script>
-const DATA = __DATA__;
+const DATA = Object.assign({
+  kpi: {},
+  candles: { tickers: [], bars: {}, events: [] },
+  loops: [],
+  curve: { date: null, points: [] },
+  bonds: [],
+  ps_screener: [],
+  ps_history: [],
+  fractions: [],
+  sectors: [],
+  stovall: null,
+  almanac_diff: { file: "", rows: [] },
+  disclaimer: "",
+  built_at: "",
+  built_at_label: "",
+}, __DATA__ || {});
+window.addEventListener("error", (event) => {
+  console.error("[dashboard:window.error]", event.message, event.filename, event.lineno, event.colno, event.error);
+});
+window.addEventListener("unhandledrejection", (event) => {
+  console.error("[dashboard:unhandledrejection]", event.reason);
+});
 const themeBtn = document.getElementById("themeToggle");
 const root = document.documentElement;
 
 function themeLabel() {
   return root.getAttribute("data-theme") === "dark" ? "Тёмный терминал" : "Миллиметровка Ганна";
 }
-themeBtn.textContent = themeLabel();
-themeBtn.addEventListener("click", () => {
+if (themeBtn) themeBtn.textContent = themeLabel();
+if (themeBtn) themeBtn.addEventListener("click", () => {
   const next = root.getAttribute("data-theme") === "dark" ? "gann" : "dark";
   root.setAttribute("data-theme", next);
   themeBtn.textContent = themeLabel();
-  applyChartTheme();
-  if (currentTicker) showTicker(currentTicker);
-  drawCurve();
-  drawPs();
+  safeRun("applyChartTheme", applyChartTheme);
+  if (currentTicker) safeRun("showTicker:theme", () => showTicker(currentTicker));
+  safeRun("drawCurve:theme", drawCurve);
+  safeRun("drawPs:theme", drawPs);
 });
 
 function clsPct(v) {
@@ -1738,21 +1759,43 @@ function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
 }
 
+function safeRun(label, fn) {
+  try { return fn(); }
+  catch (err) {
+    console.error("[dashboard]", label, err);
+    return null;
+  }
+}
+function kpiField(block, key) {
+  const src = (block && typeof block === "object") ? block : {};
+  const row = (src[key] && typeof src[key] === "object") ? src[key] : {};
+  return row;
+}
 function renderKpi() {
-  const k = DATA.kpi;
+  const k = (DATA && DATA.kpi && typeof DATA.kpi === "object") ? DATA.kpi : {};
+  const imoex = kpiField(k, "imoex");
+  const rgbitr = kpiField(k, "rgbitr");
+  const ofz10 = kpiField(k, "ofz10");
+  const ps = kpiField(k, "ps");
+  const rvi = kpiField(k, "rvi");
+  const cnyrub = kpiField(k, "cnyrub");
   const cards = [
-    ["IMOEX", fmt(k.imoex.value, 2), `${fmtPct(k.imoex.day_pct)} · ${k.imoex.date || "нет"}`, clsPct(k.imoex.day_pct)],
-    ["RGBITR", fmt(k.rgbitr.value, 2), `${fmtPct(k.rgbitr.day_pct)} · ${k.rgbitr.date || "нет"}`, clsPct(k.rgbitr.day_pct)],
-    ["КБД 10Y", fmt(k.ofz10.value, 2) + "%", `спред 10−2: ${fmt(k.ofz10.spread_10_2, 2)} п.п. · ${k.ofz10.date || "нет"}`, "flat"],
-    ["P/S IMOEX", fmt(k.ps.value, 5), `коридор ${fmt(k.ps.min, 5)}–${fmt(k.ps.max, 5)} · ${k.ps.date || "нет"}`, "flat"],
-    ["RVI", fmt(k.rvi.value, 2), `страх · ${k.rvi.as_of || "нет"}`, "flat"],
-    ["CNY/RUB", fmt(k.cnyrub.value, 4), `${k.cnyrub.as_of || "нет"}`, "flat"],
-    ["Обновлено", k.updated_at || "нет", "локальная сборка", "flat"],
+    ["IMOEX", fmt(imoex.value, 2), `${fmtPct(imoex.day_pct)} · ${imoex.date || "нет"}`, clsPct(imoex.day_pct)],
+    ["RGBITR", fmt(rgbitr.value, 2), `${fmtPct(rgbitr.day_pct)} · ${rgbitr.date || "нет"}`, clsPct(rgbitr.day_pct)],
+    ["КБД 10Y", fmt(ofz10.value, 2) + "%", `спред 10−2: ${fmt(ofz10.spread_10_2, 2)} п.п. · ${ofz10.date || "нет"}`, "flat"],
+    ["P/S IMOEX", fmt(ps.value, 5), `коридор ${fmt(ps.min, 5)}–${fmt(ps.max, 5)} · ${ps.date || "нет"}`, "flat"],
+    ["RVI", fmt(rvi.value, 2), `страх · ${rvi.as_of || "нет"}`, "flat"],
+    ["CNY/RUB", fmt(cnyrub.value, 4), `${cnyrub.as_of || "нет"}`, "flat"],
+    ["Обновлено", k.updated_at || (DATA && DATA.built_at_label) || "нет", "локальная сборка", "flat"],
   ];
-  document.getElementById("kpi").innerHTML = cards.map(([label, value, sub, tone]) => (
+  const host = document.getElementById("kpi");
+  if (!host) return;
+  host.innerHTML = cards.map(([label, value, sub, tone]) => (
     `<article class="card"><div class="label">${esc(label)}</div><div class="value ${tone}">${esc(value)}</div><div class="sub">${esc(sub)}</div></article>`
   )).join("");
 }
+// Ранний рендер KPI: даже если дальше упадёт LWC/индикаторы, шапка не останется пустой.
+safeRun("renderKpi:early", renderKpi);
 
 document.getElementById("tabs").addEventListener("click", (event) => {
   const btn = event.target.closest("button[data-tab]");
@@ -1760,8 +1803,8 @@ document.getElementById("tabs").addEventListener("click", (event) => {
   const id = btn.getAttribute("data-tab");
   document.querySelectorAll(".tabs button").forEach((el) => el.classList.toggle("active", el === btn));
   document.querySelectorAll(".panel").forEach((el) => el.classList.toggle("active", el.id === "tab-" + id));
-  if (id === "ofz") drawCurve();
-  if (id === "ps") drawPs();
+  if (id === "ofz") safeRun("drawCurve:tab", drawCurve);
+  if (id === "ps") safeRun("drawPs:tab", drawPs);
   if (id === "candles" && currentTicker) {
     requestAnimationFrame(() => {
       priceChart.applyOptions({ width: priceEl.clientWidth });
@@ -4141,9 +4184,13 @@ priceChart.subscribeCrosshairMove((event) => {
   tipEl.style.top = y + "px";
 });
 
-document.getElementById("loops").innerHTML = (DATA.loops || []).map((loop) => (
+safeRun("loops", () => {
+const loopsEl = document.getElementById("loops");
+if (!loopsEl) return;
+loopsEl.innerHTML = (DATA.loops || []).map((loop) => (
   `<article class="loop"><div class="meta">${esc(loop.source)}</div><div>${esc(loop.title)}</div></article>`
 )).join("") || `<p class="hint">Петель в последнем narrative-файле не найдено.</p>`;
+});
 
 let curveChart, curveSeries, psChartObj, psSeries;
 function applyChartTheme() {
@@ -4153,7 +4200,9 @@ function applyChartTheme() {
 }
 function drawCurve() {
   const el = document.getElementById("curveChart");
-  const points = (DATA.curve.points || []).filter((p) => p.ytm != null);
+  if (!el) return;
+  const curve = (DATA && DATA.curve && typeof DATA.curve === "object") ? DATA.curve : {};
+  const points = (curve.points || []).filter((p) => p && p.ytm != null);
   const tenorTimes = {
     "1Y": "2020-01-01",
     "2Y": "2020-02-01",
@@ -4187,7 +4236,8 @@ function drawCurve() {
     curveChart.applyOptions(base);
     curveSeries.applyOptions({ color: getComputedStyle(root).getPropertyValue("--blue").trim() });
   }
-  document.getElementById("curveHint").textContent = `Срез ${DATA.curve.date || "нет"} · точки 1/2/5/10/15 лет.`;
+  const curveHint = document.getElementById("curveHint");
+  if (curveHint) curveHint.textContent = `Срез ${curve.date || "нет"} · точки 1/2/5/10/15 лет.`;
   curveSeries.setData(points.map((p) => ({ time: tenorTimes[p.tenor] || p.tenor, value: p.ytm })));
   curveChart.timeScale().fitContent();
   let legend = document.getElementById("curveLegend");
@@ -4202,6 +4252,7 @@ function drawCurve() {
 }
 function drawPs() {
   const el = document.getElementById("psChart");
+  if (!el) return;
   if (!psChartObj) {
     psChartObj = LightweightCharts.createChart(el, chartBase(260));
     psSeries = psChartObj.addAreaSeries({
@@ -4244,17 +4295,18 @@ function renderPsTable() {
 let stovallHorizon = (DATA.stovall && DATA.stovall.default_horizon) || "cycle";
 
 function renderStovall() {
-  const pack = DATA.stovall || null;
+  const pack = (DATA && DATA.stovall && typeof DATA.stovall === "object") ? DATA.stovall : null;
   const cycleEl = document.getElementById("stovallCycle");
   const tableEl = document.getElementById("stovallTable");
   const noteEl = document.getElementById("stovallNote");
+  if (!cycleEl || !tableEl) return;
   if (!pack || !pack.cycle) {
     cycleEl.innerHTML = `<p class="hint">Нет данных RUSFAR / отраслей для модели Стовалла.</p>`;
     tableEl.innerHTML = "";
-    noteEl.textContent = "";
+    if (noteEl) noteEl.textContent = "";
     return;
   }
-  const c = pack.cycle;
+  const c = pack.cycle || {};
   const favored = (c.favored || []).join(", ") || "—";
   const posPct = c.cycle_pos == null ? "нет" : (100 * c.cycle_pos).toFixed(0) + "%";
   const dirCls = c.delta_dir === "СНИЖЕНИЕ" ? "up" : (c.delta_dir === "ПОВЫШЕНИЕ" ? "down" : "flat");
@@ -4264,7 +4316,8 @@ function renderStovall() {
     <div class="cell"><span class="k">cycle_pos (2г)</span><span class="v mono">${esc(posPct)} · [${fmt(c.corridor_low, 2)}; ${fmt(c.corridor_high, 2)}]</span></div>
     <div class="cell"><span class="k">Δ 60 сессий</span><span class="v mono ${dirCls}">${fmt(c.delta_60, 2)} п.п. · ${esc(c.delta_dir || "")}</span></div>
     <div class="cell"><span class="k">Макро-бонус фазы</span><span class="v">${esc(favored)}</span></div>`;
-  const horizon = pack.horizons[stovallHorizon] || pack.horizons.cycle || { rows: [], label: "" };
+  const horizons = (pack.horizons && typeof pack.horizons === "object") ? pack.horizons : {};
+  const horizon = horizons[stovallHorizon] || horizons.cycle || { rows: [], label: "" };
   document.querySelectorAll("#stovallHorizon button").forEach((btn) => {
     btn.classList.toggle("active", btn.getAttribute("data-horizon") === stovallHorizon);
   });
@@ -4275,14 +4328,15 @@ function renderStovall() {
     return `<tr class="${boost}"><td>${esc(row.rank)}</td><td>${esc(row.title)}</td><td>${esc(row.code)}</td><td class="num ${scoreCls}"><strong>${fmt(row.score, 2)}</strong></td><td class="num">${fmt(row.z_rs, 2)}</td><td class="num">${fmt(row.z_momentum, 2)}</td><td class="num">${fmt(row.z_acceleration, 2)}</td><td class="num ${clsPct(row.rs)}">${fmt(row.rs, 2)}</td><td class="num ${clsPct(row.momentum)}">${fmt(row.momentum, 2)}</td><td>${esc(row.boost_note)}</td></tr>`;
   }).join("");
   tableEl.innerHTML = head + (body || `<tr><td colspan="10">Нет строк рейтинга</td></tr>`);
-  noteEl.textContent = `${pack.model || ""} · горизонт ${horizon.label || stovallHorizon}. ${pack.note || ""} Сектора с макро-бонусом отмечены синей полосой.`;
+  if (noteEl) noteEl.textContent = `${pack.model || ""} · горизонт ${horizon.label || stovallHorizon}. ${pack.note || ""} Сектора с макро-бонусом отмечены синей полосой.`;
 }
 
-document.getElementById("stovallHorizon").addEventListener("click", (event) => {
+const stovallHorizonEl = document.getElementById("stovallHorizon");
+if (stovallHorizonEl) stovallHorizonEl.addEventListener("click", (event) => {
   const btn = event.target.closest("button[data-horizon]");
   if (!btn) return;
   stovallHorizon = btn.getAttribute("data-horizon") || "cycle";
-  renderStovall();
+  safeRun("renderStovall:horizon", renderStovall);
 });
 
 function renderFractions() {
@@ -4311,29 +4365,32 @@ function renderDiff() {
   document.getElementById("diffTable").innerHTML = head + (body || `<tr><td colspan="4">DIFF не найден</td></tr>`);
 }
 
-renderKpi();
-renderBonds();
-renderPsTable();
-renderFractions();
-renderDiff();
-document.getElementById("foot").textContent = DATA.disclaimer || "";
+safeRun("renderKpi", renderKpi);
+safeRun("renderBonds", renderBonds);
+safeRun("renderPsTable", renderPsTable);
+safeRun("renderFractions", renderFractions);
+safeRun("renderDiff", renderDiff);
+const footEl = document.getElementById("foot");
+if (footEl) footEl.textContent = (DATA && DATA.disclaimer) || "";
 window.addEventListener("resize", () => {
-  resizeAllCharts();
-  if (curveChart) curveChart.applyOptions({ width: document.getElementById("curveChart").clientWidth });
-  if (psChartObj) psChartObj.applyOptions({ width: document.getElementById("psChart").clientWidth });
+  safeRun("resizeAllCharts", resizeAllCharts);
+  const curveHost = document.getElementById("curveChart");
+  const psHost = document.getElementById("psChart");
+  if (curveChart && curveHost) curveChart.applyOptions({ width: curveHost.clientWidth });
+  if (psChartObj && psHost) psChartObj.applyOptions({ width: psHost.clientWidth });
 });
-resizeAllCharts();
-applyInteractionMode("cursor");
+safeRun("resizeAllCharts:boot", resizeAllCharts);
+safeRun("applyInteractionMode:cursor", () => applyInteractionMode("cursor"));
 if (currentTicker) {
-  showTicker(currentTicker);
+  safeRun("showTicker:boot", () => showTicker(currentTicker));
   // Повтор после layout: LWC иногда стартует с нулевой шириной контейнера.
   requestAnimationFrame(() => {
-    resizeAllCharts();
-    applyInteractionMode(interactMode);
-    showTicker(currentTicker);
+    safeRun("resizeAllCharts:raf", resizeAllCharts);
+    safeRun("applyInteractionMode:raf", () => applyInteractionMode(interactMode));
+    safeRun("showTicker:raf", () => showTicker(currentTicker));
   });
 } else {
-  refreshHeadBadges("", []);
+  safeRun("refreshHeadBadges:empty", () => refreshHeadBadges("", []));
 }
 </script>
 </body>
