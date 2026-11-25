@@ -12,7 +12,9 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import re
+import subprocess
 import sys
 from collections import defaultdict
 from datetime import datetime
@@ -22,6 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CLEAN = ROOT / "data" / "clean"
 
 OUT = ROOT / "dashboard.html"
+PUBLISH_SCRIPT = ROOT / "scripts" / "publish_github_pages.sh"
 
 
 def now_msk() -> datetime:
@@ -1123,6 +1126,89 @@ def _inline_lwc_script() -> str:
     return f"<script>\n{source}\n</script>"
 
 
+def _env_file_has_token(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    try:
+        for raw in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            if key.strip() not in {"PAGES_GITHUB_TOKEN", "GH_TOKEN"}:
+                continue
+            token = value.strip().strip("'").strip('"')
+            if token:
+                return True
+    except OSError:
+        return False
+    return False
+
+
+def _git_credentials_have_github_token() -> bool:
+    path = Path.home() / ".git-credentials"
+    if not path.is_file():
+        return False
+    try:
+        text = path.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return False
+    for line in text.splitlines():
+        line = line.strip()
+        if "github.com" not in line or "@github.com" not in line:
+            continue
+        # https://user:token@github.com  or  https://token@github.com
+        if re.search(r"https?://[^/\s]+@github\.com", line):
+            return True
+    return False
+
+
+def _pages_token_available() -> bool:
+    if os.environ.get("PAGES_GITHUB_TOKEN") or os.environ.get("GH_TOKEN"):
+        return True
+    if _env_file_has_token(ROOT / ".env"):
+        return True
+    return _git_credentials_have_github_token()
+
+
+def _publish_github_pages_best_effort() -> None:
+    """Push dashboard twins to GitHub Pages; never fail the local build."""
+    if os.environ.get("SKIP_PAGES_PUBLISH") == "1":
+        print("pages: nested build — skip auto-publish")
+        return
+    if not PUBLISH_SCRIPT.is_file():
+        print(f"pages: skip publish ({PUBLISH_SCRIPT.name} missing)")
+        return
+    if not _pages_token_available():
+        print(
+            "pages: skip publish "
+            "(no PAGES_GITHUB_TOKEN / GH_TOKEN in env, .env, or ~/.git-credentials)"
+        )
+        return
+    try:
+        result = subprocess.run(
+            ["bash", str(PUBLISH_SCRIPT), "--no-build"],
+            cwd=str(ROOT),
+            env={**os.environ, "SKIP_PAGES_PUBLISH": "1"},
+            capture_output=True,
+            text=True,
+            timeout=180,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        print(f"pages: publish failed (non-fatal): {exc}")
+        return
+    out = (result.stdout or "").strip()
+    err = (result.stderr or "").strip()
+    if out:
+        print(out)
+    if result.returncode == 0:
+        print("pages: published → https://alexeigudkov2018-jpg.github.io/bond-purchase-agent/")
+        return
+    detail = err or out or f"exit {result.returncode}"
+    print(f"pages: publish failed (non-fatal): {detail}")
+
+
 def build() -> None:
     payload = build_payload()
     stamp = now_msk()
@@ -1149,6 +1235,7 @@ def build() -> None:
         f"built={payload['built_at_label']} "
         f"lwc_inline={LWC_VENDOR.stat().st_size}"
     )
+    _publish_github_pages_best_effort()
 
 
 HTML = r"""<!DOCTYPE html>
