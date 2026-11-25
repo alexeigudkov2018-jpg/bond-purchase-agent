@@ -91,10 +91,45 @@ SECTOR_INDICES = (
     ("MOEXTN", "Транспорт"),
     ("MOEX10", "MOEX10"),
 )
-# Sector Rotation MOEX v1.0 (Pine → Python). Тикеры ISS / алиасы TradingView.
-# Бенчмарк IRUS на TV ≈ широкий рынок; в ISS берём IMOEX.
-STOVALL_BENCHMARK = "IMOEX"
+# ─── Legacy Stovall Sector Rotation (прежняя логика терминала) ───────────────
+# 9 активных отраслей Стовалла (MOEXTL застыл 19.03.2026 — не используем).
 STOVALL_SECTORS = (
+    ("MOEXOG", "Нефтегаз"),
+    ("MOEXFN", "Финансы"),
+    ("MOEXMM", "Металлы и добыча"),
+    ("MOEXIT", "ИТ и телеком"),
+    ("MOEXTN", "Транспорт"),
+    ("MOEXRE", "Недвижимость"),
+    ("MOEXCN", "Потребительский"),
+    ("MOEXEU", "Электроэнергетика"),
+    ("MOEXCH", "Химия и нефтехимия"),
+)
+STOVALL_HORIZONS = {
+    "tactical": {"label": "Тактика 20/10", "rs": 20, "mom": 10},
+    "cycle": {"label": "Цикл 60/30", "rs": 60, "mom": 30},
+    "long": {"label": "Долгосрок 120/60", "rs": 120, "mom": 60},
+}
+# Макро-бонус фазы: кто обычно лидирует у Стовалла / на рублевой ставке.
+STOVALL_PHASE_BONUS = {
+    "ПИК СТАВКИ": {"MOEXEU": 1.0, "MOEXCN": 0.8, "MOEXFN": 0.4},
+    "РАННЯЯ ЭКСПАНСИЯ": {"MOEXFN": 1.0, "MOEXRE": 1.0, "MOEXIT": 0.8, "MOEXCN": 0.6, "MOEXTN": 0.4},
+    "СРЕДНЯЯ ЭКСПАНСИЯ": {"MOEXTN": 1.0, "MOEXMM": 0.9, "MOEXCH": 0.8, "MOEXIT": 0.5, "MOEXOG": 0.4},
+    "ПОЗДНЯЯ ЭКСПАНСИЯ": {"MOEXOG": 1.0, "MOEXCH": 0.8, "MOEXEU": 0.7, "MOEXMM": 0.5},
+    "РАННЯЯ КОНТРАКЦИЯ": {"MOEXEU": 1.0, "MOEXCN": 0.9, "MOEXIT": 0.4},
+    "СРЕДНЯЯ КОНТРАКЦИЯ": {"MOEXEU": 1.0, "MOEXCN": 0.9, "MOEXIT": 0.5, "MOEXCH": 0.3},
+    "ПОЗДНЯЯ КОНТРАКЦИЯ": {"MOEXFN": 0.9, "MOEXRE": 0.8, "MOEXIT": 0.6, "MOEXCN": 0.5},
+}
+# Бонус направления RUSFAR: выигрывают от снижения / повышения ставки.
+STOVALL_RATE_BONUS = {
+    "СНИЖЕНИЕ": {"MOEXRE": 0.8, "MOEXFN": 0.7, "MOEXIT": 0.5, "MOEXCN": 0.3, "MOEXTN": 0.2},
+    "ПОВЫШЕНИЕ": {"MOEXOG": 0.6, "MOEXMM": 0.5, "MOEXCH": 0.4, "MOEXEU": 0.3, "MOEXFN": 0.2},
+    "ПЛАТО": {},
+}
+
+# ─── Новая стратегия: Sector Rotation MOEX v1.0 (Pine-скрипт) ────────────────
+# Бенчмарк IRUS на TV ≈ широкий рынок; в ISS берём IMOEX.
+SR_MOEX_BENCHMARK = "IMOEX"
+SR_MOEX_SECTORS = (
     ("MOEXOG", "RUSOG", "Нефтегаз", "LKOH/ROSN/GAZP"),
     ("MOEXFN", "RUSFN", "Финансы", "SBER/VTBR/TCSG"),
     ("MOEXMM", "RUSMM", "Металлы", "GMKN/CHMF/NLMK"),
@@ -106,14 +141,13 @@ STOVALL_SECTORS = (
     ("MOEXCH", "RUSCH", "Химия", "PHOR/AKRN/NKNC"),
     ("MOEXTL", "RUSTL", "Телеком", "MTSS/RTKM"),
 )
-STOVALL_HORIZONS = {
+SR_MOEX_HORIZONS = {
     "tactical": {"label": "Тактика (20/10)", "rs": 20, "mom": 10, "accel": 5, "zs": 60},
     "cycle": {"label": "Цикл (60/30)", "rs": 60, "mom": 30, "accel": 10, "zs": 252},
     "long": {"label": "Долгосрок (120/60)", "rs": 120, "mom": 60, "accel": 20, "zs": 252},
     "invest": {"label": "Инвест 2-3 года (252/126)", "rs": 252, "mom": 126, "accel": 30, "zs": 504},
 }
-# cycle_bonus(sec) из Pine SR MOEX v1.0
-STOVALL_PHASE_BONUS = {
+SR_MOEX_PHASE_BONUS = {
     "РАННЯЯ ЭКСПАНСИЯ": {"MOEXIT": 1.0, "MOEXTN": 1.0, "MOEXRE": 1.0, "MOEXFN": 0.5},
     "СРЕДНЯЯ ЭКСПАНСИЯ": {"MOEXRE": 1.0, "MOEXCN": 1.0, "MOEXIT": 0.5, "MOEXFN": 0.5},
     "ПОЗДНЯЯ ЭКСПАНСИЯ": {"MOEXOG": 1.0, "MOEXMM": 1.0, "MOEXCH": 1.0},
@@ -124,12 +158,11 @@ STOVALL_PHASE_BONUS = {
     "БОКОВИК": {},
     "НЕТ ДАННЫХ": {},
 }
-# rate_bonus при |rate_speed| > 3 (скорость изменения RUSFAR за 60д в %)
-STOVALL_RATE_BONUS_CUT = {
+SR_MOEX_RATE_BONUS_CUT = {
     "СНИЖЕНИЕ": {"MOEXRE": 1.5, "MOEXIT": 0.8, "MOEXFN": 0.6, "MOEXCN": 0.4, "MOEXEU": -0.5},
     "ПОВЫШЕНИЕ": {"MOEXRE": -1.5, "MOEXIT": -0.6, "MOEXEU": 0.8, "MOEXCN": 0.4, "MOEXTL": 0.3},
 }
-STOVALL_PHASE_RECO = {
+SR_MOEX_PHASE_RECO = {
     "РАННЯЯ ЭКСПАНСИЯ": "BUY: IT + ТРАНСПОРТ + ДЕВЕЛОПМЕНТ | FIX: КОММУНАЛКА",
     "СРЕДНЯЯ ЭКСПАНСИЯ": "BUY: ДЕВЕЛОПМЕНТ + ПОТРЕБСЕКТОР | HOLD: IT",
     "ПОЗДНЯЯ ЭКСПАНСИЯ": "BUY: НЕФТЕГАЗ + МЕТАЛЛЫ + ХИМИЯ | FIX: ДЕВЕЛОПМЕНТ",
@@ -212,6 +245,163 @@ def _session_return(series: dict[str, float], sessions: int) -> float | None:
     return ret_n(series, sessions)
 
 
+def classify_rusfar_cycle(rusfar: dict[str, float]) -> dict:
+    """Legacy-фаза RUSFAR для прежней модели Стовалла."""
+    dates = sorted(rusfar)
+    if len(dates) < 60:
+        return {
+            "asof": dates[-1] if dates else None,
+            "rate": rusfar.get(dates[-1]) if dates else None,
+            "cycle_pos": None,
+            "delta_60": None,
+            "delta_dir": "нет ряда",
+            "phase": "нет ряда",
+            "corridor_low": None,
+            "corridor_high": None,
+            "window_days": 0,
+            "favored": [],
+        }
+    asof = dates[-1]
+    rate = rusfar[asof]
+    window = dates[-min(len(dates), 504) :]
+    lows = [rusfar[d] for d in window]
+    lo, hi = min(lows), max(lows)
+    cycle_pos = 0.5 if hi <= lo else (rate - lo) / (hi - lo)
+    prev_idx = max(0, len(dates) - 1 - 60)
+    prev_rate = rusfar[dates[prev_idx]]
+    delta_60 = rate - prev_rate
+    if abs(delta_60) < 0.15:
+        delta_dir = "ПЛАТО"
+    elif delta_60 < 0:
+        delta_dir = "СНИЖЕНИЕ"
+    else:
+        delta_dir = "ПОВЫШЕНИЕ"
+    if cycle_pos >= 0.85 and delta_dir in ("ПЛАТО", "СНИЖЕНИЕ"):
+        phase = "ПИК СТАВКИ"
+    elif delta_dir == "ПОВЫШЕНИЕ":
+        if cycle_pos < 0.35:
+            phase = "РАННЯЯ КОНТРАКЦИЯ"
+        elif cycle_pos < 0.70:
+            phase = "СРЕДНЯЯ КОНТРАКЦИЯ"
+        else:
+            phase = "ПОЗДНЯЯ КОНТРАКЦИЯ"
+    elif delta_dir == "СНИЖЕНИЕ":
+        if cycle_pos >= 0.70:
+            phase = "РАННЯЯ ЭКСПАНСИЯ"
+        elif cycle_pos >= 0.35:
+            phase = "СРЕДНЯЯ ЭКСПАНСИЯ"
+        else:
+            phase = "ПОЗДНЯЯ ЭКСПАНСИЯ"
+    else:
+        if cycle_pos >= 0.70:
+            phase = "ПОЗДНЯЯ КОНТРАКЦИЯ"
+        elif cycle_pos <= 0.30:
+            phase = "ПОЗДНЯЯ ЭКСПАНСИЯ"
+        else:
+            phase = "СРЕДНЯЯ ЭКСПАНСИЯ"
+    favored_map = STOVALL_PHASE_BONUS.get(phase, {})
+    favored = [code for code, _ in sorted(favored_map.items(), key=lambda item: -item[1])]
+    return {
+        "asof": asof,
+        "rate": rate,
+        "cycle_pos": cycle_pos,
+        "delta_60": delta_60,
+        "delta_dir": delta_dir,
+        "phase": phase,
+        "corridor_low": lo,
+        "corridor_high": hi,
+        "window_days": len(window),
+        "favored": favored,
+    }
+
+
+def build_stovall_rotation(series: dict[str, dict[str, float]]) -> dict:
+    """Прежняя Sector Rotation · Стовалл + RUSFAR (кросс-секционные Z)."""
+    cycle = classify_rusfar_cycle(series.get("RUSFAR", {}))
+    imoex = series.get("IMOEX", {})
+    phase = cycle.get("phase") or ""
+    delta_dir = cycle.get("delta_dir") or ""
+    phase_bonus_map = STOVALL_PHASE_BONUS.get(phase, {})
+    rate_bonus_map = STOVALL_RATE_BONUS.get(delta_dir, {})
+    horizons_out: dict[str, list[dict]] = {}
+    for key, cfg in STOVALL_HORIZONS.items():
+        rs_n = cfg["rs"]
+        mom_n = cfg["mom"]
+        raw_rows = []
+        for code, title in STOVALL_SECTORS:
+            own = series.get(code, {})
+            sec_ret = _session_return(own, rs_n)
+            imx_ret = _session_return(imoex, rs_n)
+            rs = None if sec_ret is None or imx_ret is None else sec_ret - imx_ret
+            mom = _session_return(own, mom_n)
+            mom_prev = None
+            dates = sorted(own)
+            if len(dates) > mom_n * 2:
+                truncated = {d: own[d] for d in dates[: -(mom_n)]}
+                mom_prev = _session_return(truncated, mom_n)
+            accel = None if mom is None or mom_prev is None else mom - mom_prev
+            raw_rows.append(
+                {
+                    "code": code,
+                    "title": title,
+                    "rs": rs,
+                    "momentum": mom,
+                    "acceleration": accel,
+                    "close": own.get(dates[-1]) if dates else None,
+                    "asof": dates[-1] if dates else None,
+                    "rate_bonus": float(rate_bonus_map.get(code, 0.0)),
+                    "phase_bonus": float(phase_bonus_map.get(code, 0.0)),
+                }
+            )
+        z_rs = _zscores([row["rs"] for row in raw_rows])
+        z_mom = _zscores([row["momentum"] for row in raw_rows])
+        z_acc = _zscores([row["acceleration"] for row in raw_rows])
+        scored = []
+        for i, row in enumerate(raw_rows):
+            if z_rs[i] is None or z_mom[i] is None:
+                score = None
+            else:
+                acc = z_acc[i] if z_acc[i] is not None else 0.0
+                score = z_rs[i] + z_mom[i] + 0.5 * acc + row["rate_bonus"] + row["phase_bonus"]
+            scored.append(
+                {
+                    **row,
+                    "z_rs": z_rs[i],
+                    "z_momentum": z_mom[i],
+                    "z_acceleration": z_acc[i],
+                    "score": score,
+                    "macro_boost": bool(row["rate_bonus"] or row["phase_bonus"]),
+                    "boost_note": (
+                        (
+                            (f"фаза +{row['phase_bonus']:.1f}" if row["phase_bonus"] else "")
+                            + (" · " if row["phase_bonus"] and row["rate_bonus"] else "")
+                            + (f"ставка +{row['rate_bonus']:.1f}" if row["rate_bonus"] else "")
+                        )
+                        or "без макро-бонуса"
+                    ),
+                }
+            )
+        scored.sort(key=lambda item: (item["score"] is None, -(item["score"] or 0.0)))
+        for rank, row in enumerate(scored, start=1):
+            row["rank"] = rank
+        horizons_out[key] = scored
+    return {
+        "model": "Sector Rotation MOEX · Стовалл + RUSFAR",
+        "cycle": cycle,
+        "horizons": {
+            key: {
+                "label": STOVALL_HORIZONS[key]["label"],
+                "rs": STOVALL_HORIZONS[key]["rs"],
+                "mom": STOVALL_HORIZONS[key]["mom"],
+                "rows": rows,
+            }
+            for key, rows in horizons_out.items()
+        },
+        "default_horizon": "cycle",
+        "note": "Score = Z(RS) + Z(Momentum) + 0.5·Z(Acceleration) + бонус RUSFAR + бонус фазы. MOEXTL исключён.",
+    }
+
+
 def _sma_last(values: list[float], length: int) -> float | None:
     if length <= 0 or len(values) < length:
         return None
@@ -224,7 +414,7 @@ def _stdev_last(values: list[float], length: int) -> float | None:
         return None
     window = values[-length:]
     mean = sum(window) / length
-    var = sum((v - mean) ** 2 for v in window) / length  # Pine ta.stdev population-style
+    var = sum((v - mean) ** 2 for v in window) / length
     return var ** 0.5
 
 
@@ -260,7 +450,7 @@ def _signal_for_rank(rank0: int) -> str:
     return "HOLD"
 
 
-def classify_rusfar_cycle(rusfar: dict[str, float]) -> dict:
+def classify_rusfar_cycle_sr_moex(rusfar: dict[str, float]) -> dict:
     """Фаза денежного цикла как в Pine SR MOEX v1.0 (RUSFAR)."""
     dates = sorted(rusfar)
     empty = {
@@ -278,7 +468,7 @@ def classify_rusfar_cycle(rusfar: dict[str, float]) -> dict:
         "rate_min_3y": None,
         "window_days": 0,
         "favored": [],
-        "recommendation": STOVALL_PHASE_RECO["НЕТ ДАННЫХ"],
+        "recommendation": SR_MOEX_PHASE_RECO["НЕТ ДАННЫХ"],
         "curve": {},
     }
     if len(dates) < 60:
@@ -301,7 +491,6 @@ def classify_rusfar_cycle(rusfar: dict[str, float]) -> dict:
     rate_min_3y = min(rusfar[d] for d in win_3y)
     span = rate_max_2y - rate_min_3y
     cycle_pos = 0.5 if span <= 0 else (rate - rate_min_3y) / span
-    # phase ladder из Pine
     if cycle_pos > 0.85 and delta_dir == "ПЛАТО":
         phase = "ПИК СТАВКИ"
     elif cycle_pos > 0.60 and delta_dir == "СНИЖЕНИЕ":
@@ -318,8 +507,8 @@ def classify_rusfar_cycle(rusfar: dict[str, float]) -> dict:
         phase = "ПОЗДНЯЯ КОНТРАКЦИЯ"
     else:
         phase = "БОКОВИК"
-    favored_map = STOVALL_PHASE_BONUS.get(phase, {})
-    alias = {code: alias for code, alias, _title, _stocks in STOVALL_SECTORS}
+    favored_map = SR_MOEX_PHASE_BONUS.get(phase, {})
+    alias = {code: alias for code, alias, _title, _stocks in SR_MOEX_SECTORS}
     favored = [
         alias.get(code, code)
         for code, _ in sorted(favored_map.items(), key=lambda item: -item[1])
@@ -351,7 +540,7 @@ def classify_rusfar_cycle(rusfar: dict[str, float]) -> dict:
         "rate_min_3y": rate_min_3y,
         "window_days": len(win_3y),
         "favored": favored,
-        "recommendation": STOVALL_PHASE_RECO.get(phase, STOVALL_PHASE_RECO["БОКОВИК"]),
+        "recommendation": SR_MOEX_PHASE_RECO.get(phase, SR_MOEX_PHASE_RECO["БОКОВИК"]),
         "curve": {
             "now": rate,
             "m1": rusfar_1m,
@@ -362,11 +551,11 @@ def classify_rusfar_cycle(rusfar: dict[str, float]) -> dict:
     }
 
 
-def _rate_bonus_for(code: str, delta_dir: str, rate_speed: float) -> float:
+def _rate_bonus_for_sr_moex(code: str, delta_dir: str, rate_speed: float) -> float:
     if delta_dir == "СНИЖЕНИЕ" and rate_speed < -3:
-        return float(STOVALL_RATE_BONUS_CUT["СНИЖЕНИЕ"].get(code, 0.0))
+        return float(SR_MOEX_RATE_BONUS_CUT["СНИЖЕНИЕ"].get(code, 0.0))
     if delta_dir == "ПОВЫШЕНИЕ" and rate_speed > 3:
-        return float(STOVALL_RATE_BONUS_CUT["ПОВЫШЕНИЕ"].get(code, 0.0))
+        return float(SR_MOEX_RATE_BONUS_CUT["ПОВЫШЕНИЕ"].get(code, 0.0))
     return 0.0
 
 
@@ -393,7 +582,6 @@ def _sector_score_series(
             "asof": dates[-1] if dates else None,
             "close": sec_v[-1] if sec_v else None,
         }
-    # RS = (sec/bench) / SMA(sec/bench, rs_p) - 1  (Pine calc_rs)
     ratio = [s / b if b else None for s, b in zip(sec_v, bench_v)]
     rs_series: list[float | None] = [None] * len(ratio)
     for i in range(len(ratio)):
@@ -404,14 +592,12 @@ def _sector_score_series(
             continue
         sma = sum(window) / rs_p  # type: ignore[arg-type]
         rs_series[i] = ((ratio[i] / sma) - 1.0) * 100.0 if sma else 0.0
-    # MOM % over mom_p sessions
     mom_series: list[float | None] = [None] * len(sec_v)
     for i in range(len(sec_v)):
         j = i - mom_p
         if j < 0 or not sec_v[j]:
             continue
         mom_series[i] = (sec_v[i] / sec_v[j] - 1.0) * 100.0
-    # ACCEL = mom_now - mom[accel_lb]
     accel_series: list[float | None] = [None] * len(sec_v)
     for i in range(len(sec_v)):
         if mom_series[i] is None:
@@ -440,18 +626,18 @@ def _sector_score_series(
     }
 
 
-def build_stovall_rotation(series: dict[str, dict[str, float]]) -> dict:
-    """Sector Rotation MOEX v1.0 — порт Pine-логики на ISS-ряды."""
-    cycle = classify_rusfar_cycle(series.get("RUSFAR", {}))
-    bench = series.get(STOVALL_BENCHMARK, {})
+def build_sr_moex_rotation(series: dict[str, dict[str, float]]) -> dict:
+    """Новая стратегия Sector Rotation MOEX v1.0 — порт Pine-логики на ISS-ряды."""
+    cycle = classify_rusfar_cycle_sr_moex(series.get("RUSFAR", {}))
+    bench = series.get(SR_MOEX_BENCHMARK, {})
     phase = cycle.get("phase") or "НЕТ ДАННЫХ"
     delta_dir = cycle.get("delta_dir") or "НЕТ ДАННЫХ"
     rate_speed = float(cycle.get("delta_pct_60") or 0.0)
-    phase_bonus_map = STOVALL_PHASE_BONUS.get(phase, {})
+    phase_bonus_map = SR_MOEX_PHASE_BONUS.get(phase, {})
     horizons_out: dict[str, dict] = {}
-    for key, cfg in STOVALL_HORIZONS.items():
+    for key, cfg in SR_MOEX_HORIZONS.items():
         scored: list[dict] = []
-        for code, alias, title, top_stocks in STOVALL_SECTORS:
+        for code, alias, title, top_stocks in SR_MOEX_SECTORS:
             own = series.get(code, {})
             metrics = _sector_score_series(
                 own,
@@ -461,17 +647,12 @@ def build_stovall_rotation(series: dict[str, dict[str, float]]) -> dict:
                 accel_lb=cfg["accel"],
                 zs_lb=cfg["zs"],
             )
-            rate_bonus = _rate_bonus_for(code, delta_dir, rate_speed)
+            rate_bonus = _rate_bonus_for_sr_moex(code, delta_dir, rate_speed)
             phase_bonus = float(phase_bonus_map.get(code, 0.0))
             base = metrics["base_score"]
             score = None if base is None else base + rate_bonus + phase_bonus
             bench_asof = sorted(bench)[-1] if bench else None
-            # Stale only if sector lags the equity benchmark (RUSFAR может быть свежее).
-            stale = bool(
-                metrics["asof"]
-                and bench_asof
-                and metrics["asof"] < bench_asof
-            )
+            stale = bool(metrics["asof"] and bench_asof and metrics["asof"] < bench_asof)
             scored.append(
                 {
                     "code": code,
@@ -525,16 +706,17 @@ def build_stovall_rotation(series: dict[str, dict[str, float]]) -> dict:
             "top3": top3,
         }
     return {
-        "model": "Sector Rotation MOEX v1.0 · Стовалл + Relative Strength + RUSFAR",
+        "model": "Sector Rotation MOEX v1.0 · Pine / Стовалл + RS + RUSFAR",
         "version": "1.0",
-        "benchmark": STOVALL_BENCHMARK,
+        "benchmark": SR_MOEX_BENCHMARK,
         "cycle": cycle,
         "horizons": horizons_out,
         "default_horizon": "cycle",
         "note": (
+            "Новая стратегия по TradingView-скрипту. "
             "Score = Z(RS)+Z(MOM)+0.5·Z(ACC)+rate_bonus+cycle_bonus. "
-            f"RS = (сектор/{STOVALL_BENCHMARK}) / SMA − 1. "
-            "MOEXTL может быть stale (ISS редко обновляет RUSTL/MOEXTL)."
+            f"RS = (сектор/{SR_MOEX_BENCHMARK}) / SMA − 1. "
+            "MOEXTL может быть stale."
         ),
     }
 
@@ -1300,6 +1482,7 @@ def build_payload() -> dict:
         "fractions": build_fractions(series),
         "sectors": build_sectors(series),
         "stovall": build_stovall_rotation(series),
+        "sr_moex": build_sr_moex_rotation(series),
         "almanac_diff": parse_almanac_diff(),
         "disclaimer": "Материал не является индивидуальной инвестиционной рекомендацией.",
     }
@@ -1987,28 +2170,40 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
 
 <section class="panel" id="tab-fractions">
   <div class="board">
-    <h2>Sector Rotation MOEX v1.0 · Стовалл + RS + RUSFAR</h2>
-    <p class="hint">Порт индикатора TradingView: 10 секторов МосБиржи, 4 режима, авто-фаза цикла и мониторинг RUSFAR. Бенчмарк RS — IMOEX (ISS-аналог IRUS).</p>
-    <div id="stovallVerdict" class="stovall-verdict"></div>
+    <h2>Sector Rotation MOEX · Стовалл + RUSFAR</h2>
+    <p class="hint">Прежняя логика терминала: фаза денежного цикла по RUSFAR (2-летний коридор ISS) и Score Стовалла по 9 отраслям. Горизонт: Тактика 20/10 · Цикл 60/30 · Долгосрок 120/60.</p>
     <div id="stovallCycle" class="stovall-cycle"></div>
+    <div id="stovallHorizon" class="modes" style="margin:10px 0 8px">
+      <button type="button" data-horizon="tactical">Тактика 20/10</button>
+      <button type="button" data-horizon="cycle" class="active">Цикл 60/30</button>
+      <button type="button" data-horizon="long">Долгосрок 120/60</button>
+    </div>
+    <div class="scroll"><table class="grid" id="stovallTable"></table></div>
+    <p class="hint" id="stovallNote"></p>
+  </div>
+  <div class="board">
+    <h2>Ротация секторов · SR MOEX v1.0 (Pine)</h2>
+    <p class="hint">Новая стратегия по TradingView-скрипту: 10 секторов, 4 режима, авто-фаза, мониторинг RUSFAR. Бенчмарк RS — IMOEX (ISS-аналог IRUS). Не заменяет блок Стовалла выше.</p>
+    <div id="srMoexVerdict" class="stovall-verdict"></div>
+    <div id="srMoexCycle" class="stovall-cycle"></div>
     <div class="stovall-panels">
       <div class="board-mini">
         <h3>Мониторинг ставки</h3>
-        <div id="stovallRate"></div>
+        <div id="srMoexRate"></div>
       </div>
       <div class="board-mini">
         <h3>История ставки / кривая</h3>
-        <div id="stovallCurve"></div>
+        <div id="srMoexCurve"></div>
       </div>
     </div>
-    <div id="stovallHorizon" class="modes" style="margin:10px 0 8px">
+    <div id="srMoexHorizon" class="modes" style="margin:10px 0 8px">
       <button type="button" data-horizon="tactical">Тактика 20/10</button>
       <button type="button" data-horizon="cycle" class="active">Цикл 60/30</button>
       <button type="button" data-horizon="long">Долгосрок 120/60</button>
       <button type="button" data-horizon="invest">Инвест 252/126</button>
     </div>
-    <div class="scroll"><table class="grid" id="stovallTable"></table></div>
-    <p class="hint" id="stovallNote"></p>
+    <div class="scroll"><table class="grid" id="srMoexTable"></table></div>
+    <p class="hint" id="srMoexNote"></p>
   </div>
   <div class="board">
     <h2>Межрыночные дроби · 5 и 20 сессий</h2>
@@ -2043,6 +2238,7 @@ const DATA = Object.assign({
   fractions: [],
   sectors: [],
   stovall: null,
+  sr_moex: null,
   almanac_diff: { file: "", rows: [] },
   disclaimer: "",
   built_at: "",
@@ -4624,6 +4820,7 @@ function renderPsTable() {
 }
 
 let stovallHorizon = (DATA.stovall && DATA.stovall.default_horizon) || "cycle";
+let srMoexHorizon = (DATA.sr_moex && DATA.sr_moex.default_horizon) || "cycle";
 
 function sigClass(signal) {
   const s = String(signal || "");
@@ -4639,12 +4836,49 @@ function renderStovall() {
   const cycleEl = document.getElementById("stovallCycle");
   const tableEl = document.getElementById("stovallTable");
   const noteEl = document.getElementById("stovallNote");
-  const verdictEl = document.getElementById("stovallVerdict");
-  const rateEl = document.getElementById("stovallRate");
-  const curveEl = document.getElementById("stovallCurve");
   if (!cycleEl || !tableEl) return;
   if (!pack || !pack.cycle) {
     cycleEl.innerHTML = `<p class="hint">Нет данных RUSFAR / отраслей для модели Стовалла.</p>`;
+    tableEl.innerHTML = "";
+    if (noteEl) noteEl.textContent = "";
+    return;
+  }
+  const c = pack.cycle || {};
+  const favored = (c.favored || []).join(", ") || "—";
+  const posPct = c.cycle_pos == null ? "нет" : (100 * c.cycle_pos).toFixed(0) + "%";
+  const dirCls = c.delta_dir === "СНИЖЕНИЕ" ? "up" : (c.delta_dir === "ПОВЫШЕНИЕ" ? "down" : "flat");
+  cycleEl.innerHTML = `
+    <div class="cell phase"><span class="k">Фаза цикла</span><span class="v">${esc(c.phase || "нет")}</span></div>
+    <div class="cell"><span class="k">RUSFAR</span><span class="v mono">${fmt(c.rate, 2)}% · ${esc(c.asof || "")}</span></div>
+    <div class="cell"><span class="k">cycle_pos (2г)</span><span class="v mono">${esc(posPct)} · [${fmt(c.corridor_low, 2)}; ${fmt(c.corridor_high, 2)}]</span></div>
+    <div class="cell"><span class="k">Δ 60 сессий</span><span class="v mono ${dirCls}">${fmt(c.delta_60, 2)} п.п. · ${esc(c.delta_dir || "")}</span></div>
+    <div class="cell"><span class="k">Макро-бонус фазы</span><span class="v">${esc(favored)}</span></div>`;
+  const horizons = (pack.horizons && typeof pack.horizons === "object") ? pack.horizons : {};
+  const horizon = horizons[stovallHorizon] || horizons.cycle || { rows: [], label: "" };
+  document.querySelectorAll("#stovallHorizon button").forEach((btn) => {
+    btn.classList.toggle("active", btn.getAttribute("data-horizon") === stovallHorizon);
+  });
+  const head = `<tr><th>#</th><th>Сектор</th><th>Код</th><th class="num">Score</th><th class="num">Z(RS)</th><th class="num">Z(Mom)</th><th class="num">Z(Acc)</th><th class="num">RS %</th><th class="num">Mom %</th><th>Макро-бонус</th></tr>`;
+  const body = (horizon.rows || []).map((row) => {
+    const boost = row.macro_boost ? "macro-boost" : "";
+    const scoreCls = row.score == null ? "flat" : (row.score >= 0 ? "up" : "down");
+    return `<tr class="${boost}"><td>${esc(row.rank)}</td><td>${esc(row.title)}</td><td>${esc(row.code)}</td><td class="num ${scoreCls}"><strong>${fmt(row.score, 2)}</strong></td><td class="num">${fmt(row.z_rs, 2)}</td><td class="num">${fmt(row.z_momentum, 2)}</td><td class="num">${fmt(row.z_acceleration, 2)}</td><td class="num ${clsPct(row.rs)}">${fmt(row.rs, 2)}</td><td class="num ${clsPct(row.momentum)}">${fmt(row.momentum, 2)}</td><td>${esc(row.boost_note)}</td></tr>`;
+  }).join("");
+  tableEl.innerHTML = head + (body || `<tr><td colspan="10">Нет строк рейтинга</td></tr>`);
+  if (noteEl) noteEl.textContent = `${pack.model || ""} · горизонт ${horizon.label || stovallHorizon}. ${pack.note || ""} Сектора с макро-бонусом отмечены синей полосой.`;
+}
+
+function renderSrMoex() {
+  const pack = (DATA && DATA.sr_moex && typeof DATA.sr_moex === "object") ? DATA.sr_moex : null;
+  const cycleEl = document.getElementById("srMoexCycle");
+  const tableEl = document.getElementById("srMoexTable");
+  const noteEl = document.getElementById("srMoexNote");
+  const verdictEl = document.getElementById("srMoexVerdict");
+  const rateEl = document.getElementById("srMoexRate");
+  const curveEl = document.getElementById("srMoexCurve");
+  if (!cycleEl || !tableEl) return;
+  if (!pack || !pack.cycle) {
+    cycleEl.innerHTML = `<p class="hint">Нет данных для стратегии SR MOEX v1.0.</p>`;
     tableEl.innerHTML = "";
     if (noteEl) noteEl.textContent = "";
     if (verdictEl) verdictEl.innerHTML = "";
@@ -4654,14 +4888,14 @@ function renderStovall() {
   }
   const c = pack.cycle || {};
   const horizons = (pack.horizons && typeof pack.horizons === "object") ? pack.horizons : {};
-  const horizon = horizons[stovallHorizon] || horizons.cycle || { rows: [], label: "", top3: [] };
+  const horizon = horizons[srMoexHorizon] || horizons.cycle || { rows: [], label: "", top3: [] };
   const favored = (c.favored || []).join(", ") || "—";
   const posPct = c.cycle_pos == null ? "нет" : (100 * c.cycle_pos).toFixed(0) + "%";
   const dirCls = c.delta_dir === "СНИЖЕНИЕ" ? "up" : (c.delta_dir === "ПОВЫШЕНИЕ" ? "down" : "flat");
   const top3 = (horizon.top3 || []).map((row) => `${esc(row.title)} (${esc(row.top_stocks)})`).join(", ") || "—";
   if (verdictEl) {
     verdictEl.innerHTML = `
-      <div class="meta">ВЕРДИКТ СИСТЕМЫ · ${esc(pack.model || "SR MOEX")}</div>
+      <div class="meta">ВЕРДИКТ · ${esc(pack.model || "SR MOEX v1.0")}</div>
       <div class="phase-line">ФАЗА: ${esc(c.phase || "нет")}</div>
       <div class="reco">${esc(c.recommendation || "")}</div>
       <div class="top3">ТОП-3 BUY: ${top3}</div>`;
@@ -4690,8 +4924,8 @@ function renderStovall() {
       <div class="kv"><span>Тренд</span><span>${esc(curve.shape || "—")}</span></div>
       <div class="kv"><span>Сигнал</span><span>${esc(curve.signal || "—")}</span></div>`;
   }
-  document.querySelectorAll("#stovallHorizon button").forEach((btn) => {
-    btn.classList.toggle("active", btn.getAttribute("data-horizon") === stovallHorizon);
+  document.querySelectorAll("#srMoexHorizon button").forEach((btn) => {
+    btn.classList.toggle("active", btn.getAttribute("data-horizon") === srMoexHorizon);
   });
   const head = `<tr><th>#</th><th>Сектор</th><th>Тикер</th><th class="num">Score</th><th>Сигнал</th><th>Акции</th><th class="num">Z(RS)</th><th class="num">Z(Mom)</th><th class="num">Z(Acc)</th><th class="num">RS %</th><th class="num">Mom %</th><th>Макро</th></tr>`;
   const body = (horizon.rows || []).map((row) => {
@@ -4702,7 +4936,7 @@ function renderStovall() {
   }).join("");
   tableEl.innerHTML = head + (body || `<tr><td colspan="12">Нет строк рейтинга</td></tr>`);
   if (noteEl) {
-    noteEl.textContent = `${pack.model || ""} · горизонт ${horizon.label || stovallHorizon} · RS=${horizon.rs || "?"}д / MOM=${horizon.mom || "?"}д / ACC=${horizon.accel || "?"}д / Z=${horizon.zs || "?"}д. ${pack.note || ""}`;
+    noteEl.textContent = `${pack.model || ""} · горизонт ${horizon.label || srMoexHorizon} · RS=${horizon.rs || "?"}д / MOM=${horizon.mom || "?"}д / ACC=${horizon.accel || "?"}д / Z=${horizon.zs || "?"}д. ${pack.note || ""}`;
   }
 }
 
@@ -4714,8 +4948,17 @@ if (stovallHorizonEl) stovallHorizonEl.addEventListener("click", (event) => {
   safeRun("renderStovall:horizon", renderStovall);
 });
 
+const srMoexHorizonEl = document.getElementById("srMoexHorizon");
+if (srMoexHorizonEl) srMoexHorizonEl.addEventListener("click", (event) => {
+  const btn = event.target.closest("button[data-horizon]");
+  if (!btn) return;
+  srMoexHorizon = btn.getAttribute("data-horizon") || "cycle";
+  safeRun("renderSrMoex:horizon", renderSrMoex);
+});
+
 function renderFractions() {
   renderStovall();
+  renderSrMoex();
   const rows = DATA.fractions || [];
   const head = `<tr><th>Дробь</th><th>5 сессий</th><th>20 сессий</th><th class="num">5с %</th><th class="num">20с %</th></tr>`;
   const body = rows.map((row) => (
