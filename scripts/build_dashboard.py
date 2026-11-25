@@ -1284,7 +1284,7 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
 <section class="panel active" id="tab-candles">
   <div class="board">
     <h2>Свечи, Kennedy и нарративы</h2>
-    <p class="hint">TradingView Lightweight Charts. Флажки — <span class="mono">radar_events.csv</span>. Модули Kennedy: Trend, Donchian, %R, RSI/Stoch, RSX, Heikin-Ashi, 5 vs 200, Диапазон справедливости.</p>
+    <p class="hint">TradingView Lightweight Charts. Флажки — <span class="mono">radar_events.csv</span>. Модули: Kennedy, RSX, HA, 5 vs 200, Fair Range, Канал Пламмера.</p>
     <div class="tickers" id="tickers"></div>
     <div class="modes" id="modeButtons">
       <button type="button" data-mode="kennedy" id="btnKennedy">Kennedy Trend (MA + HA + Сигналы L/S)</button>
@@ -1295,6 +1295,7 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
       <button type="button" data-mode="ha" id="btnHa">Панель свечей Heikin-Ashi + EMA9</button>
       <button type="button" data-mode="hill" id="btnHill">Облако 5 vs 200 + Пивоты (Arthur Hill)</button>
       <button type="button" data-mode="fair" id="btnFair">Средний High / Low (Диапазон справедливости)</button>
+      <button type="button" data-mode="plummer" id="btnPlummer">Вибрация Тони Пламмера</button>
       <button type="button" data-mode="clear" id="btnClearModes">Очистить график</button>
     </div>
     <div id="fairMode">
@@ -1352,6 +1353,7 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
       <div id="haStatus"></div>
       <div id="hillStatus"></div>
       <div id="fairStatus"></div>
+      <div id="plummerStatus"></div>
     </div>
     <div id="eventList"></div>
   </div>
@@ -1596,10 +1598,15 @@ let haOn = false;
 let hillOn = false;
 let fairOn = false;
 let fairMode = "cum";
+let plummerOn = false;
 const kennedySeries = { ema5: null, sma10: null, sma30: null, haOpen: null, haClose: null };
 const donchSeries = { hh: null, mid: null, ll: null };
 const fairSeries = { hi: null, lo: null };
 const hillSeries = { sma5: null, sma200: null, clouds: [] };
+const plummerSeries = {
+  basis: null, upperIn: null, lowerIn: null, upperEx: null, lowerEx: null,
+  fillInnerHi: null, fillInnerLo: null, fillUpHi: null, fillUpLo: null, fillDnHi: null, fillDnLo: null,
+};
 const explainBoard = document.getElementById("explainBoard");
 const explainTitle = document.getElementById("explainTitle");
 const kennedySummaryEl = document.getElementById("kennedySummary");
@@ -1611,6 +1618,7 @@ const rsxStatusEl = document.getElementById("rsxStatus");
 const haStatusEl = document.getElementById("haStatus");
 const hillStatusEl = document.getElementById("hillStatus");
 const fairStatusEl = document.getElementById("fairStatus");
+const plummerStatusEl = document.getElementById("plummerStatus");
 const fairModeEl = document.getElementById("fairMode");
 const pctRBox = document.getElementById("pctRBox");
 const pctRChartEl = document.getElementById("pctRChart");
@@ -1686,6 +1694,11 @@ document.getElementById("btnFair").addEventListener("click", () => {
   fairModeEl.style.display = fairOn ? "flex" : "none";
   if (currentTicker) showTicker(currentTicker);
 });
+document.getElementById("btnPlummer").addEventListener("click", () => {
+  plummerOn = !plummerOn;
+  document.getElementById("btnPlummer").classList.toggle("active", plummerOn);
+  if (currentTicker) showTicker(currentTicker);
+});
 document.getElementById("fairMode").addEventListener("click", (event) => {
   const btn = event.target.closest("button[data-fair]");
   if (!btn) return;
@@ -1722,6 +1735,7 @@ document.getElementById("btnClearModes").addEventListener("click", () => {
   haOn = false;
   hillOn = false;
   fairOn = false;
+  plummerOn = false;
   document.getElementById("btnKennedy").classList.remove("active");
   document.getElementById("btnDonch").classList.remove("active");
   document.getElementById("btnPctR").classList.remove("active");
@@ -1730,6 +1744,7 @@ document.getElementById("btnClearModes").addEventListener("click", () => {
   document.getElementById("btnHa").classList.remove("active");
   document.getElementById("btnHill").classList.remove("active");
   document.getElementById("btnFair").classList.remove("active");
+  document.getElementById("btnPlummer").classList.remove("active");
   fairModeEl.style.display = "none";
   if (currentTicker) showTicker(currentTicker);
 });
@@ -1890,6 +1905,164 @@ function linePoints(bars, values) {
   return out;
 }
 
+function trueRange(bars) {
+  const out = new Array(bars.length).fill(null);
+  for (let i = 0; i < bars.length; i++) {
+    const hi = bars[i].high;
+    const lo = bars[i].low;
+    if (i === 0) {
+      out[i] = hi - lo;
+      continue;
+    }
+    const prevClose = bars[i - 1].close;
+    out[i] = Math.max(hi - lo, Math.abs(hi - prevClose), Math.abs(lo - prevClose));
+  }
+  return out;
+}
+
+function rma(values, period) {
+  const out = new Array(values.length).fill(null);
+  let prev = null;
+  let seed = 0;
+  let count = 0;
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    if (v == null || Number.isNaN(v)) continue;
+    if (prev == null) {
+      seed += v;
+      count += 1;
+      if (count < period) continue;
+      prev = seed / period;
+      out[i] = prev;
+      continue;
+    }
+    prev = (prev * (period - 1) + v) / period;
+    out[i] = prev;
+  }
+  return out;
+}
+
+function computePlummer(bars, len = 34, multIn = 1.618, multEx = 2.618) {
+  const hlc3 = bars.map((b) => (b.high + b.low + b.close) / 3);
+  const basis = ema(hlc3, len);
+  const vibUnit = rma(trueRange(bars), len);
+  const upperIn = basis.map((v, i) => (v == null || vibUnit[i] == null ? null : v + vibUnit[i] * multIn));
+  const lowerIn = basis.map((v, i) => (v == null || vibUnit[i] == null ? null : v - vibUnit[i] * multIn));
+  const upperEx = basis.map((v, i) => (v == null || vibUnit[i] == null ? null : v + vibUnit[i] * multEx));
+  const lowerEx = basis.map((v, i) => (v == null || vibUnit[i] == null ? null : v - vibUnit[i] * multEx));
+  const signals = [];
+  for (let i = 0; i < bars.length; i++) {
+    if (lowerEx[i] == null || upperEx[i] == null) continue;
+    const b = bars[i];
+    if (b.low <= lowerEx[i] && b.close > lowerEx[i] && b.close > b.open) {
+      signals.push({ time: b.time, side: "P+", index: i });
+    }
+    if (b.high >= upperEx[i] && b.close < upperEx[i] && b.close < b.open) {
+      signals.push({ time: b.time, side: "P-", index: i });
+    }
+  }
+  let last = bars.length - 1;
+  while (last >= 0 && (basis[last] == null || vibUnit[last] == null)) last -= 1;
+  let pulsePhase = "нет данных";
+  if (last >= 0) {
+    const b = bars[last];
+    const slopeUp = last > 0 && basis[last - 1] != null ? basis[last] > basis[last - 1] : false;
+    if (b.close >= upperEx[last]) pulsePhase = "Пик пульса (+2.618): истощение роста";
+    else if (b.close >= upperIn[last] && slopeUp) pulsePhase = "Фаза расширения вверх (+1.618)";
+    else if (b.close <= lowerEx[last]) pulsePhase = "Дно пульса (−2.618): истощение падения";
+    else if (b.close <= lowerIn[last] && !slopeUp) pulsePhase = "Фаза сжатия вниз (−1.618)";
+    else if (slopeUp) pulsePhase = "Восходящий ритм к верхней стенке";
+    else pulsePhase = "Нисходящий ритм к нижней стенке";
+  }
+  return {
+    basis, vibUnit, upperIn, lowerIn, upperEx, lowerEx, signals,
+    status: {
+      len,
+      vibUnit: last >= 0 ? vibUnit[last] : null,
+      basis: last >= 0 ? basis[last] : null,
+      upperIn: last >= 0 ? upperIn[last] : null,
+      lowerIn: last >= 0 ? lowerIn[last] : null,
+      upperEx: last >= 0 ? upperEx[last] : null,
+      lowerEx: last >= 0 ? lowerEx[last] : null,
+      pulsePhase,
+      close: last >= 0 ? bars[last].close : null,
+      time: last >= 0 ? bars[last].time : null,
+    },
+  };
+}
+
+function applyPlummer(bars, eventMarkers) {
+  plummerStatusEl.innerHTML = "";
+  if (!plummerOn || !bars.length) return eventMarkers;
+  const pack = computePlummer(bars, 34, 1.618, 2.618);
+  const chartBg = getComputedStyle(root).getPropertyValue("--chart-bg").trim() || "#FCF8E3";
+  const navy = getComputedStyle(root).getPropertyValue("--blue").trim() || "#1D3E6E";
+  const blue = "#2F6FED";
+  const red = getComputedStyle(root).getPropertyValue("--down").trim() || "#A62626";
+  const green = getComputedStyle(root).getPropertyValue("--up").trim() || "#1B6B3A";
+  const band = (hiKey, loKey, fill) => {
+    plummerSeries[hiKey] = priceChart.addAreaSeries({
+      lineColor: "rgba(0,0,0,0)",
+      topColor: fill,
+      bottomColor: fill,
+      lineWidth: 1,
+      priceLineVisible: false,
+      lastValueVisible: false,
+      crosshairMarkerVisible: false,
+    });
+    plummerSeries[loKey] = priceChart.addAreaSeries({
+      lineColor: "rgba(0,0,0,0)",
+      topColor: chartBg,
+      bottomColor: chartBg,
+      lineWidth: 1,
+      priceLineVisible: false,
+      lastValueVisible: false,
+      crosshairMarkerVisible: false,
+    });
+  };
+  // Сначала внешние зоны, затем внутренняя, затем линии поверх.
+  band("fillUpHi", "fillUpLo", "rgba(166, 38, 38, 0.12)");
+  band("fillDnHi", "fillDnLo", "rgba(27, 107, 58, 0.12)");
+  band("fillInnerHi", "fillInnerLo", "rgba(47, 111, 237, 0.10)");
+  plummerSeries.fillUpHi.setData(linePoints(bars, pack.upperEx));
+  plummerSeries.fillUpLo.setData(linePoints(bars, pack.upperIn));
+  plummerSeries.fillDnHi.setData(linePoints(bars, pack.lowerIn));
+  plummerSeries.fillDnLo.setData(linePoints(bars, pack.lowerEx));
+  plummerSeries.fillInnerHi.setData(linePoints(bars, pack.upperIn));
+  plummerSeries.fillInnerLo.setData(linePoints(bars, pack.lowerIn));
+  plummerSeries.basis = priceChart.addLineSeries({ color: navy, lineWidth: 2, title: "Ось 0" });
+  plummerSeries.upperIn = priceChart.addLineSeries({ color: blue, lineWidth: 1, title: "+1.618" });
+  plummerSeries.lowerIn = priceChart.addLineSeries({ color: blue, lineWidth: 1, title: "-1.618" });
+  plummerSeries.upperEx = priceChart.addLineSeries({ color: red, lineWidth: 2, title: "+2.618" });
+  plummerSeries.lowerEx = priceChart.addLineSeries({ color: green, lineWidth: 2, title: "-2.618" });
+  plummerSeries.basis.setData(linePoints(bars, pack.basis));
+  plummerSeries.upperIn.setData(linePoints(bars, pack.upperIn));
+  plummerSeries.lowerIn.setData(linePoints(bars, pack.lowerIn));
+  plummerSeries.upperEx.setData(linePoints(bars, pack.upperEx));
+  plummerSeries.lowerEx.setData(linePoints(bars, pack.lowerEx));
+  const markers = pack.signals.map((sig) => ({
+    time: sig.time,
+    position: sig.side === "P+" ? "belowBar" : "aboveBar",
+    color: sig.side === "P+" ? green : red,
+    shape: sig.side === "P+" ? "arrowUp" : "arrowDown",
+    text: sig.side,
+  }));
+  const st = pack.status;
+  plummerStatusEl.innerHTML = `
+    <h3 style="font-size:13px;margin:12px 0 6px">Канал Пламмера · Пульс Жизни v3</h3>
+    <p class="hint">Ритм ${st.len}: <span class="mono">basis = EMA(hlc3, ${st.len})</span>, <span class="mono">vibUnit = RMA(TR, ${st.len})</span>. Внутренний коридор ±1.618, внешний ±2.618. Сигналы P+/P− — отбой от экстремумов.</p>
+    <div class="scroll"><table class="grid">
+      <tr><th>Параметр</th><th>Статус</th></tr>
+      <tr><td>Единица вибрации</td><td class="mono">${fmt(st.vibUnit, 4)}</td></tr>
+      <tr><td>Ось равновесия</td><td class="mono">${fmt(st.basis, 4)}</td></tr>
+      <tr><td>Коридор +1.618 / −1.618</td><td class="mono">${fmt(st.upperIn, 4)} / ${fmt(st.lowerIn, 4)}</td></tr>
+      <tr><td>Пределы +2.618 / −2.618</td><td class="mono">${fmt(st.upperEx, 4)} / ${fmt(st.lowerEx, 4)}</td></tr>
+      <tr><td>Фаза Пульса Жизни</td><td><strong>${esc(st.pulsePhase)}</strong></td></tr>
+      <tr><td>Сигналов P+ / P−</td><td class="mono">${pack.signals.filter((s) => s.side === "P+").length} / ${pack.signals.filter((s) => s.side === "P-").length}</td></tr>
+    </table></div>`;
+  return eventMarkers.concat(markers).sort((a, b) => String(a.time).localeCompare(String(b.time)));
+}
+
 function clearIndicatorOverlays() {
   Object.keys(kennedySeries).forEach((key) => {
     if (kennedySeries[key]) {
@@ -1921,6 +2094,12 @@ function clearIndicatorOverlays() {
     try { priceChart.removeSeries(series); } catch (e) {}
   });
   hillSeries.clouds = [];
+  Object.keys(plummerSeries).forEach((key) => {
+    if (plummerSeries[key]) {
+      try { priceChart.removeSeries(plummerSeries[key]); } catch (e) {}
+      plummerSeries[key] = null;
+    }
+  });
   explainBoard.style.display = "none";
   kennedySummaryEl.innerHTML = "";
   kennedyStatusEl.innerHTML = "";
@@ -1931,6 +2110,7 @@ function clearIndicatorOverlays() {
   haStatusEl.innerHTML = "";
   hillStatusEl.innerHTML = "";
   fairStatusEl.innerHTML = "";
+  plummerStatusEl.innerHTML = "";
   pctRBox.style.display = "none";
   rsiStochBox.style.display = "none";
   rsxBox.style.display = "none";
@@ -1940,7 +2120,7 @@ function clearIndicatorOverlays() {
 }
 
 function refreshExplainVisibility() {
-  const any = kennedyOn || donchOn || pctROn || rsiStochOn || rsxOn || haOn || hillOn || fairOn;
+  const any = kennedyOn || donchOn || pctROn || rsiStochOn || rsxOn || haOn || hillOn || fairOn || plummerOn;
   explainBoard.style.display = any ? "block" : "none";
   const titles = [];
   if (kennedyOn) titles.push("Trend");
@@ -1951,12 +2131,13 @@ function refreshExplainVisibility() {
   if (haOn) titles.push("Heikin-Ashi");
   if (hillOn) titles.push("5 vs 200");
   if (fairOn) titles.push("Диапазон справедливости");
+  if (plummerOn) titles.push("Пламмер");
   explainTitle.textContent = titles.length ? ("Пояснения · Kennedy · " + titles.join(" · ")) : "Пояснения · Kennedy";
 }
 
 function renderKennedySummary(bars) {
   kennedySummaryEl.innerHTML = "";
-  if (!bars.length || !(kennedyOn || donchOn || pctROn || rsiStochOn || rsxOn || haOn || hillOn || fairOn)) return;
+  if (!bars.length || !(kennedyOn || donchOn || pctROn || rsiStochOn || rsxOn || haOn || hillOn || fairOn || plummerOn)) return;
   const trend = computeKennedy(bars);
   const donch = computeDonch(bars);
   const pr5 = percentR(bars, 5);
@@ -2951,6 +3132,7 @@ function showTicker(ticker) {
   markers = applyDonch(bars, markers);
   markers = applyHillCloud(bars, markers);
   applyFairRange(bars);
+  markers = applyPlummer(bars, markers);
   applyPctRPanel(bars);
   applyRsiStochPanel(bars);
   markers = applyRsxPanel(bars, markers);
