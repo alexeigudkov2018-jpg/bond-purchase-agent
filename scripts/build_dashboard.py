@@ -3,6 +3,9 @@
 Числа только из data/ и reports/. При отсутствии снимков
 data/bonds_tuesday_latest.csv, data/ps_screener_latest.csv,
 data/macro_ofz_latest.md скрипт собирает их из уже лежащих источников.
+
+Итог — один self-contained HTML: DATA и Lightweight Charts встроены
+в файл, страница открывается по file:// без сервера и без сети.
 """
 
 from __future__ import annotations
@@ -53,7 +56,7 @@ FINRADAR = ROOT / "data" / "finradar"
 BONDS_CSV = ROOT / "data" / "bonds_tuesday_latest.csv"
 PS_CSV = ROOT / "data" / "ps_screener_latest.csv"
 MACRO_MD = ROOT / "data" / "macro_ofz_latest.md"
-CDN = "https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"
+LWC_VENDOR = Path(__file__).resolve().parent / "vendor" / "lightweight-charts.standalone.production.js"
 TICKER_ORDER = ("IMOEX", "SMLT", "KLVZ", "EUTR", "MGKL", "SELG", "TATN", "OZON", "GAZP")
 SECTOR_INDICES = (
     ("MOEXOG", "Нефтегаз"),
@@ -1018,9 +1021,24 @@ def build_payload() -> dict:
     }
 
 
+def _inline_lwc_script() -> str:
+    """Встраивает standalone Lightweight Charts для file:// без сети."""
+    if not LWC_VENDOR.exists():
+        raise FileNotFoundError(
+            f"нет {LWC_VENDOR.relative_to(ROOT)} — положите lightweight-charts.standalone.production.js в scripts/vendor/"
+        )
+    source = LWC_VENDOR.read_text(encoding="utf-8")
+    # Не дать закрыть HTML-тег script изнутри бандла.
+    source = source.replace("</script>", "<\\/script>").replace("</Script>", "<\\/Script>")
+    return f"<script>\n{source}\n</script>"
+
+
 def build() -> None:
     payload = build_payload()
-    html = HTML.replace("__DATA__", _json_blob(payload)).replace("__CDN__", CDN)
+    html = (
+        HTML.replace("__DATA__", _json_blob(payload))
+        .replace("__LWC_SCRIPT__", _inline_lwc_script())
+    )
     OUT.write_text(html, encoding="utf-8")
     kpi = payload["kpi"]
     print(
@@ -1029,7 +1047,8 @@ def build() -> None:
         f"events={len(payload['candles']['events'])} "
         f"bonds={len(payload['bonds'])} "
         f"ps_rows={len(payload['ps_screener'])} "
-        f"imoex={kpi['imoex']['value']} ps={kpi['ps']['value']}"
+        f"imoex={kpi['imoex']['value']} ps={kpi['ps']['value']} "
+        f"lwc_inline={LWC_VENDOR.stat().st_size}"
     )
 
 
@@ -1039,10 +1058,7 @@ HTML = r"""<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TERMINAL · GANN / RADAR</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
-<script src="__CDN__"></script>
+__LWC_SCRIPT__
 <style>
 :root, [data-theme="gann"] {
   --paper: #F7F1D5;
