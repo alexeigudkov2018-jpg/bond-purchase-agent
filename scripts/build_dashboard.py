@@ -61,26 +61,39 @@ PS_CSV = ROOT / "data" / "ps_screener_latest.csv"
 MACRO_MD = ROOT / "data" / "macro_ofz_latest.md"
 LWC_VENDOR = Path(__file__).resolve().parent / "vendor" / "lightweight-charts.standalone.production.js"
 CANDLES_EXTRA = CLEAN / "candles_extra_daily.csv"
-# Полный рабочий список: индексы, акции, вечные фьючерсы металлов/FX, нефть BR.
-TICKER_ORDER = (
-    "IMOEX",
-    "RGBI",
-    "SMLT",
-    "KLVZ",
-    "EUTR",
-    "MGKL",
-    "SELG",
-    "TATN",
-    "OZON",
-    "GAZP",
-    "GLDRUBF",
-    "SLVRUBF",
-    "PLTRUBF",
-    "PLDRUBF",
-    "USDRUBF",
-    "CNYRUBF",
-    "BR",
+# Акции РФ (канон кнопки) + алиасы ISS, если тикер переименован/не торгуется.
+EQUITY_UNIVERSE = (
+    "SBER", "SBERP", "GAZP", "LKOH", "ROSN", "NVTK", "GMKN", "PLZL", "YDEX", "T",
+    "TATN", "TATNP", "SURG", "SNGSP", "CHMF", "NLMK", "MAGN", "ALRS", "MOEX", "VTBR",
+    "OZON", "HEAD", "RUAL", "MTSS", "RTKM", "RTKMP", "IRAO", "HYDR", "FEES", "RASP",
+    "MTLR", "AFLT", "PIKK", "SMLT", "LSRG", "PHOR", "AKRN", "FLOT", "NMTP", "TRNFP",
+    "BANEP", "BANE", "SIBN", "POSI", "ASTR", "DIAS", "SOFL", "VKCO", "MVID", "LENT",
+    "FIVE", "MGNT", "BELU", "ENPG", "UPRO", "OGKB", "TGKA", "MSNG",
 )
+TICKER_FETCH_ALIASES = {
+    "FIVE": ("FIVE", "X5"),
+    "SURG": ("SURG", "SNGS"),
+}
+INDEX_UNIVERSE = ("IMOEX", "RGBI", "RVI")
+METAL_UNIVERSE = ("GLDRUBF", "SLVRUBF", "PLTRUBF", "PLDRUBF")
+FX_UNIVERSE = ("USDRUBF", "CNYRUBF")
+OIL_UNIVERSE = ("BR",)
+TICKER_ORDER = tuple(
+    dict.fromkeys(
+        list(EQUITY_UNIVERSE)
+        + list(INDEX_UNIVERSE)
+        + list(METAL_UNIVERSE)
+        + list(FX_UNIVERSE)
+        + list(OIL_UNIVERSE)
+    )
+)
+TICKER_GROUPS = {
+    "equities": {"label": f"Все {len(EQUITY_UNIVERSE)} Акции", "tickers": list(EQUITY_UNIVERSE)},
+    "indices": {"label": "Индексы", "tickers": list(INDEX_UNIVERSE)},
+    "metals": {"label": "Драгметаллы", "tickers": list(METAL_UNIVERSE)},
+    "fx": {"label": "Валюта", "tickers": list(FX_UNIVERSE)},
+    "oil": {"label": "Нефть", "tickers": list(OIL_UNIVERSE)},
+}
 SECTOR_INDICES = (
     ("MOEXOG", "Нефтегаз"),
     ("MOEXMM", "Металлы и добыча"),
@@ -1182,17 +1195,179 @@ def synthesize_candles(raw_rows: list[dict]) -> list[dict]:
     return out
 
 
+def _iss_history_urls(secid: str) -> list[str]:
+    """Кандидаты ISS history для акции / индекса / вечного фьючерса."""
+    end = now_msk().date()
+    start = end.fromordinal(end.toordinal() - 400)
+    window = f"from={start.isoformat()}&till={end.isoformat()}&iss.meta=off"
+    if secid in INDEX_UNIVERSE:
+        return [
+            f"https://iss.moex.com/iss/history/engines/stock/markets/index/securities/{secid}.json?{window}",
+            f"https://iss.moex.com/iss/history/engines/stock/markets/index/boards/SNDX/securities/{secid}.json?{window}",
+            f"https://iss.moex.com/iss/history/engines/stock/markets/index/boards/RTSI/securities/{secid}.json?{window}",
+        ]
+    if secid in METAL_UNIVERSE or secid in FX_UNIVERSE or secid in OIL_UNIVERSE:
+        return [
+            f"https://iss.moex.com/iss/history/engines/futures/markets/forts/boards/RFUD/securities/{secid}.json?{window}",
+            f"https://iss.moex.com/iss/history/engines/futures/markets/forts/securities/{secid}.json?{window}",
+        ]
+    return [
+        f"https://iss.moex.com/iss/history/engines/stock/markets/shares/boards/TQBR/securities/{secid}.json?{window}",
+        f"https://iss.moex.com/iss/history/engines/stock/markets/shares/securities/{secid}.json?{window}",
+    ]
+
+
+def _http_get_json(url: str) -> dict | None:
+    """GET JSON: curl -k (обход SSL-цепочки среды) с пагинацией start=."""
+    import subprocess
+
+    rows_all: list = []
+    columns: list = []
+    start = 0
+    while True:
+        page_url = url + (f"&start={start}" if "start=" not in url else "")
+        try:
+            proc = subprocess.run(
+                ["curl", "-k", "-sS", "-m", "45", "-A", "AlmanacCollector/0.1", page_url],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except OSError:
+            return None
+        if proc.returncode != 0 or not (proc.stdout or "").strip():
+            break
+        try:
+            payload = json.loads(proc.stdout)
+        except json.JSONDecodeError:
+            break
+        hist = payload.get("history") or {}
+        if not columns:
+            columns = list(hist.get("columns") or [])
+        chunk = list(hist.get("data") or [])
+        if not chunk:
+            break
+        rows_all.extend(chunk)
+        cursor = (payload.get("history.cursor") or {}).get("data") or []
+        if not cursor:
+            break
+        index, total, page = cursor[0][0], cursor[0][1], cursor[0][2] or 100
+        start = int(index) + int(page)
+        if start >= int(total):
+            break
+        if len(chunk) < int(page):
+            break
+    if not rows_all or not columns:
+        return None
+    return {"columns": columns, "data": rows_all}
+
+
+def _rows_from_iss_history(secid: str, payload: dict) -> list[dict]:
+    cols = payload["columns"]
+    idx = {name: i for i, name in enumerate(cols)}
+
+    def cell(row, name):
+        i = idx.get(name)
+        return row[i] if i is not None and i < len(row) else None
+
+    out = []
+    for row in payload["data"]:
+        stamp = cell(row, "TRADEDATE") or cell(row, "TRADE_SESSION_DATE")
+        close = _num(cell(row, "CLOSE") or cell(row, "LEGALCLOSEPRICE"))
+        if not stamp or close is None:
+            continue
+        out.append(
+            {
+                "ticker": secid,
+                "date": str(stamp)[:10],
+                "open": _num(cell(row, "OPEN")),
+                "high": _num(cell(row, "HIGH")),
+                "low": _num(cell(row, "LOW")),
+                "close": close,
+                "volume": _num(cell(row, "VALUE") or cell(row, "VOLUME")),
+                "source": "iss.moex.com",
+            }
+        )
+    return out
+
+
+def ensure_iss_candles(needed: list[str], min_bars: int = 120) -> dict[str, int]:
+    """Добирает недостающие дневные свечи (~1г) с iss.moex.com в candles_extra_daily.csv."""
+    existing = load_bars(needed)
+    fetched: dict[str, int] = {}
+    new_rows: list[dict] = []
+    for ticker in needed:
+        have = len(existing.get(ticker, []))
+        if have >= min_bars:
+            continue
+        candidates = TICKER_FETCH_ALIASES.get(ticker, (ticker,))
+        got: list[dict] = []
+        used = ticker
+        for secid in candidates:
+            for url in _iss_history_urls(secid):
+                payload = _http_get_json(url)
+                if not payload:
+                    continue
+                rows = _rows_from_iss_history(ticker, payload)  # store under button ticker
+                if len(rows) >= max(20, min_bars // 3):
+                    got = rows
+                    used = secid
+                    break
+            if got:
+                break
+        if not got:
+            print(f"iss skip {ticker}: no history")
+            continue
+        new_rows.extend(got)
+        fetched[ticker] = len(got)
+        print(f"iss fetch {ticker} via {used}: {len(got)} bars")
+    if new_rows:
+        cols = ["date", "ticker", "open", "high", "low", "close", "volume", "source", "fetched_at"]
+        stamp = now_msk().strftime("%Y-%m-%dT%H:%M:%S")
+        prev = read_csv(CANDLES_EXTRA)
+        keep = [row for row in prev if (row.get("ticker") or "") not in fetched]
+        merged = []
+        for row in keep + new_rows:
+            merged.append(
+                {
+                    "date": row.get("date") or "",
+                    "ticker": row.get("ticker") or "",
+                    "open": "" if row.get("open") in (None, "") else row.get("open"),
+                    "high": "" if row.get("high") in (None, "") else row.get("high"),
+                    "low": "" if row.get("low") in (None, "") else row.get("low"),
+                    "close": row.get("close") if row.get("close") is not None else "",
+                    "volume": "" if row.get("volume") in (None, "") else row.get("volume"),
+                    "source": row.get("source") or "iss.moex.com",
+                    "fetched_at": row.get("fetched_at") or stamp,
+                }
+            )
+        merged.sort(key=lambda row: (row.get("ticker") or "", row.get("date") or ""))
+        with CANDLES_EXTRA.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=cols, extrasaction="ignore")
+            writer.writeheader()
+            writer.writerows(merged)
+    return fetched
+
+
 def load_bars(tickers: list[str]) -> dict[str, list[dict]]:
     wanted = set(tickers) | set(TICKER_ORDER)
     bars: dict[str, dict[str, dict]] = {}
+
+    def resolve_ticker(raw_ticker: str) -> str | None:
+        if raw_ticker in wanted:
+            return raw_ticker
+        for canon, aliases in TICKER_FETCH_ALIASES.items():
+            if raw_ticker in aliases and canon in wanted:
+                return canon
+        return None
 
     def read_ohlc_csv(path: Path, ticker_field: str) -> None:
         if not path.exists():
             return
         with path.open(encoding="utf-8", newline="") as handle:
             for row in csv.DictReader(handle):
-                ticker = row.get(ticker_field) or ""
-                if ticker not in wanted:
+                ticker = resolve_ticker(row.get(ticker_field) or "")
+                if not ticker:
                     continue
                 stamp = row.get("date") or ""
                 open_, high, low, close = (_num(row.get(name)) for name in ("open", "high", "low", "close"))
@@ -1202,17 +1377,19 @@ def load_bars(tickers: list[str]) -> dict[str, list[dict]]:
     read_ohlc_csv(CLEAN / "prices_daily.csv", "ticker")
     read_ohlc_csv(CANDLES_EXTRA, "ticker")
 
-    with (CLEAN / "indices_daily.csv").open(encoding="utf-8", newline="") as handle:
-        for row in csv.DictReader(handle):
-            ticker = row.get("index") or ""
-            if ticker not in wanted:
-                continue
-            stamp = row.get("date") or ""
-            close = _num(row.get("close"))
-            open_ = _num(row.get("open"))
-            high = _num(row.get("high"))
-            low = _num(row.get("low"))
-            _ingest_bar_row(bars, ticker, stamp, open_, high, low, close, None)
+    indices_path = CLEAN / "indices_daily.csv"
+    if indices_path.exists():
+        with indices_path.open(encoding="utf-8", newline="") as handle:
+            for row in csv.DictReader(handle):
+                ticker = row.get("index") or ""
+                if ticker not in wanted:
+                    continue
+                stamp = row.get("date") or ""
+                close = _num(row.get("close"))
+                open_ = _num(row.get("open"))
+                high = _num(row.get("high"))
+                low = _num(row.get("low"))
+                _ingest_bar_row(bars, ticker, stamp, open_, high, low, close, None)
 
     result: dict[str, list[dict]] = {}
     for ticker in sorted(bars):
@@ -1220,7 +1397,6 @@ def load_bars(tickers: list[str]) -> dict[str, list[dict]]:
         candles = synthesize_candles(raw)
         if candles:
             result[ticker] = candles
-    # Стабильный порядок по TICKER_ORDER + хвост.
     ordered: dict[str, list[dict]] = {}
     for ticker in TICKER_ORDER:
         if ticker in result:
@@ -1331,6 +1507,167 @@ def parse_almanac_diff() -> dict:
     return {"file": str(path.relative_to(ROOT)), "rows": rows}
 
 
+def _series_pair(series: dict[str, float], lookback: int = 20) -> tuple[str | None, float | None, str | None, float | None]:
+    dates = sorted(series)
+    if not dates:
+        return None, None, None, None
+    now_d, now_v = dates[-1], series[dates[-1]]
+    prev_i = max(0, len(dates) - 1 - lookback)
+    was_d, was_v = dates[prev_i], series[dates[prev_i]]
+    return was_d, was_v, now_d, now_v
+
+
+def _signal_from_pct(pct: float | None, *, up_good: bool = True) -> str:
+    if pct is None:
+        return "нет данных"
+    thr = 1.0
+    if abs(pct) < thr:
+        return "без существенных изменений"
+    rising = pct > 0
+    if rising == up_good:
+        return "бычий импульс" if rising else "защитный спад давления"
+    return "давление продавцов" if rising else "осторожный отскок"
+
+
+def build_almanac_compare(
+    series: dict[str, dict[str, float]],
+    bars: dict[str, list[dict]],
+    kpi: dict,
+    stovall: dict,
+    sr_moex: dict,
+    lookback: int = 20,
+) -> dict:
+    """Наглядная сводка Было/Стало из data/ для вкладки альманаха."""
+    rows: list[dict] = []
+
+    def add_row(metric: str, was_d, was_v, now_d, now_v, *, digits=2, up_good=True, unit=""):
+        delta = None if was_v is None or now_v is None else now_v - was_v
+        pct = None if was_v in (None, 0) or now_v is None else (now_v / was_v - 1.0) * 100.0
+        rows.append(
+            {
+                "metric": metric,
+                "was": None if was_v is None else f"{was_v:.{digits}f}{unit}",
+                "was_date": was_d or "",
+                "now": None if now_v is None else f"{now_v:.{digits}f}{unit}",
+                "now_date": now_d or "",
+                "delta": None if delta is None else f"{delta:+.{digits}f}{unit}",
+                "delta_pct": pct,
+                "signal": _signal_from_pct(pct, up_good=up_good),
+            }
+        )
+
+    for code, title, up_good in (
+        ("IMOEX", "Индекс IMOEX", True),
+        ("RGBI", "Индекс RGBI (ОФЗ)", True),
+        ("RVI", "Индекс страха RVI", False),
+        ("GLDRUBF", "Золото GLDRUBF", True),
+        ("SLVRUBF", "Серебро SLVRUBF", True),
+        ("CNYRUBF", "Юань CNYRUBF", False),
+        ("USDRUBF", "Доллар USDRUBF", False),
+        ("BR", "Нефть BR", True),
+    ):
+        src = series.get(code) or {}
+        if not src and code in bars:
+            src = {b["time"]: b["close"] for b in bars[code]}
+        add_row(title, *_series_pair(src, lookback), up_good=up_good)
+
+    # КБД 10Y и спред из kpi (текущие) + ofz_curve_daily если есть история.
+    curve_hist: dict[str, float] = {}
+    spread_hist: dict[str, float] = {}
+    curve_path = CLEAN / "ofz_curve_daily.csv"
+    if curve_path.exists():
+        for row in read_csv(curve_path):
+            stamp = row.get("date") or ""
+            y10 = _num(row.get("t_10y") or row.get("y10") or row.get("tenor_10y"))
+            y2 = _num(row.get("t_2y") or row.get("y2") or row.get("tenor_2y"))
+            if stamp and y10 is not None:
+                curve_hist[stamp] = y10
+            if stamp and y10 is not None and y2 is not None:
+                spread_hist[stamp] = y10 - y2
+    if curve_hist:
+        add_row("КБД 10Y, %", *_series_pair(curve_hist, lookback), digits=3, up_good=False, unit="%")
+    else:
+        y10 = ((kpi.get("ofz10") or {}).get("value"))
+        add_row(
+            "КБД 10Y, %",
+            (kpi.get("ofz10") or {}).get("date"),
+            y10,
+            (kpi.get("ofz10") or {}).get("date"),
+            y10,
+            digits=3,
+            up_good=False,
+            unit="%",
+        )
+    if spread_hist:
+        add_row("Спред 10−2, п.п.", *_series_pair(spread_hist, lookback), digits=3, up_good=True, unit=" п.п.")
+    else:
+        spread = (kpi.get("ofz10") or {}).get("spread_10_2")
+        add_row(
+            "Спред 10−2, п.п.",
+            (kpi.get("ofz10") or {}).get("date"),
+            spread,
+            (kpi.get("ofz10") or {}).get("date"),
+            spread,
+            digits=3,
+            up_good=True,
+            unit=" п.п.",
+        )
+
+    ps = kpi.get("ps") or {}
+    add_row("P/S корзины", ps.get("date"), ps.get("value"), ps.get("date"), ps.get("value"), digits=4, up_good=False)
+
+    # Лидеры роста/падения среди equity-кнопок.
+    day_moves = []
+    for ticker in EQUITY_UNIVERSE:
+        own = bars.get(ticker) or []
+        if len(own) < 2 or not own[-2]["close"]:
+            continue
+        pct = (own[-1]["close"] / own[-2]["close"] - 1.0) * 100.0
+        day_moves.append((ticker, own[-1]["time"], own[-2]["close"], own[-1]["close"], pct))
+    day_moves.sort(key=lambda item: item[4], reverse=True)
+    for ticker, now_d, was_v, now_v, pct in day_moves[:3]:
+        add_row(f"Лидер роста · {ticker}", now_d, was_v, now_d, now_v, digits=2, up_good=True)
+        rows[-1]["delta_pct"] = pct
+        rows[-1]["signal"] = "лидер дня среди 52 акций"
+    for ticker, now_d, was_v, now_v, pct in day_moves[-3:]:
+        add_row(f"Лидер падения · {ticker}", now_d, was_v, now_d, now_v, digits=2, up_good=True)
+        rows[-1]["delta_pct"] = pct
+        rows[-1]["signal"] = "аутсайдер дня среди 52 акций"
+
+    st_phase = ((stovall or {}).get("cycle") or {}).get("phase")
+    sr_phase = ((sr_moex or {}).get("cycle") or {}).get("phase")
+    rows.append(
+        {
+            "metric": "Фаза Стовалл (legacy)",
+            "was": "—",
+            "was_date": "",
+            "now": st_phase or "нет",
+            "now_date": ((stovall or {}).get("cycle") or {}).get("asof") or "",
+            "delta": "",
+            "delta_pct": None,
+            "signal": ((stovall or {}).get("cycle") or {}).get("delta_dir") or "см. блок Стовалла",
+        }
+    )
+    rows.append(
+        {
+            "metric": "Фаза SR MOEX v1.0 (Pine)",
+            "was": "—",
+            "was_date": "",
+            "now": sr_phase or "нет",
+            "now_date": ((sr_moex or {}).get("cycle") or {}).get("asof") or "",
+            "delta": "",
+            "delta_pct": None,
+            "signal": ((sr_moex or {}).get("cycle") or {}).get("recommendation") or "см. блок SR MOEX",
+        }
+    )
+    return {
+        "file": "data/* live snapshot",
+        "lookback_sessions": lookback,
+        "asof": now_msk().strftime("%Y-%m-%d %H:%M МСК"),
+        "rows": rows,
+    }
+
+
 def build_fractions(series: dict[str, dict[str, float]]) -> list[dict]:
     out = []
     for num, den, label in FRACTIONS:
@@ -1424,14 +1761,33 @@ def build_payload() -> dict:
     extras = load_finradar_extras()
     ps_history = parse_ps_history()
     events = load_events()
+    # Сначала читаем локальный кэш, затем добираем дыры с ISS (best-effort).
+    ensure_iss_candles(list(TICKER_ORDER), min_bars=120)
     bars = load_bars(list(TICKER_ORDER))
-    tickers = ticker_list(events, bars)
+    # Порядок кнопок: вселенная TICKER_ORDER, у которых есть свечи.
+    tickers = [name for name in TICKER_ORDER if name in bars] or ticker_list(events, bars)
     bonds = ensure_bonds_tuesday()
     ps_rows = ensure_ps_screener()
     ensure_macro_md(series, curve)
+    kpi = build_kpi(series, curve, ps_history, extras)
+    stovall = build_stovall_rotation(series)
+    sr_moex = build_sr_moex_rotation(series)
+    groups = {
+        key: {
+            "label": cfg["label"],
+            "tickers": [t for t in cfg["tickers"] if t in bars],
+        }
+        for key, cfg in TICKER_GROUPS.items()
+    }
     return {
-        "kpi": build_kpi(series, curve, ps_history, extras),
-        "candles": {"tickers": tickers, "bars": bars, "events": events},
+        "kpi": kpi,
+        "candles": {
+            "tickers": tickers,
+            "bars": bars,
+            "events": events,
+            "groups": groups,
+            "default_group": "equities",
+        },
         "loops": parse_soros_loops(),
         "curve": {
             "date": curve.get("date"),
@@ -1481,9 +1837,10 @@ def build_payload() -> dict:
         "ps_history": ps_history,
         "fractions": build_fractions(series),
         "sectors": build_sectors(series),
-        "stovall": build_stovall_rotation(series),
-        "sr_moex": build_sr_moex_rotation(series),
+        "stovall": stovall,
+        "sr_moex": sr_moex,
         "almanac_diff": parse_almanac_diff(),
+        "almanac_compare": build_almanac_compare(series, bars, kpi, stovall, sr_moex),
         "disclaimer": "Материал не является индивидуальной инвестиционной рекомендацией.",
     }
 
@@ -1740,7 +2097,30 @@ header.app .note { margin: 6px 0 0; font-size: 12px; color: var(--muted); max-wi
 }
 .board h2 { margin: 0 0 8px; font-size: 15px; letter-spacing: 0.04em; }
 .board .hint { margin: 0 0 10px; font-size: 12px; color: var(--muted); }
-.tickers { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.ticker-picker { margin-bottom: 8px; }
+.ticker-cats { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 6px; }
+.ticker-cats button {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 10px;
+  padding: 5px 8px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+.ticker-cats button.active { background: var(--ink); color: var(--paper); }
+.ticker-search {
+  flex: 1 1 140px;
+  min-width: 120px;
+  max-width: 220px;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  padding: 5px 8px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+}
+.tickers { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; max-height: 120px; overflow: auto; }
 .tickers button {
   font-family: "JetBrains Mono", Consolas, monospace;
   font-size: 10px;
@@ -1751,6 +2131,38 @@ header.app .note { margin: 6px 0 0; font-size: 12px; color: var(--muted); max-wi
   cursor: pointer;
 }
 .tickers button.active { background: var(--ink); color: var(--paper); }
+.tickers button.missing { opacity: 0.45; text-decoration: line-through; }
+.gann9-card {
+  display: none;
+  margin-top: 8px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  padding: 10px 12px;
+}
+.gann9-card.is-on { display: block; }
+.gann9-card h3 { margin: 0 0 6px; font-size: 13px; }
+.chart-pane { position: relative; }
+.wrap .gudkoff-mark,
+#lower .gudkoff-mark,
+#optChart .gudkoff-mark,
+#pctRChart .gudkoff-mark,
+#rsiStochChart .gudkoff-mark,
+#rsxChart .gudkoff-mark,
+#haChart .gudkoff-mark {
+  position: absolute;
+  left: 10px;
+  bottom: 6px;
+  z-index: 6;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: rgba(28, 25, 21, 0.30);
+  pointer-events: none;
+  user-select: none;
+}
+[data-theme="dark"] .gudkoff-mark { color: rgba(232, 224, 208, 0.28); }
+a[href*="tradingview.com"] { display: none !important; }
 .chart-toolbar {
   position: relative;
   z-index: 50;
@@ -1869,7 +2281,8 @@ header.app .note { margin: 6px 0 0; font-size: 12px; color: var(--muted); max-wi
 .wrap { position: relative; overflow: hidden; z-index: 1; }
 .chart { height: 420px; border: 1px solid var(--rule); background: var(--chart-bg); }
 .chart.small { height: 260px; }
-#lower { height: 150px; margin-top: 8px; border: 1px solid var(--rule); background: var(--chart-bg); }
+#lower { position: relative; height: 150px; margin-top: 8px; border: 1px solid var(--rule); background: var(--chart-bg); }
+#optChart, #pctRChart, #rsiStochChart, #rsxChart, #haChart { position: relative; }
 #optBox, #pctRBox, #rsiStochBox, #haBox, #rsxBox { display: none; margin-top: 8px; border: 1px solid var(--rule); background: var(--card); padding: 8px; }
 #optBox .pct-head, #pctRBox .pct-head, #rsiStochBox .pct-head, #haBox .pct-head, #rsxBox .pct-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 #optBox .pct-head h3, #pctRBox .pct-head h3, #rsiStochBox .pct-head h3, #haBox .pct-head h3, #rsxBox .pct-head h3 { margin: 0; font-size: 13px; }
@@ -2036,11 +2449,14 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
             <button type="button" id="btnFullscreen" class="fs-btn" title="Развернуть график">⛶ На весь экран</button>
           </div>
         </div>
-        <div class="tickers" id="tickers"></div>
+        <div class="ticker-picker">
+          <div class="ticker-cats" id="tickerCats"></div>
+          <div class="tickers" id="tickers"></div>
+        </div>
         <div class="mode-block">
           <div class="mode-label">Строка 1 · Уровни, Циклы и Волны (наложения)</div>
           <div class="modes" id="modeRowLevels">
-            <button type="button" data-mode="gann9" id="btnGann9">Квадрат 9 Ганна (Углы)</button>
+            <button type="button" data-mode="gann9" id="btnGann9">Квадрат 9 Ганна (Уровни)</button>
             <button type="button" data-mode="gann18" id="btnGann18">Сетка Ганна 1/8 (50%)</button>
             <button type="button" data-mode="boroden" id="btnBoroden">Кластеры и Время Кэролайн Бороден</button>
             <button type="button" data-mode="elliott" id="btnElliott">Волны Эллиотта (1-2-3-4-5)</button>
@@ -2069,17 +2485,19 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
           <button type="button" data-fair="sma20">Скользящий конверт SMA(20)</button>
         </div>
       </div>
-      <div class="wrap">
+      <div class="wrap chart-pane">
         <div class="chart" id="price"></div>
         <div id="tip"></div>
+        <div class="gudkoff-mark" aria-hidden="true">GUDKOFF &amp;</div>
       </div>
-      <div id="lower"></div>
+      <div id="gann9Card" class="gann9-card"></div>
+      <div id="lower" class="chart-pane"><div class="gudkoff-mark" aria-hidden="true">GUDKOFF &amp;</div></div>
       <div id="optBox">
         <div class="pct-head">
           <h3 id="optTitle">Подвал · Опционы Put/Call (прокси потока)</h3>
           <span class="meta" id="optHint">PCR по объёму дня</span>
         </div>
-        <div id="optChart"></div>
+        <div id="optChart" class="chart-pane"><div class="gudkoff-mark" aria-hidden="true">GUDKOFF &amp;</div></div>
       </div>
       <div id="pctRBox">
         <div class="pct-head">
@@ -2089,7 +2507,7 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
             <button type="button" data-speed="20">Медленный %R(20)</button>
           </div>
         </div>
-        <div id="pctRChart"></div>
+        <div id="pctRChart" class="chart-pane"><div class="gudkoff-mark" aria-hidden="true">GUDKOFF &amp;</div></div>
       </div>
       <div id="rsiStochBox">
         <div class="pct-head">
@@ -2099,21 +2517,21 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
             <button type="button" data-pane="stoch">Stochastic (8, 5, 3)</button>
           </div>
         </div>
-        <div id="rsiStochChart"></div>
+        <div id="rsiStochChart" class="chart-pane"><div class="gudkoff-mark" aria-hidden="true">GUDKOFF &amp;</div></div>
       </div>
       <div id="rsxBox">
         <div class="pct-head">
           <h3 id="rsxTitle">Панель Jurik RSX (14) · Ход / Сила / Слом</h3>
           <span class="meta" id="rsxHint">ось 50 · слом наклона</span>
         </div>
-        <div id="rsxChart"></div>
+        <div id="rsxChart" class="chart-pane"><div class="gudkoff-mark" aria-hidden="true">GUDKOFF &amp;</div></div>
       </div>
       <div id="haBox">
         <div class="pct-head">
           <h3 id="haTitle">Панель Heikin-Ashi + EMA9</h3>
           <span class="meta" id="haRibbonHint">лента EMA9</span>
         </div>
-        <div id="haChart"></div>
+        <div id="haChart" class="chart-pane"><div class="gudkoff-mark" aria-hidden="true">GUDKOFF &amp;</div></div>
       </div>
       <div class="board explain-compact" id="explainBoard" style="display:none;margin-top:10px;padding:10px;">
         <h2 id="explainTitle">Пояснения · индикаторы</h2>
@@ -2218,8 +2636,8 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
 
 <section class="panel" id="tab-almanac">
   <div class="board">
-    <h2>Альманах · Было / Стало</h2>
-    <p class="hint" id="diffHint">Сравнение из <span class="mono">almanac/DIFF_*.md</span>.</p>
+    <h2>5. Сводка Альманаха · Было / Стало</h2>
+    <p class="hint" id="diffHint">Живое сравнение срезов из <span class="mono">data/</span> (≈20 сессий) + фазы ротации.</p>
     <div class="scroll"><table class="grid" id="diffTable"></table></div>
   </div>
 </section>
@@ -2240,6 +2658,7 @@ const DATA = Object.assign({
   stovall: null,
   sr_moex: null,
   almanac_diff: { file: "", rows: [] },
+  almanac_compare: { file: "", rows: [] },
   disclaimer: "",
   built_at: "",
   built_at_label: "",
@@ -2345,7 +2764,13 @@ function chartBase(height) {
   // По умолчанию режим «Курсор»: без зума колесом/драгом — кнопки не перекрываются жестами графика.
   return {
     height,
-    layout: { background: { color: getComputedStyle(root).getPropertyValue("--chart-bg").trim() || "#FCF8E3" }, textColor: getComputedStyle(root).getPropertyValue("--chart-text").trim() || "#1C1915", fontSize: 11, fontFamily: "JetBrains Mono, Consolas, monospace" },
+    layout: {
+      background: { color: getComputedStyle(root).getPropertyValue("--chart-bg").trim() || "#FCF8E3" },
+      textColor: getComputedStyle(root).getPropertyValue("--chart-text").trim() || "#1C1915",
+      fontSize: 11,
+      fontFamily: "JetBrains Mono, Consolas, monospace",
+      attributionLogo: false,
+    },
     grid: {
       vertLines: { color: getComputedStyle(root).getPropertyValue("--chart-grid").trim() || "rgba(160,125,58,0.35)" },
       horzLines: { color: getComputedStyle(root).getPropertyValue("--chart-grid").trim() || "rgba(160,125,58,0.35)" },
@@ -2461,17 +2886,81 @@ bindRangeSync(lowerChart);
 bindCrosshairSync(priceChart);
 bindCrosshairSync(lowerChart);
 
-const candleData = DATA.candles || { tickers: [], bars: {}, events: [] };
+const candleData = DATA.candles || { tickers: [], bars: {}, events: [], groups: {} };
 let currentTicker = candleData.tickers[0] || "";
 const buttons = {};
-candleData.tickers.forEach((ticker) => {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.textContent = ticker;
-  button.addEventListener("click", () => showTicker(ticker));
-  buttonRow.appendChild(button);
-  buttons[ticker] = button;
-});
+const tickerCatsEl = document.getElementById("tickerCats");
+let activeTickerGroup = (candleData.default_group || "equities");
+let tickerSearchQuery = "";
+
+function allGroupTickers() {
+  const groups = candleData.groups || {};
+  const ordered = [];
+  const seen = new Set();
+  Object.keys(groups).forEach((key) => {
+    (groups[key].tickers || []).forEach((t) => {
+      if (!seen.has(t)) { seen.add(t); ordered.push(t); }
+    });
+  });
+  (candleData.tickers || []).forEach((t) => {
+    if (!seen.has(t)) { seen.add(t); ordered.push(t); }
+  });
+  return ordered;
+}
+
+function renderTickerPicker() {
+  if (!buttonRow || !tickerCatsEl) return;
+  const groups = candleData.groups || {};
+  const groupKeys = Object.keys(groups);
+  if (!groupKeys.includes(activeTickerGroup)) activeTickerGroup = groupKeys[0] || "equities";
+  tickerCatsEl.innerHTML = "";
+  groupKeys.forEach((key) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = (groups[key] && groups[key].label) || key;
+    btn.classList.toggle("active", key === activeTickerGroup);
+    btn.addEventListener("click", () => {
+      activeTickerGroup = key;
+      renderTickerPicker();
+    });
+    tickerCatsEl.appendChild(btn);
+  });
+  const search = document.createElement("input");
+  search.type = "search";
+  search.className = "ticker-search";
+  search.placeholder = "Поиск тикера…";
+  search.value = tickerSearchQuery;
+  search.addEventListener("input", () => {
+    tickerSearchQuery = search.value || "";
+    renderTickerPicker();
+    search.focus();
+  });
+  tickerCatsEl.appendChild(search);
+
+  buttonRow.innerHTML = "";
+  Object.keys(buttons).forEach((key) => { delete buttons[key]; });
+  const q = tickerSearchQuery.trim().toUpperCase();
+  let list = q
+    ? allGroupTickers().filter((t) => t.toUpperCase().includes(q))
+    : ((groups[activeTickerGroup] && groups[activeTickerGroup].tickers) || candleData.tickers || []);
+  if (!list.length && q) list = allGroupTickers().filter((t) => t.toUpperCase().includes(q));
+  list.forEach((ticker) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = ticker;
+    const hasBars = !!(candleData.bars && candleData.bars[ticker] && candleData.bars[ticker].length);
+    if (!hasBars) button.classList.add("missing");
+    button.classList.toggle("active", ticker === currentTicker);
+    button.addEventListener("click", () => {
+      if (!hasBars) return;
+      showTicker(ticker);
+      renderTickerPicker();
+    });
+    buttonRow.appendChild(button);
+    buttons[ticker] = button;
+  });
+}
+renderTickerPicker();
 
 function eventsOf(ticker) {
   return (candleData.events || []).filter((row) => row.ticker === ticker);
@@ -2918,44 +3407,46 @@ function heikinAshi(bars) {
 }
 
 function jurikRsx(closes, length = 14) {
+  // Порт Pine: Jurik RSX — ход, сила, слом (length=14, source=close).
   const n = closes.length;
   const out = new Array(n).fill(null);
   if (n < 2) return out;
-  const f18 = 3 / (length + 2);
-  const f20 = 1 - f18;
-  let f28 = 0, f30 = 0, f38 = 0, f40 = 0, f48 = 0, f50 = 0;
-  let f58 = 0, f60 = 0, f68 = 0, f70 = 0, f78 = 0, f80 = 0;
-  let f88 = 0;
-  let prev = closes[0];
+  const f18 = 3.0 / (length + 2.0);
+  const f20 = 1.0 - f18;
+  let f28 = 0.0, f30 = 0.0, f38 = 0.0, f40 = 0.0, f48 = 0.0, f50 = 0.0;
+  let f58 = 0.0, f60 = 0.0, f68 = 0.0, f70 = 0.0, f78 = 0.0, f80 = 0.0;
+  let f8Prev = 100.0 * closes[0];
   for (let i = 1; i < n; i++) {
     const src = closes[i];
-    if (src == null || Number.isNaN(src) || prev == null || Number.isNaN(prev)) {
-      prev = src;
+    if (src == null || Number.isNaN(src) || f8Prev == null || Number.isNaN(f8Prev)) {
+      if (src != null && !Number.isNaN(src)) f8Prev = 100.0 * src;
       continue;
     }
-    const v8 = 100 * src - 100 * prev;
-    f28 = f20 * f28 + f18 * v8;
+    const f8 = 100.0 * src;
+    const v8 = f8 - f8Prev;
+    f28 = f28 * f20 + f18 * v8;
     f30 = f18 * f28 + f20 * f30;
-    const vC = f28 * 1.5 - f30 * 0.5;
-    f38 = f20 * f38 + f18 * vC;
+    const vC = 1.5 * f28 - 0.5 * f30;
+    f38 = f38 * f20 + f18 * vC;
     f40 = f18 * f38 + f20 * f40;
-    const v10 = f38 * 1.5 - f40 * 0.5;
-    f48 = f20 * f48 + f18 * v10;
+    const v10 = 1.5 * f38 - 0.5 * f40;
+    f48 = f48 * f20 + f18 * v10;
     f50 = f18 * f48 + f20 * f50;
-    const v14 = f48 * 1.5 - f50 * 0.5;
-    f58 = f20 * f58 + f18 * Math.abs(v8);
+    const v14 = 1.5 * f48 - 0.5 * f50;
+    f58 = f58 * f20 + f18 * Math.abs(v8);
     f60 = f18 * f58 + f20 * f60;
-    const v18 = f58 * 1.5 - f60 * 0.5;
-    f68 = f20 * f68 + f18 * v18;
+    const v18 = 1.5 * f58 - 0.5 * f60;
+    f68 = f68 * f20 + f18 * v18;
     f70 = f18 * f68 + f20 * f70;
-    const v1C = f68 * 1.5 - f70 * 0.5;
-    f78 = f20 * f78 + f18 * v1C;
+    const v1C = 1.5 * f68 - 0.5 * f70;
+    f78 = f78 * f20 + f18 * v1C;
     f80 = f18 * f78 + f20 * f80;
-    const v20 = f78 * 1.5 - f80 * 0.5;
-    if (v20 > 0) f88 = v14 / v20;
-    const raw = v20 <= 0 ? 50 : 50 * (f88 + 1);
-    out[i] = Math.max(0, Math.min(100, raw));
-    prev = src;
+    const v20 = 1.5 * f78 - 0.5 * f80;
+    let raw = v20 === 0.0 ? 50.0 : (v14 / v20 + 1.0) * 50.0;
+    if (raw > 100.0) raw = 100.0;
+    if (raw < 0.0) raw = 0.0;
+    out[i] = raw;
+    f8Prev = f8;
   }
   const warm = Math.min(length, n);
   for (let i = 0; i < warm; i++) out[i] = null;
@@ -3125,10 +3616,10 @@ function applyPlummer(bars, eventMarkers) {
       crosshairMarkerVisible: false,
     });
   };
-  // Сначала внешние зоны, затем внутренняя, затем линии поверх.
-  band("fillUpHi", "fillUpLo", "rgba(166, 38, 38, 0.12)");
-  band("fillDnHi", "fillDnLo", "rgba(27, 107, 58, 0.12)");
-  band("fillInnerHi", "fillInnerLo", "rgba(47, 111, 237, 0.10)");
+  // Максимально прозрачные заливки, чтобы свечи читались чётко.
+  band("fillUpHi", "fillUpLo", "rgba(166, 38, 38, 0.05)");
+  band("fillDnHi", "fillDnLo", "rgba(27, 107, 58, 0.05)");
+  band("fillInnerHi", "fillInnerLo", "rgba(47, 111, 237, 0.06)");
   plummerSeries.fillUpHi.setData(linePoints(bars, pack.upperEx));
   plummerSeries.fillUpLo.setData(linePoints(bars, pack.upperIn));
   plummerSeries.fillDnHi.setData(linePoints(bars, pack.lowerIn));
@@ -3232,6 +3723,8 @@ function clearIndicatorOverlays() {
   fairStatusEl.innerHTML = "";
   plummerStatusEl.innerHTML = "";
   if (gannStatusEl) gannStatusEl.innerHTML = "";
+  const gannCard = document.getElementById("gann9Card");
+  if (gannCard && !gann9On) { gannCard.classList.remove("is-on"); gannCard.innerHTML = ""; }
   if (borodenStatusEl) borodenStatusEl.innerHTML = "";
   if (elliottStatusEl) elliottStatusEl.innerHTML = "";
   if (optStatusEl) optStatusEl.innerHTML = "";
@@ -3543,46 +4036,78 @@ function ensureRsxChart() {
   try { rsxChart.applyOptions(interactionOptions(interactMode === "magnifier")); } catch (e) {}
 }
 
-function computeRsxPack(bars) {
+function computeRsxPack(bars, opts) {
+  // Параметры как в Pine: length=14, strongPts=15, markBars=5.
+  const length = (opts && opts.length) || 14;
+  const strongPts = (opts && opts.strongPts) || 15;
+  const markBars = (opts && opts.markBars) || 5;
   const closes = bars.map((b) => b.close);
-  const rsx = jurikRsx(closes, 14);
+  const rsx = jurikRsx(closes, length);
   const breaks = [];
   const tint = new Array(bars.length).fill(null);
+  let upLeft = 0;
+  let dnLeft = 0;
   for (let i = 2; i < bars.length; i++) {
     const r = rsx[i], r1 = rsx[i - 1], r2 = rsx[i - 2];
-    if (r == null || r1 == null || r2 == null) continue;
-    if (r > r1 && r1 <= r2) {
-      breaks.push({ time: bars[i].time, side: "up", index: i });
-      for (let k = 0; k < 5 && i + k < bars.length; k++) {
-        if (rsx[i + k] != null) tint[i + k] = "up";
-      }
-    } else if (r < r1 && r1 >= r2) {
-      breaks.push({ time: bars[i].time, side: "down", index: i });
-      for (let k = 0; k < 5 && i + k < bars.length; k++) {
-        if (rsx[i + k] != null) tint[i + k] = "down";
-      }
+    if (r == null || r1 == null || r2 == null) {
+      if (upLeft > 0) upLeft -= 1;
+      if (dnLeft > 0) dnLeft -= 1;
+      continue;
     }
+    const turnUp = r > r1 && r1 <= r2;
+    const turnDn = r < r1 && r1 >= r2;
+    if (turnUp) {
+      breaks.push({ time: bars[i].time, side: "up", index: i });
+      upLeft = markBars;
+      dnLeft = 0;
+    } else if (turnDn) {
+      breaks.push({ time: bars[i].time, side: "down", index: i });
+      dnLeft = markBars;
+      upLeft = 0;
+    } else {
+      if (upLeft > 0) upLeft -= 1;
+      if (dnLeft > 0) dnLeft -= 1;
+    }
+    if (upLeft > 0) tint[i] = "up";
+    else if (dnLeft > 0) tint[i] = "down";
   }
   let last = bars.length - 1;
   while (last >= 0 && rsx[last] == null) last -= 1;
   const r = last >= 0 ? rsx[last] : null;
   const r1 = last >= 1 ? rsx[last - 1] : null;
-  const r2 = last >= 2 ? rsx[last - 2] : null;
+  const turnUpNow = r != null && r1 != null && last >= 2 && rsx[last - 2] != null
+    && r > r1 && r1 <= rsx[last - 2];
+  const turnDnNow = r != null && r1 != null && last >= 2 && rsx[last - 2] != null
+    && r < r1 && r1 >= rsx[last - 2];
   let hod = "нет данных";
-  let konets = "—";
-  if (r != null && r1 != null && r2 != null) {
-    const d1 = r - r1;
-    const d2 = r1 - r2;
-    if (d1 > 0 && d2 > 0) hod = "рост";
-    else if (d1 > 0 && d2 <= 0) { hod = "падение слабеет"; konets = "падение может кончаться"; }
-    else if (d1 < 0 && d2 < 0) hod = "падение";
-    else if (d1 < 0 && d2 >= 0) { hod = "рост слабеет"; konets = "рост может кончаться"; }
-    else hod = "плоский";
-  } else if (r != null && r1 != null) {
-    hod = r > r1 ? "рост" : (r < r1 ? "падение" : "плоский");
+  let konets = "нет";
+  if (r != null && r1 != null) {
+    const above = r >= 50;
+    const rising = r > r1;
+    hod = above && rising ? "рост"
+      : above && !rising ? "рост слабеет"
+      : !above && !rising ? "падение"
+      : "падение слабеет";
+    if (turnDnNow && above) konets = "рост может кончаться";
+    else if (turnUpNow && !above) konets = "падение может кончаться";
+    else konets = "нет";
   }
-  const sila = r != null && Math.abs(r - 50) >= 15 ? "сильный" : "обычный";
-  return { rsx, breaks, tint, status: { value: r, hod, sila, konets, time: last >= 0 ? bars[last].time : null } };
+  const sila = r != null && Math.abs(r - 50) >= strongPts ? "сильный" : "обычный";
+  return {
+    rsx,
+    breaks,
+    tint,
+    status: {
+      value: r,
+      hod,
+      sila,
+      konets,
+      length,
+      strongPts,
+      markBars,
+      time: last >= 0 ? bars[last].time : null,
+    },
+  };
 }
 
 function applyRsxPanel(bars, eventMarkers) {
@@ -3593,14 +4118,15 @@ function applyRsxPanel(bars, eventMarkers) {
   }
   rsxBox.style.display = "block";
   ensureRsxChart();
-  const blue = getComputedStyle(root).getPropertyValue("--blue").trim() || "#1D3E6E";
-  const up = getComputedStyle(root).getPropertyValue("--up").trim() || "#1B6B3A";
-  const down = getComputedStyle(root).getPropertyValue("--down").trim() || "#A62626";
+  // Цвета как в Pine: RSX #1d4ed8, слом вверх #15803d, слом вниз #b91c1c.
+  const blue = "#1d4ed8";
+  const up = "#15803d";
+  const down = "#b91c1c";
   const muted = getComputedStyle(root).getPropertyValue("--muted").trim() || "#5C4F38";
   rsxChart.applyOptions(Object.assign(chartBase(160), { height: 160 }));
   rsxLine.applyOptions({ color: blue, lineWidth: 2 });
   rsxLevel50.applyOptions({ color: muted, lineStyle: 2 });
-  const pack = computeRsxPack(bars);
+  const pack = computeRsxPack(bars, { length: 14, strongPts: 15, markBars: 5 });
   rsxLine.setData(linePoints(bars, pack.rsx));
   rsxLevel50.setData(bars.map((b, i) => (pack.rsx[i] == null ? null : { time: b.time, value: 50 })).filter(Boolean));
   const hist = [];
@@ -3609,7 +4135,7 @@ function applyRsxPanel(bars, eventMarkers) {
     hist.push({
       time: bars[i].time,
       value: pack.rsx[i],
-      color: pack.tint[i] === "up" ? "rgba(27, 107, 58, 0.35)" : "rgba(166, 38, 38, 0.35)",
+      color: pack.tint[i] === "up" ? "rgba(21, 128, 61, 0.55)" : "rgba(185, 28, 28, 0.55)",
     });
   }
   rsxBreakHist.setData(hist);
@@ -3620,18 +4146,20 @@ function applyRsxPanel(bars, eventMarkers) {
   } catch (e) {}
   const st = pack.status;
   const hodCls = st.hod.indexOf("рост") >= 0 ? "up" : (st.hod.indexOf("падение") >= 0 ? "down" : "flat");
-  document.getElementById("rsxHint").textContent = `RSX ${fmt(st.value, 1)} · ${st.hod} · ${st.sila}`;
+  const headBg = (st.value != null && st.value >= 50) ? "#1f7a4d" : "#9b2c2c";
+  document.getElementById("rsxTitle").textContent = `Панель Jurik RSX (${st.length}) · Ход / Сила / Слом`;
+  document.getElementById("rsxHint").textContent = `RSX ${fmt(st.value, 2)} · ${st.hod} · ${st.sila} · strongPts=${st.strongPts} · markBars=${st.markBars}`;
   rsxStatusEl.innerHTML = `
-    <h3 style="font-size:13px;margin:12px 0 6px">Jurik RSX (14) · Ход / Сила / Слом</h3>
-    <p class="hint">Тройное сглаживание Jurik RSX(14), ось 50. Зелёный/красный сегмент — слом наклона на 5 баров. Памятка: <strong>слом без свечи не вход</strong>.</p>
+    <h3 style="font-size:13px;margin:12px 0 6px;padding:6px 8px;color:#fff;background:${headBg}">Jurik RSX · ${fmt(st.value, 2)}</h3>
+    <p class="hint">Параметры Pine: length=${st.length}, strongPts=${st.strongPts}, markBars=${st.markBars}. Синяя линия — RSX, зелёная/красная черта — слом наклона. <strong>Слом без свечи входом не считается.</strong></p>
     <div class="scroll"><table class="grid">
       <tr><th>Параметр</th><th>Статус</th></tr>
       <tr><td>RSX</td><td class="mono">${fmt(st.value, 2)}</td></tr>
       <tr><td>Ход</td><td class="${hodCls}">${esc(st.hod)}</td></tr>
       <tr><td>Сила</td><td>${esc(st.sila)}</td></tr>
       <tr><td>Конец</td><td>${esc(st.konets)}</td></tr>
+      <tr><td>Вход</td><td>слом без свечи не вход</td></tr>
       <tr><td>Сломов ↑ / ↓</td><td class="mono">${pack.breaks.filter((b) => b.side === "up").length} / ${pack.breaks.filter((b) => b.side === "down").length}</td></tr>
-      <tr><td>Памятка</td><td>слом без свечи не вход</td></tr>
     </table></div>`;
   const markers = pack.breaks.map((sig) => ({
     time: sig.time,
@@ -4260,38 +4788,56 @@ function pickMajorSwings(bars, count) {
   return alt.slice(-count);
 }
 
+function addCalendarDays(iso, days) {
+  const d = new Date(String(iso) + "T12:00:00Z");
+  if (Number.isNaN(d.getTime())) return String(iso);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 function applyGannSquare9(bars) {
+  // Не рисуем диагональные лучи на холсте — только карточка расчёта под графиком.
   if (gannStatusEl) gannStatusEl.innerHTML = "";
-  if (!gann9On || !bars.length) return;
-  const pivot = pickMajorSwings(bars, 1)[0] || { price: bars[bars.length - 1].close, time: bars[bars.length - 1].time, kind: "C" };
-  const root = Math.sqrt(Math.max(pivot.price, 1e-9));
-  const times = bars.map((b) => b.time);
-  const angles = [
-    { deg: 45, step: 0.125, color: "#8A5A12" },
-    { deg: 90, step: 0.25, color: "#1D3E6E" },
-    { deg: 180, step: 0.5, color: "#A62626" },
-    { deg: 360, step: 1.0, color: "#1C1915" },
-  ];
-  const levels = [];
-  angles.forEach((ang) => {
-    for (let k = -4; k <= 4; k++) {
-      if (k === 0) continue;
-      const lvl = Math.pow(root + k * ang.step, 2);
-      if (lvl <= 0) continue;
-      gann9Series.lines.push(levelLine(times, lvl, ang.color, k === 1 || k === -1 ? 2 : 1, 2));
-      levels.push({ deg: ang.deg, k, value: lvl });
-    }
-  });
-  // cardinal pivot
-  gann9Series.lines.push(levelLine(times, pivot.price, "#F2C94C", 2, 0));
-  if (gannStatusEl) {
-    gannStatusEl.innerHTML = `
-      <h3 style="font-size:13px;margin:12px 0 6px">Квадрат 9 Ганна (Углы)</h3>
-      <p class="hint">Пивот ${esc(pivot.kind)} @ <span class="mono">${fmt(pivot.price, 4)}</span> (${esc(pivot.time)}). Уровни (√P ± n·δ)², δ=0.125/0.25/0.5/1.</p>
-      <div class="scroll"><table class="grid"><tr><th>Угол</th><th>n</th><th>Уровень</th></tr>
-      ${levels.filter((l) => Math.abs(l.k) <= 2).slice(0, 16).map((l) => `<tr><td>${l.deg}°</td><td class="mono">${l.k > 0 ? "+" : ""}${l.k}</td><td class="mono">${fmt(l.value, 4)}</td></tr>`).join("")}
-      </table></div>`;
+  const card = document.getElementById("gann9Card");
+  if (card) {
+    card.classList.toggle("is-on", !!gann9On);
+    if (!gann9On) card.innerHTML = "";
   }
+  if (!gann9On || !bars.length) return;
+  const pivot = pickMajorSwings(bars, 1)[0] || { price: bars[bars.length - 1].close, time: bars[bars.length - 1].time, kind: "C", index: bars.length - 1 };
+  const root = Math.sqrt(Math.max(pivot.price, 1e-9));
+  const angles = [
+    { deg: 45, step: 0.125 },
+    { deg: 90, step: 0.25 },
+    { deg: 180, step: 0.5 },
+    { deg: 270, step: 0.75 },
+    { deg: 360, step: 1.0 },
+  ];
+  const levelRows = angles.map((ang) => {
+    const up = Math.pow(root + ang.step, 2);
+    const down = Math.pow(Math.max(root - ang.step, 0), 2);
+    return { deg: ang.deg, up, down };
+  });
+  const revDays = [45, 90, 180, 270, 360];
+  const revRows = revDays.map((d) => ({
+    deg: d,
+    date: addCalendarDays(pivot.time, d),
+    bar: (pivot.index != null && pivot.index + d < bars.length) ? bars[pivot.index + d].time : "вне окна",
+  }));
+  const html = `
+    <h3>Квадрат 9 Ганна · уровни (без лучей на графике)</h3>
+    <p class="hint">Опорный экстремум <strong>${esc(pivot.kind)}</strong> @ <span class="mono">${fmt(pivot.price, 4)}</span> · ${esc(pivot.time)}. Цены: (√P ± δ)², δ = угол/360.</p>
+    <div class="scroll"><table class="grid">
+      <tr><th>Угол</th><th class="num">Уровень вверх</th><th class="num">Уровень вниз</th></tr>
+      ${levelRows.map((r) => `<tr><td>${r.deg}°</td><td class="num mono">${fmt(r.up, 4)}</td><td class="num mono">${fmt(r.down, 4)}</td></tr>`).join("")}
+    </table></div>
+    <p class="hint" style="margin-top:8px">Контрольные даты разворота от пивота (календарные дни / бар в окне):</p>
+    <div class="scroll"><table class="grid">
+      <tr><th>Цикл</th><th>Дата (календ.)</th><th>Бар в ряде</th></tr>
+      ${revRows.map((r) => `<tr><td>${r.deg}°</td><td class="mono">${esc(r.date)}</td><td class="mono">${esc(r.bar)}</td></tr>`).join("")}
+    </table></div>`;
+  if (card) card.innerHTML = html;
+  if (gannStatusEl) gannStatusEl.innerHTML = `<h3 style="font-size:13px;margin:12px 0 6px">Квадрат 9 Ганна</h3><p class="hint">Лучи на холсте отключены. Карточка уровней — под графиком свечей.</p>`;
 }
 
 function applyGannGrid18(bars) {
@@ -4974,13 +5520,21 @@ function renderFractions() {
 }
 
 function renderDiff() {
-  const diff = DATA.almanac_diff || { file: "", rows: [] };
-  document.getElementById("diffHint").textContent = `Файл ${diff.file || "нет"}`;
-  const head = `<tr><th>Метрика</th><th>Было</th><th>Стало</th><th>Дельта</th></tr>`;
-  const body = (diff.rows || []).map((row) => (
-    `<tr><td>${esc(row.metric)}</td><td>${esc(row.was)}</td><td>${esc(row.became)}</td><td>${esc(row.delta)}</td></tr>`
-  )).join("");
-  document.getElementById("diffTable").innerHTML = head + (body || `<tr><td colspan="4">DIFF не найден</td></tr>`);
+  const pack = DATA.almanac_compare || DATA.almanac_diff || { file: "", rows: [] };
+  const hint = document.getElementById("diffHint");
+  if (hint) {
+    hint.textContent = `Срез ${pack.asof || "—"} · lookback ${pack.lookback_sessions || 20} сессий · источник ${pack.file || "data/"}`;
+  }
+  const head = `<tr><th>Показатель / Актив</th><th>БЫЛО (прошлый срез + дата)</th><th>СТАЛО (текущий срез + дата)</th><th>Изменение (Δ и %)</th><th>Что это значит (сигнал)</th></tr>`;
+  const body = (pack.rows || []).map((row) => {
+    const was = `${esc(row.was || row.was_value || "—")}${row.was_date ? ` · <span class="meta">${esc(row.was_date)}</span>` : ""}`;
+    const now = `${esc(row.now || row.became || "—")}${row.now_date ? ` · <span class="meta">${esc(row.now_date)}</span>` : ""}`;
+    const pct = row.delta_pct == null ? "" : ` (${fmt(row.delta_pct, 2)}%)`;
+    const chg = `${esc(row.delta || "—")}${pct}`;
+    const cls = row.delta_pct == null ? "flat" : (row.delta_pct >= 0 ? "up" : "down");
+    return `<tr><td>${esc(row.metric)}</td><td>${was}</td><td>${now}</td><td class="${cls}">${chg}</td><td>${esc(row.signal || "")}</td></tr>`;
+  }).join("");
+  document.getElementById("diffTable").innerHTML = head + (body || `<tr><td colspan="5">Нет строк сравнения</td></tr>`);
 }
 
 safeRun("renderKpi", renderKpi);
