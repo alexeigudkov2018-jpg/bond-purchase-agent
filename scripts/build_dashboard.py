@@ -1125,19 +1125,25 @@ def _inline_lwc_script() -> str:
 
 def build() -> None:
     payload = build_payload()
+    stamp = now_msk()
+    payload["built_at"] = stamp.strftime("%Y-%m-%dT%H:%M:%S%z")
+    payload["built_at_label"] = stamp.strftime("%d.%m.%Y %H:%M МСК")
     html = (
         HTML.replace("__DATA__", _json_blob(payload))
         .replace("__LWC_SCRIPT__", _inline_lwc_script())
     )
     OUT.write_text(html, encoding="utf-8")
+    index_path = ROOT / "index.html"
+    index_path.write_text(html, encoding="utf-8")
     kpi = payload["kpi"]
     print(
-        f"wrote {OUT.relative_to(ROOT)} "
+        f"wrote {OUT.relative_to(ROOT)} + index.html "
         f"tickers={len(payload['candles']['tickers'])} "
         f"events={len(payload['candles']['events'])} "
         f"bonds={len(payload['bonds'])} "
         f"ps_rows={len(payload['ps_screener'])} "
         f"imoex={kpi['imoex']['value']} ps={kpi['ps']['value']} "
+        f"built={payload['built_at_label']} "
         f"lwc_inline={LWC_VENDOR.stat().st_size}"
     )
 
@@ -1281,8 +1287,45 @@ header.app .note { margin: 6px 0 0; font-size: 12px; color: var(--muted); max-wi
   cursor: pointer;
 }
 .tickers button.active { background: var(--ink); color: var(--paper); }
+.chart-toolbar {
+  position: relative;
+  z-index: 50;
+  margin-bottom: 6px;
+}
 .chart-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; }
 .chart-head h2 { margin: 0 0 4px; }
+.chart-head-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.head-badge {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: baseline;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border: 1px solid var(--rule);
+  background: rgba(252, 248, 227, 0.95);
+  color: var(--ink);
+  line-height: 1.25;
+}
+.head-badge .k { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.head-badge .v { font-size: 13px; }
+.head-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: flex-end; }
+.interact-toggle { display: inline-flex; gap: 0; border: 1px solid var(--rule); }
+.interact-toggle button {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 7px 10px;
+  border: 0;
+  border-right: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+.interact-toggle button:last-child { border-right: 0; }
+.interact-toggle button.active { background: var(--ink); color: var(--paper); }
 .fs-btn {
   font-family: "JetBrains Mono", Consolas, monospace;
   font-size: 12px;
@@ -1297,8 +1340,13 @@ header.app .note { margin: 6px 0 0; font-size: 12px; color: var(--muted); max-wi
   white-space: nowrap;
 }
 .fs-btn:hover { filter: brightness(0.97); }
-.fs-btn.active { background: var(--ink); color: #F2C94C; }
-.mode-block { margin: 8px 0 4px; }
+.fs-btn.active, .fs-btn.exit-fs {
+  background: #E24B3B;
+  color: #FFF8F0;
+  border-color: #8B1E12;
+  box-shadow: 2px 2px 0 rgba(139, 30, 18, 0.25);
+}
+.mode-block { margin: 8px 0 4px; position: relative; z-index: 50; }
 .mode-label {
   font-family: "JetBrains Mono", Consolas, monospace;
   font-size: 10px;
@@ -1307,7 +1355,7 @@ header.app .note { margin: 6px 0 0; font-size: 12px; color: var(--muted); max-wi
   letter-spacing: 0.05em;
   margin: 0 0 4px;
 }
-.active-badges { display: flex; flex-wrap: wrap; gap: 4px; min-height: 0; margin: 2px 0 6px; }
+.active-badges { display: flex; flex-wrap: wrap; gap: 4px; min-height: 0; margin: 2px 0 6px; position: relative; z-index: 50; }
 .active-badges .badge {
   font-family: "JetBrains Mono", Consolas, monospace;
   font-size: 10px;
@@ -1316,18 +1364,29 @@ header.app .note { margin: 6px 0 0; font-size: 12px; color: var(--muted); max-wi
   background: rgba(242, 201, 76, 0.35);
   color: var(--ink);
 }
+.tickers { position: relative; z-index: 50; }
 .chart-workspace { position: relative; }
 .chart-workspace.is-fullscreen {
   position: fixed;
   inset: 0;
   z-index: 9999;
   overflow: auto;
-  padding: 12px 14px 18px;
+  padding: 0 14px 18px;
   background:
     linear-gradient(rgba(184, 152, 86, 0.22) 1px, transparent 1px),
     linear-gradient(90deg, rgba(184, 152, 86, 0.22) 1px, transparent 1px),
     #FCF8E3;
   background-size: 8px 8px, 8px 8px, auto;
+}
+.chart-workspace.is-fullscreen .chart-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10002;
+  background: #F7F1D5;
+  padding: 10px 0 8px;
+  margin: 0 0 8px;
+  border-bottom: 1px solid var(--rule);
+  box-shadow: 0 2px 8px rgba(28, 25, 21, 0.08);
 }
 .chart-workspace.is-fullscreen .chart { height: min(52vh, 560px); }
 .chart-workspace.is-fullscreen #haChart { height: 240px; }
@@ -1335,8 +1394,15 @@ header.app .note { margin: 6px 0 0; font-size: 12px; color: var(--muted); max-wi
 .chart-workspace.is-fullscreen #rsiStochChart,
 .chart-workspace.is-fullscreen #rsxChart,
 .chart-workspace.is-fullscreen #optChart { height: 170px; }
+.chart-workspace.mode-magnifier .chart,
+.chart-workspace.mode-magnifier #optChart,
+.chart-workspace.mode-magnifier #pctRChart,
+.chart-workspace.mode-magnifier #rsiStochChart,
+.chart-workspace.mode-magnifier #rsxChart,
+.chart-workspace.mode-magnifier #haChart,
+.chart-workspace.mode-magnifier #lower { cursor: zoom-in; }
 .explain-compact { border-style: dashed; }
-.wrap { position: relative; }
+.wrap { position: relative; overflow: hidden; z-index: 1; }
 .chart { height: 420px; border: 1px solid var(--rule); background: var(--chart-bg); }
 .chart.small { height: 260px; }
 #lower { height: 150px; margin-top: 8px; border: 1px solid var(--rule); background: var(--chart-bg); }
@@ -1367,7 +1433,7 @@ header.app .note { margin: 6px 0 0; font-size: 12px; color: var(--muted); max-wi
 .stovall-cycle .phase .v { font-family: "Libre Baskerville", Georgia, serif; font-size: 15px; font-weight: 700; }
 tr.macro-boost td:first-child { box-shadow: inset 3px 0 0 var(--blue); }
 #tip {
-  display: none; position: absolute; z-index: 5; max-width: 340px;
+  display: none; position: absolute; z-index: 2; max-width: 340px;
   background: var(--card); border: 1px solid var(--rule); padding: 8px 10px;
   font-size: 13px; line-height: 1.35; pointer-events: none;
 }
@@ -1449,46 +1515,58 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
 
 <section class="panel active" id="tab-candles">
   <div class="board">
-    <div class="chart-head">
-      <div>
-        <h2>Свечи, уровни и индикаторы</h2>
-        <p class="hint">Полные дневные свечи (~1 год). Все панели синхронизированы по времени. Флажки — <span class="mono">radar_events.csv</span>.</p>
-      </div>
-      <button type="button" id="btnFullscreen" class="fs-btn" title="Развернуть график">⛶ На весь экран</button>
-    </div>
-    <div class="tickers" id="tickers"></div>
-    <div class="mode-block">
-      <div class="mode-label">Строка 1 · Уровни, Циклы и Волны (наложения)</div>
-      <div class="modes" id="modeRowLevels">
-        <button type="button" data-mode="gann9" id="btnGann9">Квадрат 9 Ганна (Углы)</button>
-        <button type="button" data-mode="gann18" id="btnGann18">Сетка Ганна 1/8 (50%)</button>
-        <button type="button" data-mode="boroden" id="btnBoroden">Кластеры и Время Кэролайн Бороден</button>
-        <button type="button" data-mode="elliott" id="btnElliott">Волны Эллиотта (1-2-3-4-5)</button>
-        <button type="button" data-mode="plummer" id="btnPlummer">Канал Вибрации Пламмера</button>
-      </div>
-    </div>
-    <div class="mode-block">
-      <div class="mode-label">Строка 2 · Трендовые наложения и Нижние подвалы</div>
-      <div class="modes" id="modeRowTrend">
-        <button type="button" data-mode="kennedy" id="btnKennedy">Kennedy Trend (MA+HA)</button>
-        <button type="button" data-mode="donch" id="btnDonch">Donchian 20 + Поглощения</button>
-        <button type="button" data-mode="hill" id="btnHill">5 vs 200 (Arthur Hill)</button>
-        <button type="button" data-mode="fair" id="btnFair">Средний High/Low</button>
-        <button type="button" data-mode="opt" id="btnOpt">Подвал: Опционы Put/Call</button>
-        <button type="button" data-mode="pctr" id="btnPctR">Подвал: %R (5/20)</button>
-        <button type="button" data-mode="rsistoch" id="btnRsiStoch">Подвал: RSI + Stoch</button>
-        <button type="button" data-mode="rsx" id="btnRsx">Подвал: Jurik RSX</button>
-        <button type="button" data-mode="ha" id="btnHa">Подвал: Heikin-Ashi</button>
-        <button type="button" data-mode="clear" id="btnClearModes">Очистить всё</button>
-      </div>
-    </div>
-    <div id="activeBadges" class="active-badges"></div>
-    <div id="fairMode">
-      <span class="meta" style="margin-right:4px">Режим коридора:</span>
-      <button type="button" data-fair="cum" class="active">Накопленное среднее (вся история)</button>
-      <button type="button" data-fair="sma20">Скользящий конверт SMA(20)</button>
-    </div>
     <div id="chartWorkspace" class="chart-workspace">
+      <div id="chartToolbar" class="chart-toolbar">
+        <div class="chart-head">
+          <div>
+            <h2>Свечи, уровни и индикаторы · <span id="chartTickerLabel">—</span></h2>
+            <p class="hint">Полные дневные свечи (~1 год). Все панели синхронизированы по времени. Флажки — <span class="mono">radar_events.csv</span>.</p>
+            <div class="chart-head-meta">
+              <div class="head-badge" id="badgeLastCandle"><span class="k">Последняя свеча</span><span class="v" id="badgeLastCandleVal">—</span></div>
+              <div class="head-badge" id="badgeBuiltAt"><span class="k">Данные обновлены</span><span class="v" id="badgeBuiltAtVal">—</span></div>
+            </div>
+          </div>
+          <div class="head-actions">
+            <div class="interact-toggle" id="interactToggle" title="Режим взаимодействия с графиком">
+              <button type="button" data-interact="cursor" id="btnInteractCursor" class="active">🖱 Курсор</button>
+              <button type="button" data-interact="magnifier" id="btnInteractMagnifier">🔍 Лупа / Масштаб</button>
+            </div>
+            <button type="button" id="btnFullscreen" class="fs-btn" title="Развернуть график">⛶ На весь экран</button>
+          </div>
+        </div>
+        <div class="tickers" id="tickers"></div>
+        <div class="mode-block">
+          <div class="mode-label">Строка 1 · Уровни, Циклы и Волны (наложения)</div>
+          <div class="modes" id="modeRowLevels">
+            <button type="button" data-mode="gann9" id="btnGann9">Квадрат 9 Ганна (Углы)</button>
+            <button type="button" data-mode="gann18" id="btnGann18">Сетка Ганна 1/8 (50%)</button>
+            <button type="button" data-mode="boroden" id="btnBoroden">Кластеры и Время Кэролайн Бороден</button>
+            <button type="button" data-mode="elliott" id="btnElliott">Волны Эллиотта (1-2-3-4-5)</button>
+            <button type="button" data-mode="plummer" id="btnPlummer">Канал Вибрации Пламмера</button>
+          </div>
+        </div>
+        <div class="mode-block">
+          <div class="mode-label">Строка 2 · Трендовые наложения и Нижние подвалы</div>
+          <div class="modes" id="modeRowTrend">
+            <button type="button" data-mode="kennedy" id="btnKennedy">Kennedy Trend (MA+HA)</button>
+            <button type="button" data-mode="donch" id="btnDonch">Donchian 20 + Поглощения</button>
+            <button type="button" data-mode="hill" id="btnHill">5 vs 200 (Arthur Hill)</button>
+            <button type="button" data-mode="fair" id="btnFair">Средний High/Low</button>
+            <button type="button" data-mode="opt" id="btnOpt">Подвал: Опционы Put/Call</button>
+            <button type="button" data-mode="pctr" id="btnPctR">Подвал: %R (5/20)</button>
+            <button type="button" data-mode="rsistoch" id="btnRsiStoch">Подвал: RSI + Stoch</button>
+            <button type="button" data-mode="rsx" id="btnRsx">Подвал: Jurik RSX</button>
+            <button type="button" data-mode="ha" id="btnHa">Подвал: Heikin-Ashi</button>
+            <button type="button" data-mode="clear" id="btnClearModes">Очистить всё</button>
+          </div>
+        </div>
+        <div id="activeBadges" class="active-badges"></div>
+        <div id="fairMode">
+          <span class="meta" style="margin-right:4px">Режим коридора:</span>
+          <button type="button" data-fair="cum" class="active">Накопленное среднее (вся история)</button>
+          <button type="button" data-fair="sma20">Скользящий конверт SMA(20)</button>
+        </div>
+      </div>
       <div class="wrap">
         <div class="chart" id="price"></div>
         <div id="tip"></div>
@@ -1694,6 +1772,7 @@ document.getElementById("tabs").addEventListener("click", (event) => {
 
 function chartBase(height) {
   const rule = getComputedStyle(root).getPropertyValue("--rule").trim() || "#B89856";
+  // По умолчанию режим «Курсор»: без зума колесом/драгом — кнопки не перекрываются жестами графика.
   return {
     height,
     layout: { background: { color: getComputedStyle(root).getPropertyValue("--chart-bg").trim() || "#FCF8E3" }, textColor: getComputedStyle(root).getPropertyValue("--chart-text").trim() || "#1C1915", fontSize: 11, fontFamily: "JetBrains Mono, Consolas, monospace" },
@@ -1704,6 +1783,8 @@ function chartBase(height) {
     rightPriceScale: { borderColor: rule, minimumWidth: 75 },
     timeScale: { borderColor: rule },
     crosshair: { mode: 0 },
+    handleScroll: { mouseWheel: false, pressedMouseMove: false, horzTouchDrag: false, vertTouchDrag: false },
+    handleScale: { axisPressedMouseMove: false, axisDoubleClickReset: false, mouseWheel: false, pinch: false },
   };
 }
 
@@ -1913,7 +1994,9 @@ function toggleFullscreen(force) {
   if (chartWorkspace) chartWorkspace.classList.toggle("is-fullscreen", fullscreenOn);
   if (btnFullscreen) {
     btnFullscreen.classList.toggle("active", fullscreenOn);
-    btnFullscreen.textContent = fullscreenOn ? "⛶ Свернуть" : "⛶ На весь экран";
+    btnFullscreen.classList.toggle("exit-fs", fullscreenOn);
+    btnFullscreen.textContent = fullscreenOn ? "✕ Свернуть (Esc)" : "⛶ На весь экран";
+    btnFullscreen.title = fullscreenOn ? "Выйти из полноэкранного режима" : "Развернуть график";
   }
   requestAnimationFrame(() => {
     resizeAllCharts();
@@ -1924,6 +2007,103 @@ if (btnFullscreen) btnFullscreen.addEventListener("click", () => toggleFullscree
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && fullscreenOn) toggleFullscreen(false);
 });
+
+let interactMode = "cursor"; // cursor | magnifier
+const trackedPriceLines = [];
+function trackPriceLine(series, line) {
+  if (series && line) trackedPriceLines.push({ series, line });
+  return line;
+}
+function clearTrackedPriceLines() {
+  while (trackedPriceLines.length) {
+    const item = trackedPriceLines.pop();
+    try { item.series.removePriceLine(item.line); } catch (e) {}
+  }
+  // запасной путь: если API отдаёт список линий
+  try {
+    const lines = typeof priceSeries.priceLines === "function" ? priceSeries.priceLines() : [];
+    (lines || []).forEach((line) => { try { priceSeries.removePriceLine(line); } catch (e) {} });
+  } catch (e) {}
+}
+function interactionOptions(enabled) {
+  return {
+    handleScroll: {
+      mouseWheel: enabled,
+      pressedMouseMove: enabled,
+      horzTouchDrag: enabled,
+      vertTouchDrag: false,
+    },
+    handleScale: {
+      axisPressedMouseMove: { time: enabled, price: enabled },
+      axisDoubleClickReset: enabled,
+      mouseWheel: enabled,
+      pinch: enabled,
+    },
+  };
+}
+function applyInteractionMode(mode) {
+  interactMode = mode === "magnifier" ? "magnifier" : "cursor";
+  const enabled = interactMode === "magnifier";
+  if (chartWorkspace) {
+    chartWorkspace.classList.toggle("mode-magnifier", enabled);
+    chartWorkspace.classList.toggle("mode-cursor", !enabled);
+  }
+  const btnC = document.getElementById("btnInteractCursor");
+  const btnM = document.getElementById("btnInteractMagnifier");
+  if (btnC) btnC.classList.toggle("active", !enabled);
+  if (btnM) btnM.classList.toggle("active", enabled);
+  const opts = interactionOptions(enabled);
+  paneCharts().forEach((chart) => {
+    try { chart.applyOptions(opts); } catch (e) {}
+  });
+}
+const interactToggle = document.getElementById("interactToggle");
+if (interactToggle) {
+  interactToggle.addEventListener("click", (event) => {
+    const btn = event.target.closest("button[data-interact]");
+    if (!btn) return;
+    applyInteractionMode(btn.getAttribute("data-interact"));
+  });
+}
+function formatCandleDate(iso) {
+  if (!iso || typeof iso !== "string") return "—";
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return iso;
+  return m[3] + "." + m[2] + "." + m[1];
+}
+function refreshHeadBadges(ticker, bars) {
+  const label = document.getElementById("chartTickerLabel");
+  if (label) label.textContent = ticker || "—";
+  const lastEl = document.getElementById("badgeLastCandleVal");
+  const builtEl = document.getElementById("badgeBuiltAtVal");
+  if (builtEl) builtEl.textContent = DATA.built_at_label || DATA.built_at || "—";
+  if (!lastEl) return;
+  if (!bars || !bars.length) {
+    lastEl.textContent = "—";
+    return;
+  }
+  const last = bars[bars.length - 1];
+  lastEl.textContent = formatCandleDate(last.time) + " (Закрытие: " + fmt(last.close, 2) + " ₽)";
+}
+const OPT_BOOK = {
+  IMOEX: { board: "ROPD", title: "Индекс МосБиржи", codes: "IMOEX / MX" },
+  GAZP: { board: "ROPD", title: "Газпром", codes: "GAZP" },
+  TATN: { board: "ROPD", title: "Татнефть", codes: "TATN" },
+  GLDRUBF: { board: "ROPD", title: "Золото", codes: "GOLD / GLDRUBF" },
+  SLVRUBF: { board: "ROPD", title: "Серебро", codes: "SILV / SLVRUBF" },
+  USDRUBF: { board: "ROPD", title: "Доллар США", codes: "Si / USDRUBF" },
+  CNYRUBF: { board: "ROPD", title: "Юань", codes: "CR / CNYRUBF" },
+  BR: { board: "ROPD", title: "Нефть Brent", codes: "BR" },
+};
+function optionsBookLabel(ticker) {
+  const book = OPT_BOOK[ticker];
+  if (!book) return { hasBook: false, title: "Опционы MOEX: для тикера [" + ticker + "] опционной книги нет", hint: "на выбранный актив нет листинга опционов" };
+  return {
+    hasBook: true,
+    title: "Опционы MOEX (" + book.board + "): " + book.title + " [" + book.codes + "] — Put/Call Ratio",
+    hint: "базовый актив " + book.codes + " · прокси PCR по потоку дня",
+  };
+}
 const kennedySummaryEl = document.getElementById("kennedySummary");
 const kennedyStatusEl = document.getElementById("kennedyStatus");
 const donchStatusEl = document.getElementById("donchStatus");
@@ -2066,7 +2246,7 @@ document.getElementById("rsiStochMode").addEventListener("click", (event) => {
     : "Панель Stochastic (8, 5, 3)";
   if (rsiStochOn && currentTicker) applyRsiStochPanel(candleData.bars[currentTicker] || []);
 });
-document.getElementById("btnClearModes").addEventListener("click", () => {
+function clearAllIndicators() {
   kennedyOn = false;
   donchOn = false;
   pctROn = false;
@@ -2085,8 +2265,23 @@ document.getElementById("btnClearModes").addEventListener("click", () => {
     const el = document.getElementById(id);
     if (el) el.classList.remove("active");
   });
-  fairModeEl.style.display = "none";
+  if (fairModeEl) fairModeEl.style.display = "none";
+  clearTrackedPriceLines();
+  clearIndicatorOverlays();
+  try { if (typeof priceSeries.setMarkers === "function") priceSeries.setMarkers([]); } catch (e) {}
+  [optBox, pctRBox, rsiStochBox, rsxBox, haBox].forEach((box) => { if (box) box.style.display = "none"; });
+  if (lowerEl) lowerEl.style.display = "";
+  refreshActiveBadges();
+  if (explainBoard) explainBoard.style.display = "none";
   if (currentTicker) showTicker(currentTicker);
+  else if (priceSeries) {
+    try { priceSeries.setMarkers([]); } catch (e) {}
+  }
+}
+document.getElementById("btnClearModes").addEventListener("click", (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  clearAllIndicators();
 });
 
 function sma(values, period) {
@@ -2453,6 +2648,8 @@ function clearIndicatorOverlays() {
   (elliottSeries.lines || []).forEach((series) => { try { priceChart.removeSeries(series); } catch (e) {} });
   elliottSeries.lines = [];
   elliottSeries.labels = [];
+  clearTrackedPriceLines();
+  try { if (typeof priceSeries.setMarkers === "function") priceSeries.setMarkers([]); } catch (e) {}
   explainBoard.style.display = "none";
   kennedySummaryEl.innerHTML = "";
   kennedyStatusEl.innerHTML = "";
@@ -2564,6 +2761,7 @@ function ensureRsiStochChart() {
   rsiStochLvlB = dash();
   rsiStochLvlC = dash();
   bindRangeSync(rsiStochChart); bindCrosshairSync(rsiStochChart);
+  try { rsiStochChart.applyOptions(interactionOptions(interactMode === "magnifier")); } catch (e) {}
 }
 
 function applyRsiStochPanel(bars) {
@@ -2685,6 +2883,7 @@ function ensureHaChart() {
     title: "EMA9 HA_Open",
   });
   bindRangeSync(haChart); bindCrosshairSync(haChart);
+  try { haChart.applyOptions(interactionOptions(interactMode === "magnifier")); } catch (e) {}
 }
 
 function applyHaPanel(bars) {
@@ -2771,6 +2970,7 @@ function ensureRsxChart() {
     crosshairMarkerVisible: false,
   });
   bindRangeSync(rsxChart); bindCrosshairSync(rsxChart);
+  try { rsxChart.applyOptions(interactionOptions(interactMode === "magnifier")); } catch (e) {}
 }
 
 function computeRsxPack(bars) {
@@ -3125,6 +3325,7 @@ function ensurePctRChart() {
   pctRLevel50 = dash(50);
   pctRLevel20 = dash(20);
   bindRangeSync(pctRChart); bindCrosshairSync(pctRChart);
+  try { pctRChart.applyOptions(interactionOptions(interactMode === "magnifier")); } catch (e) {}
 }
 
 function applyPctRPanel(bars) {
@@ -3745,6 +3946,7 @@ function ensureOptChart() {
   optChart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.55, bottom: 0.05 } });
   bindRangeSync(optChart);
   bindCrosshairSync(optChart);
+  try { optChart.applyOptions(interactionOptions(interactMode === "magnifier")); } catch (e) {}
 }
 
 function applyOptPanel(bars) {
@@ -3754,12 +3956,29 @@ function applyOptPanel(bars) {
     return;
   }
   optBox.style.display = "block";
+  const book = optionsBookLabel(currentTicker);
+  const titleEl = document.getElementById("optTitle");
+  const hintEl = document.getElementById("optHint");
+  if (titleEl) titleEl.textContent = book.title;
+  if (!book.hasBook) {
+    if (hintEl) hintEl.textContent = book.hint;
+    // Пустая серия — честно без «ложных» опционных рядов.
+    ensureOptChart();
+    optCallHist.setData([]);
+    optPutHist.setData([]);
+    optPcrLine.setData([]);
+    optLevel1.setData([]);
+    if (optStatusEl) {
+      optStatusEl.innerHTML = `
+        <h3 style="font-size:13px;margin:12px 0 6px">${esc(book.title)}</h3>
+        <p class="hint">Для <span class="mono">${esc(currentTicker)}</span> на Мосбирже нет опционной книги — панель не рисует Put/Call Ratio.</p>`;
+    }
+    return;
+  }
   ensureOptChart();
-  const up = getComputedStyle(root).getPropertyValue("--up").trim() || "#1B6B3A";
-  const down = getComputedStyle(root).getPropertyValue("--down").trim() || "#A62626";
   const ink = getComputedStyle(root).getPropertyValue("--ink").trim() || "#1C1915";
   optChart.applyOptions(Object.assign(chartBase(160), { height: 160 }));
-  optPcrLine.applyOptions({ color: ink });
+  optPcrLine.applyOptions({ color: ink, title: "PCR · " + book.title });
   // proxy: up-day volume = Call, down-day = Put; PCR = SMA(Put)/SMA(Call)
   const call = [];
   const put = [];
@@ -3795,13 +4014,14 @@ function applyOptPanel(bars) {
     else if (last.value < 0.8) note = "Call-перевес (PCR < 0.8) — спрос покупателей";
     else note = "баланс Put/Call около 1";
   }
-  document.getElementById("optHint").textContent = note;
+  if (hintEl) hintEl.textContent = book.hint + " · " + note;
   if (optStatusEl) {
     optStatusEl.innerHTML = `
-      <h3 style="font-size:13px;margin:12px 0 6px">Подвал · Опционы Put/Call</h3>
-      <p class="hint">Прокси потока: объём растущих дней = Call, падающих = Put. Линия — SMA(10) PCR.</p>
+      <h3 style="font-size:13px;margin:12px 0 6px">${esc(book.title)}</h3>
+      <p class="hint">Базовый актив: <span class="mono">${esc(OPT_BOOK[currentTicker].codes)}</span>. Прокси потока по свечам базового актива (Call = объём роста, Put = объём падения).</p>
       <div class="scroll"><table class="grid">
         <tr><th>Параметр</th><th>Значение</th></tr>
+        <tr><td>Базовый актив</td><td class="mono">${esc(OPT_BOOK[currentTicker].title)} [${esc(OPT_BOOK[currentTicker].codes)}]</td></tr>
         <tr><td>PCR (10)</td><td class="mono">${fmt(last ? last.value : null, 2)}</td></tr>
         <tr><td>Интерпретация</td><td>${esc(note)}</td></tr>
       </table></div>`;
@@ -3824,8 +4044,10 @@ function resizeAllCharts() {
 function showTicker(ticker) {
   currentTicker = ticker;
   Object.entries(buttons).forEach(([name, button]) => button.classList.toggle("active", name === ticker));
+  clearTrackedPriceLines();
   clearIndicatorOverlays();
   const bars = candleData.bars[ticker] || [];
+  refreshHeadBadges(ticker, bars);
   const rows = eventsOf(ticker);
   const barDays = new Set(bars.map((bar) => bar.time));
   let markers = rows.filter((row) => barDays.has(row.date)).map((row) => ({
@@ -3906,10 +4128,15 @@ priceChart.subscribeCrosshairMove((event) => {
   )).join("<hr>");
   tipEl.style.display = "block";
   const host = priceEl.getBoundingClientRect();
+  const tipW = Math.min(340, host.width - 16);
+  tipEl.style.maxWidth = tipW + "px";
   let x = event.point.x + 12;
   let y = event.point.y + 12;
-  if (x > host.width - 360) x = Math.max(8, event.point.x - 348);
-  if (y > host.height - 80) y = Math.max(8, event.point.y - 72);
+  const tipH = tipEl.offsetHeight || 72;
+  if (x > host.width - tipW - 8) x = Math.max(8, event.point.x - tipW - 12);
+  if (y > host.height - tipH - 8) y = Math.max(8, event.point.y - tipH - 12);
+  x = Math.max(4, Math.min(x, host.width - tipW - 4));
+  y = Math.max(4, Math.min(y, host.height - tipH - 4));
   tipEl.style.left = x + "px";
   tipEl.style.top = y + "px";
 });
@@ -4096,13 +4323,17 @@ window.addEventListener("resize", () => {
   if (psChartObj) psChartObj.applyOptions({ width: document.getElementById("psChart").clientWidth });
 });
 resizeAllCharts();
+applyInteractionMode("cursor");
 if (currentTicker) {
   showTicker(currentTicker);
   // Повтор после layout: LWC иногда стартует с нулевой шириной контейнера.
   requestAnimationFrame(() => {
     resizeAllCharts();
+    applyInteractionMode(interactMode);
     showTicker(currentTicker);
   });
+} else {
+  refreshHeadBadges("", []);
 }
 </script>
 </body>
