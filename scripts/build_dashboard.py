@@ -1480,6 +1480,31 @@ def ensure_iss_candles(needed: list[str], min_bars: int = 120) -> dict[str, int]
     return fetched
 
 
+# Цены до ex-date делим на factor, чтобы свечи не рвались на дроблении.
+# factor > 1 — прямой сплит, factor < 1 — обратный (старую цену умножаем).
+SHARE_SPLITS: dict[str, tuple[str, float]] = {
+    "T": ("2026-04-17", 10.0),       # Т-Технологии, 10:1
+    "PLZL": ("2025-03-27", 10.0),    # Полюс, 10:1
+    "GMKN": ("2024-04-08", 100.0),   # Норникель, 100:1
+    "TRNFP": ("2024-02-21", 100.0),  # Транснефть-ап, 100:1
+    "VTBR": ("2024-07-15", 1 / 5000),  # ВТБ, обратный 1:5000
+}
+
+
+def apply_share_splits(bars: dict[str, dict[str, dict]]) -> None:
+    for ticker, (ex_date, factor) in SHARE_SPLITS.items():
+        series = bars.get(ticker)
+        if not series or not factor:
+            continue
+        for stamp, row in series.items():
+            if stamp >= ex_date:
+                continue
+            for key in ("open", "high", "low", "close"):
+                value = row.get(key)
+                if value not in (None, 0):
+                    row[key] = float(value) / factor
+
+
 def load_bars(tickers: list[str]) -> dict[str, list[dict]]:
     wanted = set(tickers) | set(TICKER_ORDER)
     bars: dict[str, dict[str, dict]] = {}
@@ -1507,6 +1532,7 @@ def load_bars(tickers: list[str]) -> dict[str, list[dict]]:
 
     read_ohlc_csv(CLEAN / "prices_daily.csv", "ticker")
     read_ohlc_csv(CANDLES_EXTRA, "ticker")
+    apply_share_splits(bars)
 
     indices_path = CLEAN / "indices_daily.csv"
     if indices_path.exists():
