@@ -1132,9 +1132,12 @@ def build() -> None:
         HTML.replace("__DATA__", _json_blob(payload))
         .replace("__LWC_SCRIPT__", _inline_lwc_script())
     )
+    # Единый автономный HTML для localhost и GitHub Pages.
     OUT.write_text(html, encoding="utf-8")
     index_path = ROOT / "index.html"
     index_path.write_text(html, encoding="utf-8")
+    if OUT.read_bytes() != index_path.read_bytes():
+        raise RuntimeError("dashboard.html and index.html diverged after build")
     kpi = payload["kpi"]
     print(
         f"wrote {OUT.relative_to(ROOT)} + index.html "
