@@ -8,6 +8,10 @@ on:
     - cron: '0 16 * * *'
   workflow_dispatch: # Кнопка ручного запуска в любое время
 
+concurrency:
+  group: update-market-terminal
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -29,12 +33,113 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install requests pandas numpy beautifulsoup4 lxml
 
-      - name: Run full MOEX collectors and build dashboard
+      - name: Run full MOEX collectors and refresh daily candles
         run: |
           export PYTHONPATH=.
-          python -m engine --refresh || echo "Warning: engine refresh exited with non-zero status"
+          python -m engine --refresh || echo "Warning: engine refresh"
           python -m scripts.run_collector --mode daily || python -m scripts.run_collector || echo "Warning: run_collector"
           python -m scripts.pipeline || echo "Warning: pipeline"
+          python - << 'EOF'
+          import csv, datetime, requests
+          from pathlib import Path
+
+          clean_dir = Path("data/clean")
+          today = datetime.date.today()
+          start_date = (today - datetime.timedelta(days=400)).isoformat()
+          end_date = today.isoformat()
+
+          equities = [
+              "SBER", "SBERP", "GAZP", "LKOH", "ROSN", "NVTK", "GMKN", "PLZL", "YDEX", "T",
+              "TATN", "TATNP", "SURG", "SNGSP", "CHMF", "NLMK", "MAGN", "ALRS", "MOEX", "VTBR",
+              "OZON", "HEAD", "RUAL", "MTSS", "RTKM", "RTKMP", "IRAO", "HYDR", "FEES", "RASP",
+              "MTLR", "AFLT", "PIKK", "SMLT", "LSRG", "PHOR", "AKRN", "FLOT", "NMTP", "TRNFP",
+              "BANEP", "BANE", "SIBN", "POSI", "ASTR", "DIAS", "SOFL", "VKCO", "MVID", "LENT",
+              "FIVE", "X5", "MGNT", "BELU", "ENPG", "UPRO", "OGKB", "TGKA", "MSNG"
+          ]
+          indices = ["IMOEX", "RGBI", "RVI", "MOEXOG", "MOEXMM", "MOEXFN", "MOEXCN", "MOEXCH", "MOEXEU", "MOEXTN", "MOEX10", "MOEXIT", "MOEXRE", "MOEXTL"]
+          futures = ["GLDRUBF", "SLVRUBF", "PLTRUBF", "PLDRUBF", "USDRUBF", "CNYRUBF", "BR"]
+
+          def fetch_moex(engine, market, board, secid):
+              url = f"https://moex.com{engine}/markets/{market}/boards/{board}/securities/{secid}.json"
+              rows = []
+              start = 0
+              while True:
+                  r = requests.get(url, params={"from": start_date, "till": end_date, "start": start}, timeout=20)
+                  if r.status_code != 200:
+                      break
+                  data = r.json().get("history", {})
+                  cols = data.get("columns", [])
+                  chunk = data.get("data", [])
+                  if not chunk:
+                      break
+                  idx = {c: i for i, c in enumerate(cols)}
+                  for item in chunk:
+                      dt = item[idx["TRADEDATE"]] if "TRADEDATE" in idx else None
+                      cl = item[idx["CLOSE"]] if "CLOSE" in idx else None
+                      if not dt or cl is None:
+                          continue
+                      op = item[idx["OPEN"]] if "OPEN" in idx and item[idx["OPEN"]] is not None else cl
+                      hi = item[idx["HIGH"]] if "HIGH" in idx and item[idx["HIGH"]] is not None else max(op, cl)
+                      lo = item[idx["LOW"]] if "LOW" in idx and item[idx["LOW"]] is not None else min(op, cl)
+                      vol = item[idx["VOLUME"]] if "VOLUME" in idx and item[idx["VOLUME"]] is not None else 0
+                      rows.append({"date": dt, "ticker": secid, "open": op, "high": hi, "low": lo, "close": cl, "volume": vol})
+                  if len(chunk) < 100:
+                      break
+                  start += len(chunk)
+              return rows
+
+          def merge_csv(path, new_rows):
+              if not path.exists() or not new_rows:
+                  return
+              with path.open(encoding="utf-8", newline="") as f:
+                  reader = csv.DictReader(f)
+                  fieldnames = reader.fieldnames
+                  existing = list(reader)
+              if not fieldnames:
+                  return
+              date_col = next((c for c in fieldnames if c.lower() in ("date", "tradedate", "time")), fieldnames[0])
+              tick_col = next((c for c in fieldnames if c.lower() in ("ticker", "secid", "symbol")), fieldnames[1])
+              by_key = {(r.get(tick_col), r.get(date_col)): r for r in existing}
+              for nr in new_rows:
+                  t = "FIVE" if nr["ticker"] == "X5" else nr["ticker"]
+                  row = {c: "" for c in fieldnames}
+                  row[date_col] = nr["date"]
+                  row[tick_col] = t
+                  for c in fieldnames:
+                      cl = c.lower()
+                      if cl == "open": row[c] = nr["open"]
+                      elif cl == "high": row[c] = nr["high"]
+                      elif cl == "low": row[c] = nr["low"]
+                      elif cl == "close": row[c] = nr["close"]
+                      elif cl in ("volume", "vol"): row[c] = nr["volume"]
+                  by_key[(t, nr["date"])] = row
+              merged = sorted(by_key.values(), key=lambda x: (x.get(tick_col, ""), x.get(date_col, "")))
+              with path.open("w", encoding="utf-8", newline="") as f:
+                  w = csv.DictWriter(f, fieldnames=fieldnames)
+                  w.writeheader()
+                  w.writerows(merged)
+
+          all_eq = []
+          for s in equities:
+              all_eq.extend(fetch_moex("stock", "shares", "TQBR", s))
+          all_idx = []
+          for s in indices:
+              all_idx.extend(fetch_moex("stock", "index", "SNDX", s))
+          all_fut = []
+          for s in futures:
+              res = fetch_moex("futures", "forts", "RFUD", s)
+              if not res and s == "BR":
+                  for m in ["BRZ6", "BRF7", "BRG7"]:
+                      res = fetch_moex("futures", "forts", "RFUD", m)
+                      if res:
+                          for r in res: r["ticker"] = "BR"
+                          break
+              all_fut.extend(res)
+
+          for fname in ["prices_daily.csv", "candles_extra_daily.csv", "indices_daily.csv"]:
+              merge_csv(clean_dir / fname, all_eq + all_idx + all_fut)
+          print(f"Fetched MOEX rows: eq={len(all_eq)}, idx={len(all_idx)}, fut={len(all_fut)}")
+          EOF
           python -m scripts.build_almanac || echo "Warning: build_almanac"
           python -m scripts.build_dashboard
           cp -f dashboard.html index.html
@@ -42,6 +147,6 @@ jobs:
       - name: Commit and push updated terminal
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@://github.com"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: auto-update terminal data [skip ci]" && git push)
