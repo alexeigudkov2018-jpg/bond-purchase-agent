@@ -2630,11 +2630,12 @@ tr.anomaly { background: rgba(138, 90, 18, 0.12); }
 }
 #psCandleChart { height: 380px; }
 #psStockChart { height: 210px; margin-top: 8px; }
+.ps-cross { font-family: "JetBrains Mono", Consolas, monospace; font-size: 12px; margin: 6px 0 0; min-height: 1.2em; }
 .ps-study-label { margin: 10px 0 4px; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
-.ps-study { margin-top: 8px; border: 1px solid var(--rule); background: var(--card); padding: 8px; }
-.ps-study h3 { margin: 0 0 6px; font-size: 13px; }
+.ps-study { margin-top: 8px; border: 1px solid var(--rule); background: var(--card); padding: 8px 0; }
+.ps-study h3 { margin: 0 8px 6px; font-size: 13px; }
 .ps-study .chart { height: 170px; }
-.ps-study .hint { margin: 6px 0 0; }
+.ps-study .hint { margin: 6px 8px 0; }
 .ps-slider {
   display: grid;
   grid-template-columns: 176px minmax(90px, 1fr) 128px;
@@ -2877,6 +2878,7 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
     <div class="ps-screen" id="psScreen">
       <div class="ps-screen-label" id="psScreenLabel">Выберите тикер</div>
       <div class="chart" id="psCandleChart"></div>
+      <div class="ps-cross" id="psCrossRead">Наведите на свечу — P/S и индикаторы встанут на этот же день.</div>
       <div class="chart" id="psStockChart"></div>
       <div class="ps-study-label">Индикаторы для изучения</div>
       <div class="modes" id="psStudyModes">
@@ -2905,7 +2907,7 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
       <p>Зелёная полоса на шкале — от 12% под полом до 5% над ним. Чёрная черта — сам пол. Квадрат — текущий P/S. Нажатие на ползунок или тикер открывает бумагу в графике выше.</p>
       <p><strong>Наблюдаем</strong> — глубже −12%, внутри ряда или запрет на долгий вход (например Газпром, ИКС 5). <strong>Шорт</strong> — P/S выше потолка своего ряда; это не покупка, а дорого относительно своей истории.</p>
       <h4>Индикаторы для изучения</h4>
-      <p>Кнопки под графиком P/S открывают расчёт по свечам выбранной бумаги. Можно включить несколько сразу. Это изучение хода цены, не замена полосы входа −12%…+5%.</p>
+      <p>Кнопки под графиком P/S открывают расчёт по свечам выбранной бумаги. Можно включить несколько сразу. Колёсико и перетаскивание свечей двигают P/S и все открытые индикаторы на тот же отрезок. Перекрестие стоит на одном дне: в строке под свечами видно, что в этот день было на цене, на P/S и на индикаторе.</p>
       <ul>
         <li><strong>SMA 20 / 50 / 200</strong> — короткая, средняя и годовая средние на свечах. Цена над всеми тремя — восходящий порядок.</li>
         <li><strong>Jurik RSX</strong> — сглаженный момент. Выше 50 ход вверх, ниже 50 ход вниз. Слом наклона без свечи входом не считается.</li>
@@ -5722,18 +5724,147 @@ let psFloorSeries = null;
 let psBandLo = null;
 let psBandHi = null;
 let psSyncing = false;
+let psCrossLock = false;
+let psScreenBars = [];
 const psStudyOn = { sma: false, rsx: false, pctr: false, rsi: false, stoch: false, ha: false };
 const psStudyCharts = {};
 const psSmaLines = { s20: null, s50: null, s200: null };
 
-function psFollowRange(src, dst) {
-  if (!src || !dst || src === dst) return;
-  src.timeScale().subscribeVisibleLogicalRangeChange((range) => {
-    if (!range || psSyncing) return;
-    psSyncing = true;
-    try { dst.timeScale().setVisibleLogicalRange(range); } catch (e) {}
-    psSyncing = false;
+function psChartHands() {
+  return {
+    handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
+    handleScale: {
+      axisPressedMouseMove: { time: true, price: false },
+      axisDoubleClickReset: true,
+      mouseWheel: true,
+      pinch: true,
+    },
+  };
+}
+function psPriceAt(time) {
+  const bar = psScreenBars.find((row) => row.time === time);
+  return bar ? bar.close : null;
+}
+function psPsAt(time) {
+  const bar = psScreenBars.find((row) => row.time === time);
+  const last = psScreenBars.length ? psScreenBars[psScreenBars.length - 1].close : null;
+  const paper = psFind(psSelected);
+  if (!bar || !last || !paper || paper.ps == null) return null;
+  return paper.ps * bar.close / last;
+}
+function psAllPanes() {
+  const list = [];
+  if (psCandleChart && psCandleSeries) list.push({ chart: psCandleChart, series: psCandleSeries, crossPrice: psPriceAt });
+  if (psStockChart && psStockLine) list.push({ chart: psStockChart, series: psStockLine, crossPrice: psPsAt });
+  Object.keys(psStudyCharts).forEach((id) => {
+    const pack = psStudyCharts[id];
+    const box = document.getElementById("psStudy-" + id);
+    if (!pack || !pack.chart || !pack.probe) return;
+    if (box && box.style.display === "none") return;
+    if (!psStudyOn[id]) return;
+    list.push({ chart: pack.chart, series: pack.probe, pack, crossPrice: pack.crossPrice });
   });
+  return list;
+}
+function psPushRange(src) {
+  if (psSyncing || !src) return;
+  let range = null;
+  let spacing = 6;
+  try { range = src.timeScale().getVisibleLogicalRange(); } catch (e) { return; }
+  if (!range) return;
+  try { spacing = src.timeScale().options().barSpacing || spacing; } catch (e) {}
+  psSyncing = true;
+  psAllPanes().forEach((item) => {
+    if (item.chart === src) return;
+    try {
+      item.chart.timeScale().applyOptions({ barSpacing: spacing, rightOffset: 6 });
+      item.chart.timeScale().setVisibleLogicalRange(range);
+    } catch (e) {}
+  });
+  psSyncing = false;
+}
+function psWatchRange(chart) {
+  if (!chart || chart.__psRange) return;
+  chart.__psRange = true;
+  chart.timeScale().subscribeVisibleLogicalRangeChange(() => psPushRange(chart));
+}
+function psFmtDay(time) {
+  const s = time == null ? "" : String(time);
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? m[3] + "." + m[2] + "." + m[1] : s;
+}
+function psNum(v, digits) {
+  if (v == null || Number.isNaN(Number(v))) return "—";
+  return Number(v).toFixed(digits).replace(".", ",");
+}
+function psIndexAt(time) {
+  if (!time) return -1;
+  return psScreenBars.findIndex((bar) => bar.time === time);
+}
+function psAt(values, time) {
+  const i = psIndexAt(time);
+  if (i < 0 || !values || values[i] == null || Number.isNaN(values[i])) return null;
+  return values[i];
+}
+function psPaintReadout(time) {
+  const host = document.getElementById("psCrossRead");
+  const i = psIndexAt(time);
+  const bar = i >= 0 ? psScreenBars[i] : (psScreenBars[psScreenBars.length - 1] || null);
+  const day = bar ? psFmtDay(bar.time) : "";
+  if (host) {
+    if (!bar) host.textContent = "Наведите на свечу — P/S и индикаторы встанут на этот же день.";
+    else {
+      const parts = [`${day}`, `O ${psNum(bar.open, 2)}`, `H ${psNum(bar.high, 2)}`, `L ${psNum(bar.low, 2)}`, `C ${psNum(bar.close, 2)}`];
+      Object.keys(psStudyCharts).forEach((id) => {
+        const pack = psStudyCharts[id];
+        const box = document.getElementById("psStudy-" + id);
+        if (!pack || !pack.readout || !box || box.style.display === "none") return;
+        if (!psStudyOn[id]) return;
+        const text = pack.readout(bar.time);
+        if (text) parts.push(text);
+      });
+      host.textContent = parts.join("  ·  ");
+    }
+  }
+  Object.keys(psStudyCharts).forEach((id) => {
+    const pack = psStudyCharts[id];
+    const box = document.getElementById("psStudy-" + id);
+    if (!pack || !box) return;
+    const h3 = box.querySelector("h3");
+    if (!h3) return;
+    if (!bar || !psStudyOn[id] || box.style.display === "none") {
+      h3.textContent = pack.title || h3.textContent;
+      return;
+    }
+    const extra = pack.readout ? pack.readout(bar.time) : "";
+    h3.textContent = `${pack.title} · ${day}${extra ? " · " + extra : ""}`;
+  });
+}
+function psApplyCrosshair(src, time) {
+  if (psCrossLock) return;
+  psCrossLock = true;
+  psAllPanes().forEach((item) => {
+    if (item.chart === src) return;
+    try {
+      if (!time || !item.series) item.chart.clearCrosshairPosition();
+      else {
+        const price = item.crossPrice ? item.crossPrice(time) : null;
+        if (price == null) item.chart.clearCrosshairPosition();
+        else item.chart.setCrosshairPosition(price, time, item.series);
+      }
+    } catch (e) {}
+  });
+  psPaintReadout(time);
+  psCrossLock = false;
+}
+function psBindCrosshair(chart, fallback) {
+  if (!chart || chart.__psCross) return;
+  chart.__psCross = true;
+  chart.subscribeCrosshairMove((param) => {
+    const time = param && param.time ? param.time : null;
+    psApplyCrosshair(chart, time);
+  });
+  if (fallback != null) chart.__psFallback = fallback;
 }
 function psStudyBox(id, title) {
   let box = document.getElementById("psStudy-" + id);
@@ -5754,33 +5885,37 @@ function psStudyChart(id, height) {
   const host = document.getElementById("psStudyChart-" + id);
   if (!host || typeof LightweightCharts === "undefined") return null;
   if (!psStudyCharts[id]) {
-    const chart = LightweightCharts.createChart(host, chartBase(height));
+    const chart = LightweightCharts.createChart(host, Object.assign(chartBase(height), psChartHands()));
     psStudyCharts[id] = { chart };
-    if (psCandleChart) {
-      psFollowRange(psCandleChart, chart);
-      psFollowRange(chart, psCandleChart);
-    }
-    if (psStockChart) {
-      psFollowRange(psStockChart, chart);
-      psFollowRange(chart, psStockChart);
-    }
-    Object.keys(psStudyCharts).forEach((other) => {
-      if (other === id) return;
-      psFollowRange(psStudyCharts[other].chart, chart);
-      psFollowRange(chart, psStudyCharts[other].chart);
-    });
+    psWatchRange(chart);
+    psBindCrosshair(chart);
   }
   const width = Math.max(host.clientWidth || 640, 280);
-  psStudyCharts[id].chart.applyOptions(Object.assign(chartBase(height), { width, height }));
+  psStudyCharts[id].chart.applyOptions(Object.assign(chartBase(height), psChartHands(), { width, height }));
   return psStudyCharts[id];
 }
-function psLevel(bars, values, level) {
-  const out = [];
-  for (let i = 0; i < bars.length; i++) {
-    if (values[i] == null || Number.isNaN(values[i])) continue;
-    out.push({ time: bars[i].time, value: level });
-  }
-  return out;
+function psAligned(bars, values) {
+  return bars.map((bar, i) => {
+    const v = values ? values[i] : null;
+    if (v == null || Number.isNaN(v)) return { time: bar.time };
+    return { time: bar.time, value: v };
+  });
+}
+function psLevelFull(bars, level) {
+  return bars.map((bar) => ({ time: bar.time, value: level }));
+}
+function psMatchScales() {
+  const charts = psAllPanes().map((item) => item.chart);
+  let width = 86;
+  charts.forEach((chart) => {
+    try {
+      const scale = chart.priceScale("right").width();
+      if (scale > width) width = scale;
+    } catch (e) {}
+  });
+  charts.forEach((chart) => {
+    try { chart.priceScale("right").applyOptions({ minimumWidth: width }); } catch (e) {}
+  });
 }
 function psWilliamsR(bars, period) {
   const out = new Array(bars.length).fill(null);
@@ -5800,13 +5935,15 @@ function psHideStudy(id) {
   if (box) box.style.display = "none";
 }
 function drawPsStudies() {
-  const bars = psBars(psSelected).filter((bar) => bar && bar.time && bar.close != null && bar.high != null && bar.low != null);
+  const bars = psScreenBars.length
+    ? psScreenBars
+    : psBars(psSelected).filter((bar) => bar && bar.time && bar.close != null && bar.high != null && bar.low != null);
   const closes = bars.map((bar) => bar.close);
   if (psSmaLines.s20) {
     if (psStudyOn.sma && bars.length) {
-      psSmaLines.s20.setData(linePoints(bars, sma(closes, 20)));
-      psSmaLines.s50.setData(linePoints(bars, sma(closes, 50)));
-      psSmaLines.s200.setData(linePoints(bars, sma(closes, 200)));
+      psSmaLines.s20.setData(psAligned(bars, sma(closes, 20)));
+      psSmaLines.s50.setData(psAligned(bars, sma(closes, 50)));
+      psSmaLines.s200.setData(psAligned(bars, sma(closes, 200)));
     } else {
       psSmaLines.s20.setData([]);
       psSmaLines.s50.setData([]);
@@ -5824,11 +5961,17 @@ function drawPsStudies() {
     if (hint) hint.textContent = note;
     const pack = psStudyChart(id, 170);
     if (!pack) return;
+    pack.title = title;
     setup(pack);
     try {
       const range = psCandleChart && psCandleChart.timeScale().getVisibleLogicalRange();
-      if (range) pack.chart.timeScale().setVisibleLogicalRange(range);
-    } catch (e) {}
+      if (range) {
+        psSyncing = true;
+        pack.chart.timeScale().applyOptions({ rightOffset: 6 });
+        pack.chart.timeScale().setVisibleLogicalRange(range);
+        psSyncing = false;
+      }
+    } catch (e) { psSyncing = false; }
   };
   paint("rsx", "Jurik RSX (14)", "Выше 50 — ход вверх, ниже 50 — ход вниз. Слом наклона без свечи входом не считается.", (pack) => {
     if (!pack.line) {
@@ -5836,8 +5979,12 @@ function drawPsStudies() {
       pack.mid = pack.chart.addLineSeries({ color: "#5C4F38", lineWidth: 1, lineStyle: 2, priceLineVisible: false });
     }
     const rsx = jurikRsx(closes, 14);
-    pack.line.setData(linePoints(bars, rsx));
-    pack.mid.setData(psLevel(bars, rsx, 50));
+    pack.values = rsx;
+    pack.probe = pack.line;
+    pack.crossPrice = (time) => psAt(rsx, time) == null ? 50 : psAt(rsx, time);
+    pack.readout = (time) => `RSX ${psNum(psAt(rsx, time), 1)}`;
+    pack.line.setData(psAligned(bars, rsx));
+    pack.mid.setData(psLevelFull(bars, 50));
   });
   paint("pctr", "%R (14)", "Около 0 бумага у верхней границы 14 дней, около −100 — у нижней. Пунктир −20 и −80.", (pack) => {
     if (!pack.line) {
@@ -5846,9 +5993,13 @@ function drawPsStudies() {
       pack.lo = pack.chart.addLineSeries({ color: "#1b6b3a", lineWidth: 1, lineStyle: 2, priceLineVisible: false });
     }
     const wr = psWilliamsR(bars, 14);
-    pack.line.setData(linePoints(bars, wr));
-    pack.hi.setData(psLevel(bars, wr, -20));
-    pack.lo.setData(psLevel(bars, wr, -80));
+    pack.values = wr;
+    pack.probe = pack.line;
+    pack.crossPrice = (time) => psAt(wr, time) == null ? -50 : psAt(wr, time);
+    pack.readout = (time) => `%R ${psNum(psAt(wr, time), 1)}`;
+    pack.line.setData(psAligned(bars, wr));
+    pack.hi.setData(psLevelFull(bars, -20));
+    pack.lo.setData(psLevelFull(bars, -80));
   });
   paint("rsi", "RSI (14)", "70 и выше — перекуплен, 30 и ниже — перепродан, 50 — середина хода.", (pack) => {
     if (!pack.line) {
@@ -5858,10 +6009,14 @@ function drawPsStudies() {
       pack.lo = pack.chart.addLineSeries({ color: "#1b6b3a", lineWidth: 1, lineStyle: 2, priceLineVisible: false });
     }
     const rsi = rsiWilder(closes, 14);
-    pack.line.setData(linePoints(bars, rsi));
-    pack.hi.setData(psLevel(bars, rsi, 70));
-    pack.mid.setData(psLevel(bars, rsi, 50));
-    pack.lo.setData(psLevel(bars, rsi, 30));
+    pack.values = rsi;
+    pack.probe = pack.line;
+    pack.crossPrice = (time) => psAt(rsi, time) == null ? 50 : psAt(rsi, time);
+    pack.readout = (time) => `RSI ${psNum(psAt(rsi, time), 1)}`;
+    pack.line.setData(psAligned(bars, rsi));
+    pack.hi.setData(psLevelFull(bars, 70));
+    pack.mid.setData(psLevelFull(bars, 50));
+    pack.lo.setData(psLevelFull(bars, 30));
   });
   paint("stoch", "Stochastic (8, 5, 3)", "Синяя линия — %K, оранжевая — %D. Пересечение снизу у 20 смотрит вверх, сверху у 80 — вниз.", (pack) => {
     if (!pack.k) {
@@ -5871,14 +6026,36 @@ function drawPsStudies() {
       pack.lo = pack.chart.addLineSeries({ color: "#1b6b3a", lineWidth: 1, lineStyle: 2, priceLineVisible: false });
     }
     const st = stochastic(bars, 8, 5, 3);
-    pack.k.setData(linePoints(bars, st.k));
-    pack.d.setData(linePoints(bars, st.d));
-    pack.hi.setData(psLevel(bars, st.k, 80));
-    pack.lo.setData(psLevel(bars, st.k, 20));
+    pack.values = st.k;
+    pack.probe = pack.k;
+    pack.crossPrice = (time) => psAt(st.k, time) == null ? 50 : psAt(st.k, time);
+    pack.readout = (time) => `%K ${psNum(psAt(st.k, time), 1)}  %D ${psNum(psAt(st.d, time), 1)}`;
+    pack.k.setData(psAligned(bars, st.k));
+    pack.d.setData(psAligned(bars, st.d));
+    pack.hi.setData(psLevelFull(bars, 80));
+    pack.lo.setData(psLevelFull(bars, 20));
   });
-  paint("ha", "Heikin-Ashi", "Сглаженные свечи. Серия зелёных без нижних теней — ход вверх, красных без верхних — ход вниз.", (pack) => {
+  paint("ha", "Heikin-Ashi", "Сглаженные свечи того же дня, что и основная свеча. Серия зелёных без нижних теней — ход вверх, красных без верхних — ход вниз.", (pack) => {
     if (!pack.candles) pack.candles = pack.chart.addCandlestickSeries(candleOptions());
-    pack.candles.setData(heikinAshi(bars));
+    const ha = heikinAshi(bars);
+    pack.ha = ha;
+    pack.probe = pack.candles;
+    pack.crossPrice = (time) => {
+      const row = ha.find((bar) => bar.time === time);
+      return row ? row.close : null;
+    };
+    pack.readout = (time) => {
+      const row = ha.find((bar) => bar.time === time);
+      return row ? `HA ${psNum(row.close, 2)}` : "";
+    };
+    pack.candles.setData(ha);
+  });
+  psMatchScales();
+  if (psCandleChart) psPushRange(psCandleChart);
+  psPaintReadout(bars.length ? bars[bars.length - 1].time : null);
+  requestAnimationFrame(() => {
+    psMatchScales();
+    if (psCandleChart) psPushRange(psCandleChart);
   });
 }
 
@@ -5978,30 +6155,24 @@ function ensurePsScreen() {
   const stockEl = document.getElementById("psStockChart");
   if (!candleEl || !stockEl || typeof LightweightCharts === "undefined") return false;
   if (!psCandleChart) {
-    psCandleChart = LightweightCharts.createChart(candleEl, chartBase(380));
+    psCandleChart = LightweightCharts.createChart(candleEl, Object.assign(chartBase(380), psChartHands()));
     psCandleSeries = psCandleChart.addCandlestickSeries(candleOptions());
     psSmaLines.s20 = psCandleChart.addLineSeries({ color: "#1d4ed8", lineWidth: 1, priceLineVisible: false, lastValueVisible: true });
     psSmaLines.s50 = psCandleChart.addLineSeries({ color: "#b45309", lineWidth: 1, priceLineVisible: false, lastValueVisible: true });
     psSmaLines.s200 = psCandleChart.addLineSeries({ color: "#1C1915", lineWidth: 2, priceLineVisible: false, lastValueVisible: true });
-    psStockChart = LightweightCharts.createChart(stockEl, chartBase(210));
+    psStockChart = LightweightCharts.createChart(stockEl, Object.assign(chartBase(210), psChartHands()));
     const psFmt = { type: "price", precision: 3, minMove: 0.001 };
     psStockLine = psStockChart.addLineSeries({ color: "#1d4ed8", lineWidth: 2, priceFormat: psFmt });
     psFloorSeries = psStockChart.addLineSeries({ color: "#1C1915", lineWidth: 1, lineStyle: 2, priceFormat: psFmt });
     psBandLo = psStockChart.addLineSeries({ color: "rgba(27,107,58,0.95)", lineWidth: 1, lineStyle: 2, priceFormat: psFmt });
     psBandHi = psStockChart.addLineSeries({ color: "rgba(27,107,58,0.95)", lineWidth: 1, lineStyle: 2, priceFormat: psFmt });
-    const follow = (src, dst) => {
-      src.timeScale().subscribeVisibleLogicalRangeChange((range) => {
-        if (!range || psSyncing) return;
-        psSyncing = true;
-        try { dst.timeScale().setVisibleLogicalRange(range); } catch (e) {}
-        psSyncing = false;
-      });
-    };
-    follow(psCandleChart, psStockChart);
-    follow(psStockChart, psCandleChart);
+    psWatchRange(psCandleChart);
+    psWatchRange(psStockChart);
+    psBindCrosshair(psCandleChart);
+    psBindCrosshair(psStockChart);
   } else {
-    psCandleChart.applyOptions(chartBase(380));
-    psStockChart.applyOptions(chartBase(210));
+    psCandleChart.applyOptions(Object.assign(chartBase(380), psChartHands()));
+    psStockChart.applyOptions(Object.assign(chartBase(210), psChartHands()));
     psCandleSeries.applyOptions(candleOptions());
   }
   return true;
@@ -6030,6 +6201,7 @@ function drawPsScreen() {
   const candles = raw.map((bar) => ({
     time: bar.time, open: bar.open, high: bar.high, low: bar.low, close: bar.close,
   })).filter((bar) => bar.time && bar.open != null && bar.close != null);
+  psScreenBars = candles;
   psCandleSeries.setData(candles);
   const last = candles.length ? candles[candles.length - 1].close : null;
   const psPoints = (last && paper.ps != null)
@@ -6046,10 +6218,13 @@ function drawPsScreen() {
     const logical = { from: i0 < 0 ? Math.max(0, candles.length - 180) : i0, to: candles.length + 4 };
     psSyncing = true;
     try {
+      psCandleChart.timeScale().applyOptions({ barSpacing: 8, rightOffset: 6 });
       psCandleChart.timeScale().setVisibleLogicalRange(logical);
+      psStockChart.timeScale().applyOptions({ barSpacing: 8, rightOffset: 6 });
       psStockChart.timeScale().setVisibleLogicalRange(logical);
     } catch (e) {}
     psSyncing = false;
+    psPushRange(psCandleChart);
   }
   if (note) {
     const extra = candles.length ? "" : " В кэше свечей этой бумаги нет.";
