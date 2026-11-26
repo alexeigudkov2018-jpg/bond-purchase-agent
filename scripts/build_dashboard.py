@@ -2478,6 +2478,42 @@ a[href*="tradingview.com"] { display: none !important; }
 .chart-workspace.mode-magnifier #rsxChart,
 .chart-workspace.mode-magnifier #haChart,
 .chart-workspace.mode-magnifier #lower { cursor: zoom-in; }
+.chart-workspace.mode-draw #price { cursor: crosshair; }
+.draw-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  display: none;
+  pointer-events: none;
+}
+.chart-workspace.mode-draw .draw-overlay,
+.chart-workspace.mode-move .draw-overlay {
+  display: block;
+  pointer-events: auto;
+}
+.draw-hint {
+  margin: 4px 0 0;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 11px;
+  color: var(--muted);
+}
+.draw-legend {
+  display: inline-flex;
+  gap: 10px;
+  margin-left: 8px;
+  font-size: 10px;
+}
+.draw-legend .swatch {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  vertical-align: middle;
+  margin-right: 3px;
+}
+.draw-legend .swatch.res { background: #b91c1c; }
+.draw-legend .swatch.sup { background: #15803d; }
 .explain-compact { border-style: dashed; }
 .wrap { position: relative; overflow: hidden; z-index: 1; }
 .chart { height: 420px; border: 1px solid var(--rule); background: var(--chart-bg); }
@@ -2740,10 +2776,18 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
             <div class="interact-toggle" id="interactToggle" title="Режим взаимодействия с графиком">
               <button type="button" data-interact="cursor" id="btnInteractCursor" class="active">🖱 Курсор</button>
               <button type="button" data-interact="magnifier" id="btnInteractMagnifier">🔍 Лупа / Масштаб</button>
+              <button type="button" data-interact="trend" id="btnDrawTrend">／ Тренд</button>
+              <button type="button" data-interact="channel" id="btnDrawChannel">☰ Канал</button>
+              <button type="button" data-interact="level" id="btnDrawLevel">― Уровень</button>
+              <button type="button" data-interact="move" id="btnDrawMove">✥ Перенос</button>
             </div>
+            <button type="button" id="btnClearDraw" class="fs-btn" title="Удалить линии рисования">✕ Линии</button>
             <button type="button" id="btnFullscreen" class="fs-btn" title="Развернуть график">⛶ На весь экран</button>
           </div>
         </div>
+        <p class="draw-hint" id="drawHint">Рисование: тренд — 2 клика; канал — 3 клика; уровень — 1 клик. Сопротивление красное, поддержка зелёная.
+          <span class="draw-legend"><span><span class="swatch res"></span>сопротивление</span><span><span class="swatch sup"></span>поддержка</span></span>
+        </p>
         <div class="ticker-picker">
           <div class="ticker-cats" id="tickerCats"></div>
           <div class="tickers" id="tickers"></div>
@@ -2782,6 +2826,7 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
       </div>
       <div class="wrap chart-pane">
         <div class="chart" id="price"></div>
+        <canvas id="drawOverlay" class="draw-overlay" aria-hidden="true"></canvas>
         <div id="tip"></div>
         <div class="gudkoff-mark" aria-hidden="true">GUDKOFF &amp;</div>
       </div>
@@ -3508,21 +3553,44 @@ function interactionOptions(enabled) {
     },
   };
 }
+const DRAW_MODES = new Set(["trend", "channel", "level", "move"]);
+const DRAW_RES = "#b91c1c";
+const DRAW_SUP = "#15803d";
+const DRAW_TREND = "#1d4ed8";
+let drawDraft = null;
+let drawDrag = null;
+let drawSeriesBag = [];
+let drawingsByTicker = {};
+try {
+  drawingsByTicker = JSON.parse(localStorage.getItem("terminalDrawings") || "{}") || {};
+} catch (e) { drawingsByTicker = {}; }
+
 function applyInteractionMode(mode) {
-  interactMode = mode === "magnifier" ? "magnifier" : "cursor";
-  const enabled = interactMode === "magnifier";
+  const next = DRAW_MODES.has(mode) || mode === "magnifier" ? mode : "cursor";
+  interactMode = next;
+  const zoomOn = interactMode === "magnifier";
+  const drawOn = DRAW_MODES.has(interactMode) && interactMode !== "move";
+  const moveOn = interactMode === "move";
   if (chartWorkspace) {
-    chartWorkspace.classList.toggle("mode-magnifier", enabled);
-    chartWorkspace.classList.toggle("mode-cursor", !enabled);
+    chartWorkspace.classList.toggle("mode-magnifier", zoomOn);
+    chartWorkspace.classList.toggle("mode-cursor", interactMode === "cursor");
+    chartWorkspace.classList.toggle("mode-draw", drawOn || moveOn);
+    chartWorkspace.classList.toggle("mode-move", moveOn);
   }
-  const btnC = document.getElementById("btnInteractCursor");
-  const btnM = document.getElementById("btnInteractMagnifier");
-  if (btnC) btnC.classList.toggle("active", !enabled);
-  if (btnM) btnM.classList.toggle("active", enabled);
-  const opts = interactionOptions(enabled);
+  document.querySelectorAll("#interactToggle button[data-interact]").forEach((btn) => {
+    btn.classList.toggle("active", btn.getAttribute("data-interact") === interactMode);
+  });
+  if (!DRAW_MODES.has(interactMode)) {
+    drawDraft = null;
+    drawDrag = null;
+    paintDrawOverlay();
+  }
+  updateDrawHint();
+  const opts = interactionOptions(zoomOn);
   paneCharts().forEach((chart) => {
     try { chart.applyOptions(opts); } catch (e) {}
   });
+  syncDrawOverlaySize();
 }
 const interactToggle = document.getElementById("interactToggle");
 if (interactToggle) {
@@ -3532,6 +3600,417 @@ if (interactToggle) {
     applyInteractionMode(btn.getAttribute("data-interact"));
   });
 }
+function updateDrawHint() {
+  const el = document.getElementById("drawHint");
+  if (!el) return;
+  const legend = `<span class="draw-legend"><span><span class="swatch res"></span>сопротивление</span><span><span class="swatch sup"></span>поддержка</span></span>`;
+  if (interactMode === "trend") el.innerHTML = `Тренд: два клика по свечному графику.${legend}`;
+  else if (interactMode === "channel") el.innerHTML = `Канал: 1–2 клик — одна граница, 3-й — параллель. Верх красный, низ зелёный.${legend}`;
+  else if (interactMode === "level") el.innerHTML = `Горизонтальный уровень: один клик. Выше цены — красное сопротивление, ниже — зелёная поддержка.${legend}`;
+  else if (interactMode === "move") el.innerHTML = `Перенос: тяните точку или линию мышью. Двойной клик по объекту — удалить.${legend}`;
+  else el.innerHTML = `Рисование: тренд — 2 клика; канал — 3 клика; уровень — 1 клик. Сопротивление красное, поддержка зелёная.${legend}`;
+}
+function drawingsOf(ticker) {
+  const key = ticker || currentTicker || "";
+  if (!key) return [];
+  if (!Array.isArray(drawingsByTicker[key])) drawingsByTicker[key] = [];
+  return drawingsByTicker[key];
+}
+function saveDrawings() {
+  try { localStorage.setItem("terminalDrawings", JSON.stringify(drawingsByTicker)); } catch (e) {}
+}
+function clearDrawSeriesBag() {
+  while (drawSeriesBag.length) {
+    const series = drawSeriesBag.pop();
+    try { priceChart.removeSeries(series); } catch (e) {}
+  }
+}
+function lastClosePrice() {
+  const bars = candleData.bars[currentTicker] || [];
+  return bars.length ? bars[bars.length - 1].close : null;
+}
+function barIndex(time) {
+  const bars = candleData.bars[currentTicker] || [];
+  let idx = bars.findIndex((bar) => bar.time === time);
+  if (idx >= 0) return idx;
+  // nearest by string date
+  for (let i = 0; i < bars.length; i++) {
+    if (bars[i].time >= time) return i;
+  }
+  return bars.length ? bars.length - 1 : -1;
+}
+function linePriceAt(a, b, time) {
+  const x1 = barIndex(a.time);
+  const x2 = barIndex(b.time);
+  const x = barIndex(time);
+  if (x1 < 0 || x2 < 0 || x < 0 || x1 === x2) return a.price;
+  return a.price + (b.price - a.price) * ((x - x1) / (x2 - x1));
+}
+function extendLinePoints(a, b) {
+  const bars = candleData.bars[currentTicker] || [];
+  if (!bars.length) return [a, b].filter(Boolean);
+  const x1 = barIndex(a.time);
+  const x2 = barIndex(b.time);
+  if (x1 < 0 || x2 < 0 || x1 === x2) {
+    return [
+      { time: bars[0].time, value: a.price },
+      { time: bars[bars.length - 1].time, value: a.price },
+    ];
+  }
+  const left = 0;
+  const right = bars.length - 1;
+  const pLeft = a.price + (b.price - a.price) * ((left - x1) / (x2 - x1));
+  const pRight = a.price + (b.price - a.price) * ((right - x1) / (x2 - x1));
+  return [
+    { time: bars[left].time, value: pLeft },
+    { time: bars[right].time, value: pRight },
+  ];
+}
+function levelPoints(price) {
+  const bars = candleData.bars[currentTicker] || [];
+  if (!bars.length) return [];
+  return [
+    { time: bars[0].time, value: price },
+    { time: bars[bars.length - 1].time, value: price },
+  ];
+}
+function roleColor(role) {
+  return role === "resistance" ? DRAW_RES : (role === "support" ? DRAW_SUP : DRAW_TREND);
+}
+function classifyLevel(price) {
+  const last = lastClosePrice();
+  if (last == null || price == null) return "resistance";
+  return price >= last ? "resistance" : "support";
+}
+function buildChannelDrawing(a, b, c) {
+  const baseAtC = linePriceAt(a, b, c.time);
+  const offset = c.price - baseAtC;
+  const a2 = { time: a.time, price: a.price + offset };
+  const b2 = { time: b.time, price: b.price + offset };
+  const avg1 = (a.price + b.price) / 2;
+  const avg2 = (a2.price + b2.price) / 2;
+  const upper = avg2 >= avg1 ? { a: a2, b: b2 } : { a, b };
+  const lower = avg2 >= avg1 ? { a, b } : { a: a2, b: b2 };
+  return {
+    id: "d" + Date.now() + Math.floor(Math.random() * 1000),
+    type: "channel",
+    upperA: upper.a,
+    upperB: upper.b,
+    lowerA: lower.a,
+    lowerB: lower.b,
+  };
+}
+function addLineBag(color, width) {
+  const series = priceChart.addLineSeries({
+    color,
+    lineWidth: width || 2,
+    priceLineVisible: false,
+    lastValueVisible: false,
+    crosshairMarkerVisible: false,
+  });
+  drawSeriesBag.push(series);
+  return series;
+}
+function renderDrawings() {
+  clearDrawSeriesBag();
+  const list = drawingsOf(currentTicker);
+  list.forEach((item) => {
+    if (item.type === "trend") {
+      const series = addLineBag(DRAW_TREND, 2);
+      series.setData(extendLinePoints(item.a, item.b));
+      item._series = [series];
+    } else if (item.type === "level") {
+      const role = item.role || classifyLevel(item.price);
+      item.role = role;
+      const series = addLineBag(roleColor(role), 2);
+      series.applyOptions({ lineStyle: 2 });
+      series.setData(levelPoints(item.price));
+      item._series = [series];
+    } else if (item.type === "channel") {
+      const up = addLineBag(DRAW_RES, 2);
+      const dn = addLineBag(DRAW_SUP, 2);
+      up.setData(extendLinePoints(item.upperA, item.upperB));
+      dn.setData(extendLinePoints(item.lowerA, item.lowerB));
+      item._series = [up, dn];
+    }
+  });
+  paintDrawOverlay();
+}
+function pointFromEvent(event) {
+  if (!priceEl || !priceSeries) return null;
+  const rect = priceEl.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  let time = null;
+  let price = null;
+  try { time = priceChart.timeScale().coordinateToTime(x); } catch (e) {}
+  try { price = priceSeries.coordinateToPrice(y); } catch (e) {}
+  if (time == null || price == null || Number.isNaN(price)) return null;
+  if (typeof time !== "string") {
+    // business day object
+    if (time.year && time.month && time.day) {
+      const mm = String(time.month).padStart(2, "0");
+      const dd = String(time.day).padStart(2, "0");
+      time = `${time.year}-${mm}-${dd}`;
+    } else return null;
+  }
+  return { time, price: Number(price), x, y };
+}
+function syncDrawOverlaySize() {
+  const canvas = document.getElementById("drawOverlay");
+  if (!canvas || !priceEl) return;
+  const w = priceEl.clientWidth || 0;
+  const h = priceEl.clientHeight || 0;
+  if (canvas.width !== w) canvas.width = w;
+  if (canvas.height !== h) canvas.height = h;
+}
+function toXY(point) {
+  if (!point || !priceSeries) return null;
+  let x = null;
+  let y = null;
+  try { x = priceChart.timeScale().timeToCoordinate(point.time); } catch (e) {}
+  try { y = priceSeries.priceToCoordinate(point.price); } catch (e) {}
+  if (x == null || y == null || Number.isNaN(x) || Number.isNaN(y)) return null;
+  return { x, y };
+}
+function paintDrawOverlay() {
+  const canvas = document.getElementById("drawOverlay");
+  if (!canvas) return;
+  syncDrawOverlaySize();
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const draft = drawDraft;
+  if (!draft || !draft.points || !draft.points.length) return;
+  const pts = draft.points.concat(draft.hover ? [draft.hover] : []).map(toXY).filter(Boolean);
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 4]);
+  if (draft.type === "trend" && pts.length >= 1) {
+    ctx.strokeStyle = DRAW_TREND;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    if (pts[1]) ctx.lineTo(pts[1].x, pts[1].y);
+    ctx.stroke();
+  } else if (draft.type === "level") {
+    const pricePt = draft.points[0] || draft.hover;
+    const xy = pricePt ? toXY(pricePt) : null;
+    if (xy) {
+      const last = lastClosePrice();
+      ctx.strokeStyle = (last != null && pricePt.price >= last) ? DRAW_RES : DRAW_SUP;
+      ctx.beginPath();
+      ctx.moveTo(0, xy.y);
+      ctx.lineTo(canvas.width, xy.y);
+      ctx.stroke();
+    }
+  } else if (draft.type === "channel") {
+    if (pts.length >= 2) {
+      ctx.strokeStyle = "#5C4F38";
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      ctx.lineTo(pts[1].x, pts[1].y);
+      ctx.stroke();
+    }
+    const third = draft.points[2] || draft.hover;
+    if (draft.points.length >= 2 && third) {
+      const built = buildChannelDrawing(draft.points[0], draft.points[1], third);
+      const up = [toXY(built.upperA), toXY(built.upperB)].filter(Boolean);
+      const dn = [toXY(built.lowerA), toXY(built.lowerB)].filter(Boolean);
+      if (up.length === 2) {
+        ctx.strokeStyle = DRAW_RES;
+        ctx.beginPath();
+        ctx.moveTo(up[0].x, up[0].y);
+        ctx.lineTo(up[1].x, up[1].y);
+        ctx.stroke();
+      }
+      if (dn.length === 2) {
+        ctx.strokeStyle = DRAW_SUP;
+        ctx.beginPath();
+        ctx.moveTo(dn[0].x, dn[0].y);
+        ctx.lineTo(dn[1].x, dn[1].y);
+        ctx.stroke();
+      }
+    }
+  }
+  pts.forEach((p) => {
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#1C1915";
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+function hitDrawing(pt) {
+  if (!pt) return null;
+  const list = drawingsOf(currentTicker);
+  let best = null;
+  let bestDist = 12;
+  const dist = (a, b) => {
+    const pa = toXY(a);
+    const pb = toXY(b);
+    if (!pa || !pb) return Infinity;
+    // distance from point to segment
+    const x = pt.x, y = pt.y;
+    const x1 = pa.x, y1 = pa.y, x2 = pb.x, y2 = pb.y;
+    const dx = x2 - x1, dy = y2 - y1;
+    const len2 = dx * dx + dy * dy || 1;
+    let t = ((x - x1) * dx + (y - y1) * dy) / len2;
+    t = Math.max(0, Math.min(1, t));
+    const hx = x1 + t * dx, hy = y1 + t * dy;
+    return Math.hypot(x - hx, y - hy);
+  };
+  list.forEach((item, index) => {
+    if (item.type === "trend") {
+      const d = dist(item.a, item.b);
+      if (d < bestDist) { bestDist = d; best = { index, item, kind: "trend" }; }
+      [["a", item.a], ["b", item.b]].forEach(([key, p]) => {
+        const xy = toXY(p);
+        if (!xy) return;
+        const dd = Math.hypot(pt.x - xy.x, pt.y - xy.y);
+        if (dd < bestDist) { bestDist = dd; best = { index, item, kind: "trend", handle: key }; }
+      });
+    } else if (item.type === "level") {
+      const y = toXY({ time: pt.time, price: item.price });
+      if (y) {
+        const d = Math.abs(pt.y - y.y);
+        if (d < bestDist) { bestDist = d; best = { index, item, kind: "level" }; }
+      }
+    } else if (item.type === "channel") {
+      const d1 = dist(item.upperA, item.upperB);
+      const d2 = dist(item.lowerA, item.lowerB);
+      if (d1 < bestDist) { bestDist = d1; best = { index, item, kind: "channel", edge: "upper" }; }
+      if (d2 < bestDist) { bestDist = d2; best = { index, item, kind: "channel", edge: "lower" }; }
+    }
+  });
+  return best;
+}
+function finishDraft() {
+  if (!drawDraft) return;
+  const list = drawingsOf(currentTicker);
+  if (drawDraft.type === "trend" && drawDraft.points.length >= 2) {
+    list.push({
+      id: "d" + Date.now(),
+      type: "trend",
+      a: drawDraft.points[0],
+      b: drawDraft.points[1],
+    });
+  } else if (drawDraft.type === "level" && drawDraft.points.length >= 1) {
+    const price = drawDraft.points[0].price;
+    list.push({
+      id: "d" + Date.now(),
+      type: "level",
+      price,
+      role: classifyLevel(price),
+    });
+  } else if (drawDraft.type === "channel" && drawDraft.points.length >= 3) {
+    list.push(buildChannelDrawing(drawDraft.points[0], drawDraft.points[1], drawDraft.points[2]));
+  } else {
+    return;
+  }
+  drawDraft = null;
+  saveDrawings();
+  renderDrawings();
+  updateDrawHint();
+}
+function onDrawPointerDown(event) {
+  if (!DRAW_MODES.has(interactMode)) return;
+  const pt = pointFromEvent(event);
+  if (!pt) return;
+  event.preventDefault();
+  if (interactMode === "move") {
+    const hit = hitDrawing(pt);
+    if (!hit) return;
+    if (event.detail === 2) {
+      drawingsOf(currentTicker).splice(hit.index, 1);
+      saveDrawings();
+      renderDrawings();
+      return;
+    }
+    drawDrag = { hit, start: pt, snapshot: JSON.parse(JSON.stringify(hit.item)) };
+    return;
+  }
+  if (!drawDraft || drawDraft.type !== interactMode) {
+    drawDraft = { type: interactMode, points: [pt], hover: null };
+  } else {
+    drawDraft.points.push(pt);
+    drawDraft.hover = null;
+  }
+  paintDrawOverlay();
+  if (interactMode === "level" && drawDraft.points.length >= 1) finishDraft();
+  else if (interactMode === "trend" && drawDraft.points.length >= 2) finishDraft();
+  else if (interactMode === "channel" && drawDraft.points.length >= 3) finishDraft();
+  else updateDrawHint();
+}
+function onDrawPointerMove(event) {
+  if (!DRAW_MODES.has(interactMode)) return;
+  const pt = pointFromEvent(event);
+  if (!pt) return;
+  if (interactMode === "move" && drawDrag) {
+    const dxPrice = pt.price - drawDrag.start.price;
+    const item = drawDrag.hit.item;
+    const snap = drawDrag.snapshot;
+    const shiftPoint = (p) => {
+      const bars = candleData.bars[currentTicker] || [];
+      const i0 = barIndex(p.time);
+      const i1 = barIndex(pt.time);
+      const iStart = barIndex(drawDrag.start.time);
+      const shift = i1 - iStart;
+      const ni = Math.max(0, Math.min(bars.length - 1, i0 + shift));
+      return { time: bars[ni].time, price: p.price + dxPrice };
+    };
+    if (item.type === "trend") {
+      if (drawDrag.hit.handle === "a") item.a = { time: pt.time, price: pt.price };
+      else if (drawDrag.hit.handle === "b") item.b = { time: pt.time, price: pt.price };
+      else {
+        item.a = shiftPoint(snap.a);
+        item.b = shiftPoint(snap.b);
+      }
+    } else if (item.type === "level") {
+      item.price = pt.price;
+      item.role = classifyLevel(item.price);
+    } else if (item.type === "channel") {
+      item.upperA = shiftPoint(snap.upperA);
+      item.upperB = shiftPoint(snap.upperB);
+      item.lowerA = shiftPoint(snap.lowerA);
+      item.lowerB = shiftPoint(snap.lowerB);
+    }
+    renderDrawings();
+    return;
+  }
+  if (!drawDraft) {
+    if (interactMode === "level") {
+      drawDraft = { type: "level", points: [], hover: pt };
+      paintDrawOverlay();
+      drawDraft = null;
+    }
+    return;
+  }
+  drawDraft.hover = pt;
+  paintDrawOverlay();
+}
+function onDrawPointerUp() {
+  if (drawDrag) {
+    drawDrag = null;
+    saveDrawings();
+    renderDrawings();
+  }
+}
+(function bindDrawOverlay() {
+  const canvas = document.getElementById("drawOverlay");
+  if (!canvas || canvas.dataset.bound) return;
+  canvas.dataset.bound = "1";
+  canvas.addEventListener("pointerdown", onDrawPointerDown);
+  canvas.addEventListener("pointermove", onDrawPointerMove);
+  window.addEventListener("pointerup", onDrawPointerUp);
+  const clearBtn = document.getElementById("btnClearDraw");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", () => {
+      drawingsByTicker[currentTicker || ""] = [];
+      drawDraft = null;
+      saveDrawings();
+      renderDrawings();
+    });
+  }
+  updateDrawHint();
+})();
 function formatCandleDate(iso) {
   if (!iso || typeof iso !== "string") return "—";
   const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -5563,6 +6042,7 @@ function resizeAllCharts() {
   if (rsiStochChart && rsiStochChartEl) rsiStochChart.applyOptions(Object.assign(chartBase(paneH), { width: rsiStochChartEl.clientWidth, height: rsiStochChartEl.clientHeight || paneH }));
   if (rsxChart && rsxChartEl) rsxChart.applyOptions(Object.assign(chartBase(paneH), { width: rsxChartEl.clientWidth, height: rsxChartEl.clientHeight || paneH }));
   if (haChart && haChartEl) haChart.applyOptions(Object.assign(chartBase(haH), { width: haChartEl.clientWidth, height: haChartEl.clientHeight || haH }));
+  try { syncDrawOverlaySize(); paintDrawOverlay(); } catch (e) {}
 }
 
 function showTicker(ticker) {
@@ -5570,6 +6050,7 @@ function showTicker(ticker) {
   Object.entries(buttons).forEach(([name, button]) => button.classList.toggle("active", name === ticker));
   clearTrackedPriceLines();
   clearIndicatorOverlays();
+  try { clearDrawSeriesBag(); drawDraft = null; } catch (e) {}
   const bars = candleData.bars[ticker] || [];
   refreshHeadBadges(ticker, bars);
   const rows = eventsOf(ticker);
@@ -5634,6 +6115,7 @@ function showTicker(ticker) {
     }
     syncingRange = false;
     resizeAllCharts();
+    try { renderDrawings(); } catch (e) {}
   };
   focus();
   requestAnimationFrame(focus);
