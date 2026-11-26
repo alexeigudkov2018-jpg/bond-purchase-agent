@@ -75,7 +75,7 @@ TICKER_FETCH_ALIASES = {
     "FIVE": ("FIVE", "X5"),
     "SURG": ("SURG", "SNGS"),
 }
-INDEX_UNIVERSE = ("IMOEX", "RGBI", "RVI")
+INDEX_UNIVERSE = ("IMOEX", "RGBI", "RGBITR", "RVI")
 METAL_UNIVERSE = ("GLDRUBF", "SLVRUBF", "PLTRUBF", "PLDRUBF")
 FX_UNIVERSE = ("USDRUBF", "CNYRUBF")
 OIL_UNIVERSE = ("BR",)
@@ -2258,7 +2258,14 @@ header.app .note { margin: 6px 0 0; font-size: 12px; color: var(--muted); max-wi
   border: 1px solid var(--rule);
   padding: 10px 12px;
   box-shadow: 0 1px 0 var(--shadow);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  width: 100%;
 }
+.kpi button.card { cursor: pointer; }
+.kpi button.card:hover,
+.kpi button.card.active { border-color: var(--ink); background: rgba(242, 201, 76, 0.35); }
 .kpi .label { font-family: "JetBrains Mono", Consolas, monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; }
 .kpi .value { font-family: "JetBrains Mono", Consolas, monospace; font-size: 18px; margin-top: 4px; font-weight: 700; }
 .kpi .sub { font-family: "JetBrains Mono", Consolas, monospace; font-size: 11px; color: var(--muted); margin-top: 2px; }
@@ -3081,19 +3088,62 @@ function renderKpi() {
   const rvi = kpiField(k, "rvi");
   const cnyrub = kpiField(k, "cnyrub");
   const cards = [
-    ["IMOEX", fmt(imoex.value, 2), `${fmtPct(imoex.day_pct)} · ${imoex.date || "нет"}`, clsPct(imoex.day_pct)],
-    ["RGBITR", fmt(rgbitr.value, 2), `${fmtPct(rgbitr.day_pct)} · ${rgbitr.date || "нет"}`, clsPct(rgbitr.day_pct)],
-    ["КБД 10Y", fmt(ofz10.value, 2) + "%", `спред 10−2: ${fmt(ofz10.spread_10_2, 2)} п.п. · ${ofz10.date || "нет"}`, "flat"],
-    ["P/S IMOEX", fmt(ps.value, 5), `коридор ${fmt(ps.min, 5)}–${fmt(ps.max, 5)} · ${ps.date || "нет"}`, "flat"],
-    ["RVI", fmt(rvi.value, 2), `страх · ${rvi.as_of || "нет"}`, "flat"],
-    ["CNY/RUB", fmt(cnyrub.value, 4), `${cnyrub.as_of || "нет"}`, "flat"],
-    ["Обновлено", k.updated_at || (DATA && DATA.built_at_label) || "нет", "локальная сборка", "flat"],
+    ["imoex", "IMOEX", fmt(imoex.value, 2), `${fmtPct(imoex.day_pct)} · ${imoex.date || "нет"}`, clsPct(imoex.day_pct)],
+    ["rgbitr", "RGBITR", fmt(rgbitr.value, 2), `${fmtPct(rgbitr.day_pct)} · ${rgbitr.date || "нет"}`, clsPct(rgbitr.day_pct)],
+    ["ofz", "КБД 10Y", fmt(ofz10.value, 2) + "%", `спред 10−2: ${fmt(ofz10.spread_10_2, 2)} п.п. · ${ofz10.date || "нет"}`, "flat"],
+    ["ps", "P/S IMOEX", fmt(ps.value, 5), `коридор ${fmt(ps.min, 5)}–${fmt(ps.max, 5)} · ${ps.date || "нет"}`, "flat"],
+    ["rvi", "RVI", fmt(rvi.value, 2), `страх · ${rvi.as_of || "нет"}`, "flat"],
+    ["cny", "CNY/RUB", fmt(cnyrub.value, 4), `${cnyrub.as_of || "нет"}`, "flat"],
   ];
   const host = document.getElementById("kpi");
   if (!host) return;
-  host.innerHTML = cards.map(([label, value, sub, tone]) => (
-    `<article class="card"><div class="label">${esc(label)}</div><div class="value ${tone}">${esc(value)}</div><div class="sub">${esc(sub)}</div></article>`
-  )).join("");
+  host.innerHTML = cards.map(([id, label, value, sub, tone]) => (
+    `<button type="button" class="card" data-kpi="${id}"><div class="label">${esc(label)}</div><div class="value ${tone}">${esc(value)}</div><div class="sub">${esc(sub)}</div></button>`
+  )).join("") + `<article class="card static"><div class="label">Обновлено</div><div class="value flat">${esc(k.updated_at || (DATA && DATA.built_at_label) || "нет")}</div><div class="sub">локальная сборка</div></article>`;
+  if (!host.dataset.bound) {
+    host.dataset.bound = "1";
+    host.addEventListener("click", (event) => {
+      const card = event.target.closest("button[data-kpi]");
+      if (!card) return;
+      openKpi(card.getAttribute("data-kpi"));
+    });
+  }
+}
+function openKpi(id) {
+  document.querySelectorAll("#kpi button[data-kpi]").forEach((el) => {
+    el.classList.toggle("active", el.getAttribute("data-kpi") === id);
+  });
+  const openTab = (name) => {
+    const btn = document.querySelector(`button[data-tab="${name}"]`);
+    if (btn) btn.click();
+  };
+  if (id === "ofz") {
+    openTab("ofz");
+    const el = document.getElementById("curveChart");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
+  if (id === "ps") {
+    openTab("ps");
+    const el = document.getElementById("psChart");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
+  const spec = {
+    imoex: ["IMOEX", "indices"],
+    rgbitr: ["RGBITR", "indices"],
+    rvi: ["RVI", "indices"],
+    cny: ["CNYRUBF", "fx"],
+  }[id];
+  if (!spec) return;
+  const ticker = spec[0];
+  activeTickerGroup = spec[1];
+  tickerSearchQuery = "";
+  renderTickerPicker();
+  openTab("candles");
+  if (candleData.bars && candleData.bars[ticker] && candleData.bars[ticker].length) showTicker(ticker);
+  const el = document.getElementById("chartWorkspace") || document.getElementById("price");
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 // Ранний рендер KPI: даже если дальше упадёт LWC/индикаторы, шапка не останется пустой.
 safeRun("renderKpi:early", renderKpi);
