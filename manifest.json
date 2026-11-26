@@ -1,6 +1,14 @@
 {
   "files": [
     {
+      "file": "data/clean/candles_extra_daily.csv",
+      "rows": 19432,
+      "min_date": "2025-10-21",
+      "max_date": "2026-11-25",
+      "sha256": "87a74777d1dad74dc2c0104e955f3377a15dff400de16cb6592b5a771e8f73a2",
+      "updated_at": "2026-11-26T08:03:26+03:00"
+    },
+    {
       "file": "data/clean/dividends.csv",
       "rows": 0,
       "min_date": "",
@@ -33,6 +41,14 @@
       "updated_at": "2026-11-23T20:01:11+03:00"
     },
     {
+      "file": "data/clean/indices_rotation_daily.csv",
+      "rows": 4403,
+      "min_date": "2021-01-04",
+      "max_date": "2026-11-24",
+      "sha256": "3e0f3db488589112044bf4b598e0d698aba43bb20c5f52ee9b842eac6fea5222",
+      "updated_at": "2026-11-26T08:03:26+03:00"
+    },
+    {
       "file": "data/clean/key_rate_events.csv",
       "rows": 33,
       "min_date": "2021-03-22",
@@ -45,8 +61,8 @@
       "rows": 475,
       "min_date": "1987-05",
       "max_date": "2026-11",
-      "sha256": "133cf72d035ffcdde0edc62b0ae1b4681a60ec49f044cbfe732db65bcbdfa9b3",
-      "updated_at": "2026-11-23T18:24:33+03:00"
+      "sha256": "7dd53066b56bca2f1a87bdc59ca1f59147d74809890edf57f4d3c659cc43f54e",
+      "updated_at": "2026-11-26T08:03:26+03:00"
     },
     {
       "file": "data/clean/news_events.csv",
@@ -173,8 +189,8 @@
       "rows": 0,
       "min_date": "",
       "max_date": "",
-      "sha256": "8a784dc1ad75c22366218c30ad722f39240cd3d1a360c5df2369bb542c1976d1",
-      "updated_at": "2026-11-23T19:55:02+03:00"
+      "sha256": "3f44089271bdc5cfa76eb036065a83c972d6311e7bd4f017e5454536ba6cce00",
+      "updated_at": "2026-11-26T08:03:26+03:00"
     },
     {
       "file": "data/derived/plan_flows.csv",
@@ -285,8 +301,8 @@
       "rows": 18,
       "min_date": "2021",
       "max_date": "2026",
-      "sha256": "da9cf37b56c996af56c5545fefd4da9bb1778df2eaecdbc5201bee89e656275b",
-      "updated_at": "2026-11-23T16:02:26+03:00"
+      "sha256": "f9d2db40f1e93f8a6f34f97306ef02355c37daad367feb866c6037a8580dafbc",
+      "updated_at": "2026-11-26T08:03:26+03:00"
     },
     {
       "file": "data/derived/zigzag_episodes.csv",

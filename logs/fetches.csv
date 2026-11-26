@@ -310,3 +310,11 @@ data/raw/stooq/silver_2026-11-23.csv,https://stooq.com/q/d/l/?s=si.f&i=d,2026-11
 data/raw/stooq/platinum_2026-11-23.csv,https://stooq.com/q/d/l/?s=pl.f&i=d,2026-11-23T19:52:46+03:00
 data/raw/stooq/palladium_2026-11-23.csv,https://stooq.com/q/d/l/?s=pa.f&i=d,2026-11-23T19:52:47+03:00
 data/raw/moex_iss/indices/MCFTR_all_2026-11-23.json,https://iss.moex.com/iss/history/engines/stock/markets/index/securities/MCFTR.json?from=2021-01-04&till=2026-11-23&iss.meta=off,2026-11-23T19:58:40+03:00
+data/raw/moex_iss/bonds/ofz_2026-11-26_2026-11.json,https://iss.moex.com/iss/history/engines/stock/markets/bonds/boards/TQOB/securities.json?month=2026-11,2026-11-26T08:02:28+03:00
+data/raw/cbr/keyrate_2026-11-26.html,https://www.cbr.ru/hd_base/keyrate/?UniDbQuery.Posted=True&UniDbQuery.From=25.11.2026&UniDbQuery.To=25.11.2026,2026-11-26T08:02:40+03:00
+data/raw/cbr/usdrub_2026-11-26.xml,https://www.cbr.ru/scripts/XML_dynamic.asp?date_req1=25/11/2026&date_req2=25/11/2026&VAL_NM_RQ=R01235,2026-11-26T08:02:41+03:00
+data/raw/stooq/gold_2026-11-26.csv,https://stooq.com/q/d/l/?s=gc.f&i=d,2026-11-26T08:03:12+03:00
+data/raw/stooq/silver_2026-11-26.csv,https://stooq.com/q/d/l/?s=si.f&i=d,2026-11-26T08:03:13+03:00
+data/raw/stooq/platinum_2026-11-26.csv,https://stooq.com/q/d/l/?s=pl.f&i=d,2026-11-26T08:03:14+03:00
+data/raw/stooq/palladium_2026-11-26.csv,https://stooq.com/q/d/l/?s=pa.f&i=d,2026-11-26T08:03:15+03:00
+data/raw/cbr/metals_2026-11-26.xml,https://www.cbr.ru/scripts/xml_metall.asp?date_req1=25/11/2026&date_req2=25/11/2026,2026-11-26T08:03:16+03:00

@@ -1,6 +1,6 @@
 code,name,url,what,license_note,last_ok_at
-S1,MOEX ISS,https://iss.moex.com/iss/,акции TQBR индексы SNDX ОФЗ дивиденды справочник,robots.txt на 2026-11-23: Disallow / для всех агентов; сборщик не ходит,2026-11-23T19:55:02+03:00
-S2,Банк России,https://www.cbr.ru/,ключевая ставка USD/RUB металлы RUONIA,публичные таблицы и XML ЦБ,2026-11-23T18:24:33+03:00
+S1,MOEX ISS,https://iss.moex.com/iss/,акции TQBR индексы SNDX ОФЗ дивиденды справочник,robots.txt на 2026-11-23: Disallow / для всех агентов; сборщик не ходит,2026-11-26T08:03:26+03:00
+S2,Банк России,https://www.cbr.ru/,ключевая ставка USD/RUB металлы RUONIA,публичные таблицы и XML ЦБ,2026-11-26T08:03:26+03:00
 S3,FRED,https://fred.stlouisfed.org/graph/fredgraph.csv?id=DCOILBRENTEU,Brent DCOILBRENTEU,FRED robots разрешает fredgraph.csv; crawl-delay 1,2026-11-23T16:02:26+03:00
 S4,драгметаллы USD,https://stooq.com/q/d/l/?s=gc.f&i=d,золото серебро платина палладий,запасной путь — учётные цены ЦБ в рублях за грамм,
 S5,солнце SILSO NOAA GFZ,https://services.swpc.noaa.gov/json/solar-cycle/observed-solar-cycle-indices.json,SSN сглаженный SSN F10.7 Kp Ap,предпочтительный сглаженный ряд — официальный SILSO; в тесте взят NOAA,2026-11-23T18:24:33+03:00
