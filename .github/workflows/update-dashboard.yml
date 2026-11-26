@@ -33,12 +33,9 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install requests pandas numpy beautifulsoup4 lxml
 
-      - name: Run full MOEX collectors and refresh daily candles
+      - name: Refresh MOEX daily candles and build dashboard
         run: |
           export PYTHONPATH=.
-          python -m engine --refresh || echo "Warning: engine refresh"
-          python -m scripts.run_collector --mode daily || python -m scripts.run_collector || echo "Warning: run_collector"
-          python -m scripts.pipeline || echo "Warning: pipeline"
           python - << 'EOF'
           import csv, datetime, requests
           from pathlib import Path
