@@ -38,7 +38,10 @@ jobs:
           export PYTHONPATH=.
           python - << 'EOF'
           import csv, datetime, requests
+          import urllib3
           from pathlib import Path
+
+          urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
           clean_dir = Path("data/clean")
           today = datetime.date.today()
@@ -63,7 +66,19 @@ jobs:
               rows = []
               start = 0
               while True:
-                  r = requests.get(url, params={"from": start_date, "till": end_date, "start": start}, timeout=20)
+                  params = {"from": start_date, "till": end_date, "start": start}
+                  try:
+                      r = requests.get(url, params=params, timeout=40)
+                  except requests.exceptions.SSLError:
+                      # На раннере цепочка ISS иногда с самоподписанным сертификатом.
+                      try:
+                          r = requests.get(url, params=params, timeout=40, verify=False)
+                      except requests.RequestException as exc:
+                          print(f"iss skip {secid}: {exc}")
+                          break
+                  except requests.RequestException as exc:
+                      print(f"iss skip {secid}: {exc}")
+                      break
                   if r.status_code != 200:
                       break
                   data = r.json().get("history", {})
@@ -140,7 +155,7 @@ jobs:
           print(f"Fetched MOEX rows: eq={len(all_eq)}, idx={len(all_idx)}, fut={len(all_fut)}")
           EOF
           python -m scripts.build_almanac || echo "Warning: build_almanac"
-          python -m scripts.build_dashboard
+          SKIP_PAGES_PUBLISH=1 python -m scripts.build_dashboard
           cp -f dashboard.html index.html
 
       - name: Commit and push updated terminal
