@@ -29,21 +29,19 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install requests pandas numpy beautifulsoup4 lxml
 
-      - name: Run data collectors and build dashboard
+      - name: Run full MOEX collectors and build dashboard
         run: |
           export PYTHONPATH=.
-          for script in scripts/*.py src/*.py; do
-            if [ -f "$script" ] && [ "$script" != "scripts/build_dashboard.py" ]; then
-              echo "Running $script..."
-              python "$script" || echo "Warning: $script exited with non-zero status"
-            fi
-          done
-          python scripts/build_dashboard.py
+          python -m engine --refresh || echo "Warning: engine refresh exited with non-zero status"
+          python -m scripts.run_collector --mode daily || python -m scripts.run_collector || echo "Warning: run_collector"
+          python -m scripts.pipeline || echo "Warning: pipeline"
+          python -m scripts.build_almanac || echo "Warning: build_almanac"
+          python -m scripts.build_dashboard
           cp -f dashboard.html index.html
 
       - name: Commit and push updated terminal
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+github-actions[bot]@://github.com"
           git add -A
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: auto-update terminal data [skip ci]" && git push)
