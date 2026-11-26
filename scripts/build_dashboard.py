@@ -2630,6 +2630,11 @@ tr.anomaly { background: rgba(138, 90, 18, 0.12); }
 }
 #psCandleChart { height: 380px; }
 #psStockChart { height: 210px; margin-top: 8px; }
+.ps-study-label { margin: 10px 0 4px; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.ps-study { margin-top: 8px; border: 1px solid var(--rule); background: var(--card); padding: 8px; }
+.ps-study h3 { margin: 0 0 6px; font-size: 13px; }
+.ps-study .chart { height: 170px; }
+.ps-study .hint { margin: 6px 0 0; }
 .ps-slider {
   display: grid;
   grid-template-columns: 176px minmax(90px, 1fr) 128px;
@@ -2873,6 +2878,16 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
       <div class="ps-screen-label" id="psScreenLabel">Выберите тикер</div>
       <div class="chart" id="psCandleChart"></div>
       <div class="chart" id="psStockChart"></div>
+      <div class="ps-study-label">Индикаторы для изучения</div>
+      <div class="modes" id="psStudyModes">
+        <button type="button" data-study="sma">SMA 20 / 50 / 200</button>
+        <button type="button" data-study="rsx">Jurik RSX</button>
+        <button type="button" data-study="pctr">%R (14)</button>
+        <button type="button" data-study="rsi">RSI (14)</button>
+        <button type="button" data-study="stoch">Stochastic</button>
+        <button type="button" data-study="ha">Heikin-Ashi</button>
+      </div>
+      <div id="psStudyStack"></div>
       <p class="hint" id="psScreenVerdict"></p>
     </div>
     <div class="ps-guide" id="psGuide">
@@ -2889,6 +2904,16 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
       <h4>Ползунки к полу</h4>
       <p>Зелёная полоса на шкале — от 12% под полом до 5% над ним. Чёрная черта — сам пол. Квадрат — текущий P/S. Нажатие на ползунок или тикер открывает бумагу в графике выше.</p>
       <p><strong>Наблюдаем</strong> — глубже −12%, внутри ряда или запрет на долгий вход (например Газпром, ИКС 5). <strong>Шорт</strong> — P/S выше потолка своего ряда; это не покупка, а дорого относительно своей истории.</p>
+      <h4>Индикаторы для изучения</h4>
+      <p>Кнопки под графиком P/S открывают расчёт по свечам выбранной бумаги. Можно включить несколько сразу. Это изучение хода цены, не замена полосы входа −12%…+5%.</p>
+      <ul>
+        <li><strong>SMA 20 / 50 / 200</strong> — короткая, средняя и годовая средние на свечах. Цена над всеми тремя — восходящий порядок.</li>
+        <li><strong>Jurik RSX</strong> — сглаженный момент. Выше 50 ход вверх, ниже 50 ход вниз. Слом наклона без свечи входом не считается.</li>
+        <li><strong>%R (14)</strong> — положение закрытия в диапазоне 14 дней. Около 0 перекуплен, около −100 перепродан.</li>
+        <li><strong>RSI (14)</strong> — сила хода. 70 и выше — перекуплен, 30 и ниже — перепродан, 50 — середина.</li>
+        <li><strong>Stochastic (8, 5, 3)</strong> — %K и %D. Пересечение снизу у 20 — разворот вверх, сверху у 80 — разворот вниз.</li>
+        <li><strong>Heikin-Ashi</strong> — сглаженные свечи. Серия зелёных без нижних теней — ход вверх, красных без верхних — ход вниз.</li>
+      </ul>
     </div>
     <h3 style="margin:4px 0 2px">Ползунки к полу</h3>
     <div id="psFloorList"></div>
@@ -5697,6 +5722,165 @@ let psFloorSeries = null;
 let psBandLo = null;
 let psBandHi = null;
 let psSyncing = false;
+const psStudyOn = { sma: false, rsx: false, pctr: false, rsi: false, stoch: false, ha: false };
+const psStudyCharts = {};
+const psSmaLines = { s20: null, s50: null, s200: null };
+
+function psFollowRange(src, dst) {
+  if (!src || !dst || src === dst) return;
+  src.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+    if (!range || psSyncing) return;
+    psSyncing = true;
+    try { dst.timeScale().setVisibleLogicalRange(range); } catch (e) {}
+    psSyncing = false;
+  });
+}
+function psStudyBox(id, title) {
+  let box = document.getElementById("psStudy-" + id);
+  if (!box) {
+    const stack = document.getElementById("psStudyStack");
+    if (!stack) return null;
+    box = document.createElement("div");
+    box.className = "ps-study";
+    box.id = "psStudy-" + id;
+    box.innerHTML = `<h3></h3><div class="chart" id="psStudyChart-${id}"></div><p class="hint"></p>`;
+    stack.appendChild(box);
+  }
+  box.querySelector("h3").textContent = title;
+  box.style.display = "block";
+  return box;
+}
+function psStudyChart(id, height) {
+  const host = document.getElementById("psStudyChart-" + id);
+  if (!host || typeof LightweightCharts === "undefined") return null;
+  if (!psStudyCharts[id]) {
+    const chart = LightweightCharts.createChart(host, chartBase(height));
+    psStudyCharts[id] = { chart };
+    if (psCandleChart) {
+      psFollowRange(psCandleChart, chart);
+      psFollowRange(chart, psCandleChart);
+    }
+    if (psStockChart) {
+      psFollowRange(psStockChart, chart);
+      psFollowRange(chart, psStockChart);
+    }
+    Object.keys(psStudyCharts).forEach((other) => {
+      if (other === id) return;
+      psFollowRange(psStudyCharts[other].chart, chart);
+      psFollowRange(chart, psStudyCharts[other].chart);
+    });
+  }
+  const width = Math.max(host.clientWidth || 640, 280);
+  psStudyCharts[id].chart.applyOptions(Object.assign(chartBase(height), { width, height }));
+  return psStudyCharts[id];
+}
+function psLevel(bars, values, level) {
+  const out = [];
+  for (let i = 0; i < bars.length; i++) {
+    if (values[i] == null || Number.isNaN(values[i])) continue;
+    out.push({ time: bars[i].time, value: level });
+  }
+  return out;
+}
+function psWilliamsR(bars, period) {
+  const out = new Array(bars.length).fill(null);
+  for (let i = period - 1; i < bars.length; i++) {
+    let hi = -Infinity;
+    let lo = Infinity;
+    for (let j = i - period + 1; j <= i; j++) {
+      hi = Math.max(hi, bars[j].high);
+      lo = Math.min(lo, bars[j].low);
+    }
+    out[i] = hi === lo ? -50 : -100 * ((hi - bars[i].close) / (hi - lo));
+  }
+  return out;
+}
+function psHideStudy(id) {
+  const box = document.getElementById("psStudy-" + id);
+  if (box) box.style.display = "none";
+}
+function drawPsStudies() {
+  const bars = psBars(psSelected).filter((bar) => bar && bar.time && bar.close != null && bar.high != null && bar.low != null);
+  const closes = bars.map((bar) => bar.close);
+  if (psSmaLines.s20) {
+    if (psStudyOn.sma && bars.length) {
+      psSmaLines.s20.setData(linePoints(bars, sma(closes, 20)));
+      psSmaLines.s50.setData(linePoints(bars, sma(closes, 50)));
+      psSmaLines.s200.setData(linePoints(bars, sma(closes, 200)));
+    } else {
+      psSmaLines.s20.setData([]);
+      psSmaLines.s50.setData([]);
+      psSmaLines.s200.setData([]);
+    }
+  }
+  const paint = (id, title, note, setup) => {
+    if (!psStudyOn[id] || !bars.length) {
+      psHideStudy(id);
+      return;
+    }
+    const box = psStudyBox(id, title);
+    if (!box) return;
+    const hint = box.querySelector(".hint");
+    if (hint) hint.textContent = note;
+    const pack = psStudyChart(id, 170);
+    if (!pack) return;
+    setup(pack);
+    try {
+      const range = psCandleChart && psCandleChart.timeScale().getVisibleLogicalRange();
+      if (range) pack.chart.timeScale().setVisibleLogicalRange(range);
+    } catch (e) {}
+  };
+  paint("rsx", "Jurik RSX (14)", "Выше 50 — ход вверх, ниже 50 — ход вниз. Слом наклона без свечи входом не считается.", (pack) => {
+    if (!pack.line) {
+      pack.line = pack.chart.addLineSeries({ color: "#1d4ed8", lineWidth: 2, priceLineVisible: false });
+      pack.mid = pack.chart.addLineSeries({ color: "#5C4F38", lineWidth: 1, lineStyle: 2, priceLineVisible: false });
+    }
+    const rsx = jurikRsx(closes, 14);
+    pack.line.setData(linePoints(bars, rsx));
+    pack.mid.setData(psLevel(bars, rsx, 50));
+  });
+  paint("pctr", "%R (14)", "Около 0 бумага у верхней границы 14 дней, около −100 — у нижней. Пунктир −20 и −80.", (pack) => {
+    if (!pack.line) {
+      pack.line = pack.chart.addLineSeries({ color: "#1d4ed8", lineWidth: 2, priceLineVisible: false });
+      pack.hi = pack.chart.addLineSeries({ color: "#8b1e12", lineWidth: 1, lineStyle: 2, priceLineVisible: false });
+      pack.lo = pack.chart.addLineSeries({ color: "#1b6b3a", lineWidth: 1, lineStyle: 2, priceLineVisible: false });
+    }
+    const wr = psWilliamsR(bars, 14);
+    pack.line.setData(linePoints(bars, wr));
+    pack.hi.setData(psLevel(bars, wr, -20));
+    pack.lo.setData(psLevel(bars, wr, -80));
+  });
+  paint("rsi", "RSI (14)", "70 и выше — перекуплен, 30 и ниже — перепродан, 50 — середина хода.", (pack) => {
+    if (!pack.line) {
+      pack.line = pack.chart.addLineSeries({ color: "#1d4ed8", lineWidth: 2, priceLineVisible: false });
+      pack.hi = pack.chart.addLineSeries({ color: "#8b1e12", lineWidth: 1, lineStyle: 2, priceLineVisible: false });
+      pack.mid = pack.chart.addLineSeries({ color: "#5C4F38", lineWidth: 1, lineStyle: 2, priceLineVisible: false });
+      pack.lo = pack.chart.addLineSeries({ color: "#1b6b3a", lineWidth: 1, lineStyle: 2, priceLineVisible: false });
+    }
+    const rsi = rsiWilder(closes, 14);
+    pack.line.setData(linePoints(bars, rsi));
+    pack.hi.setData(psLevel(bars, rsi, 70));
+    pack.mid.setData(psLevel(bars, rsi, 50));
+    pack.lo.setData(psLevel(bars, rsi, 30));
+  });
+  paint("stoch", "Stochastic (8, 5, 3)", "Синяя линия — %K, оранжевая — %D. Пересечение снизу у 20 смотрит вверх, сверху у 80 — вниз.", (pack) => {
+    if (!pack.k) {
+      pack.k = pack.chart.addLineSeries({ color: "#1d4ed8", lineWidth: 2, priceLineVisible: false });
+      pack.d = pack.chart.addLineSeries({ color: "#b45309", lineWidth: 2, priceLineVisible: false });
+      pack.hi = pack.chart.addLineSeries({ color: "#8b1e12", lineWidth: 1, lineStyle: 2, priceLineVisible: false });
+      pack.lo = pack.chart.addLineSeries({ color: "#1b6b3a", lineWidth: 1, lineStyle: 2, priceLineVisible: false });
+    }
+    const st = stochastic(bars, 8, 5, 3);
+    pack.k.setData(linePoints(bars, st.k));
+    pack.d.setData(linePoints(bars, st.d));
+    pack.hi.setData(psLevel(bars, st.k, 80));
+    pack.lo.setData(psLevel(bars, st.k, 20));
+  });
+  paint("ha", "Heikin-Ashi", "Сглаженные свечи. Серия зелёных без нижних теней — ход вверх, красных без верхних — ход вниз.", (pack) => {
+    if (!pack.candles) pack.candles = pack.chart.addCandlestickSeries(candleOptions());
+    pack.candles.setData(heikinAshi(bars));
+  });
+}
 
 function psComma(n, digits) {
   if (n == null || Number.isNaN(Number(n))) return "—";
@@ -5796,6 +5980,9 @@ function ensurePsScreen() {
   if (!psCandleChart) {
     psCandleChart = LightweightCharts.createChart(candleEl, chartBase(380));
     psCandleSeries = psCandleChart.addCandlestickSeries(candleOptions());
+    psSmaLines.s20 = psCandleChart.addLineSeries({ color: "#1d4ed8", lineWidth: 1, priceLineVisible: false, lastValueVisible: true });
+    psSmaLines.s50 = psCandleChart.addLineSeries({ color: "#b45309", lineWidth: 1, priceLineVisible: false, lastValueVisible: true });
+    psSmaLines.s200 = psCandleChart.addLineSeries({ color: "#1C1915", lineWidth: 2, priceLineVisible: false, lastValueVisible: true });
     psStockChart = LightweightCharts.createChart(stockEl, chartBase(210));
     const psFmt = { type: "price", precision: 3, minMove: 0.001 };
     psStockLine = psStockChart.addLineSeries({ color: "#1d4ed8", lineWidth: 2, priceFormat: psFmt });
@@ -5825,6 +6012,7 @@ function drawPsScreen() {
   const note = document.getElementById("psScreenVerdict");
   if (!paper) {
     if (label) label.textContent = "Выберите тикер";
+    drawPsStudies();
     return;
   }
   const verdict = psVerdict(paper);
@@ -5868,6 +6056,7 @@ function drawPsScreen() {
     const issuer = paper.note ? ` ${paper.note}` : "";
     note.textContent = `${psVerdictWhy(paper, verdict)}${issuer}${extra}`;
   }
+  drawPsStudies();
 }
 function selectPs(ticker, scrollUp) {
   const paper = psFind(ticker);
@@ -5996,6 +6185,14 @@ function bindPsFloor() {
   if (!board || board.dataset.bound) return;
   board.dataset.bound = "1";
   board.addEventListener("click", (event) => {
+    const study = event.target.closest("button[data-study]");
+    if (study && psStudyOn[study.getAttribute("data-study")] != null) {
+      const key = study.getAttribute("data-study");
+      psStudyOn[key] = !psStudyOn[key];
+      study.classList.toggle("active", psStudyOn[key]);
+      drawPsStudies();
+      return;
+    }
     const remove = event.target.closest("button[data-remove]");
     if (remove) {
       event.stopPropagation();
@@ -6250,6 +6447,10 @@ window.addEventListener("resize", () => {
   const psStockHost = document.getElementById("psStockChart");
   if (psCandleChart && psCandleHost) psCandleChart.applyOptions({ width: psCandleHost.clientWidth });
   if (psStockChart && psStockHost) psStockChart.applyOptions({ width: psStockHost.clientWidth });
+  Object.keys(psStudyCharts).forEach((id) => {
+    const host = document.getElementById("psStudyChart-" + id);
+    if (host && psStudyCharts[id]) psStudyCharts[id].chart.applyOptions({ width: host.clientWidth });
+  });
 });
 safeRun("resizeAllCharts:boot", resizeAllCharts);
 safeRun("applyInteractionMode:cursor", () => applyInteractionMode("cursor"));
