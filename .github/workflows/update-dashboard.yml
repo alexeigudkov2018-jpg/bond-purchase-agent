@@ -57,7 +57,9 @@ jobs:
           futures = ["GLDRUBF", "SLVRUBF", "PLTRUBF", "PLDRUBF", "USDRUBF", "CNYRUBF", "BR"]
 
           def fetch_moex(engine, market, board, secid):
-              url = f"https://moex.com{engine}/markets/{market}/boards/{board}/securities/{secid}.json"
+              host = "iss.moex.com"
+              prefix = "/iss/history/engines"
+              url = f"https://{host}{prefix}/{engine}/markets/{market}/boards/{board}/securities/{secid}.json"
               rows = []
               start = 0
               while True:
