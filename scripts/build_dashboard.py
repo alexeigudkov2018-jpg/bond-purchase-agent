@@ -2662,6 +2662,21 @@ tr.anomaly { background: rgba(138, 90, 18, 0.12); }
   width: 120px;
 }
 .ps-books { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.ps-guide {
+  margin: 10px 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.ps-guide h3 { margin: 0 0 8px; font-size: 13px; }
+.ps-guide h4 { margin: 10px 0 4px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.ps-guide p { margin: 0 0 6px; }
+.ps-guide ul { margin: 4px 0 8px 18px; padding: 0; }
+.ps-guide li { margin: 2px 0; }
+.ps-guide .entry-best { border-left: 3px solid #1b6b3a; padding-left: 8px; margin: 8px 0; }
+#psScreenVerdict { margin: 8px 0 0; font-size: 12px; line-height: 1.4; }
 @media (max-width: 800px) {
   .ps-verdicts, .ps-books { grid-template-columns: 1fr; }
   .ps-slider { grid-template-columns: 1fr; }
@@ -2845,7 +2860,7 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
     <div class="ps-head">
       <div>
         <h2>P/S к полу ряда</h2>
-        <p class="hint" id="psFloorHint">Переключатель тикера поднимает свечи и под ними P/S. Ползунок ниже делает то же на большом экране.</p>
+        <p class="hint" id="psFloorHint">P/S каждой бумаги к полу её годового ряда. Срез пола — 18.11.2026, точка — последний клиринг.</p>
       </div>
       <div class="modes" id="psFloorBasket">
         <button type="button" data-basket="imoex" class="active">IMOEX</button>
@@ -2858,10 +2873,24 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
       <div class="ps-screen-label" id="psScreenLabel">Выберите тикер</div>
       <div class="chart" id="psCandleChart"></div>
       <div class="chart" id="psStockChart"></div>
-      <p class="hint" id="psScreenNote"></p>
+      <p class="hint" id="psScreenVerdict"></p>
+    </div>
+    <div class="ps-guide" id="psGuide">
+      <h3>Как читать индикатор P/S</h3>
+      <p><strong>P/S (Price/Sales)</strong> — капитализация бумаги, делённая на продажи последнего полного года (у банков — ЧОД). Это не «дешевизна» относительно других акций, а <strong>свой</strong> множитель к <strong>своему</strong> минимуму за годовой ряд.</p>
+      <p class="entry-best"><strong>Лучший вход (месяц ещё не закрыт):</strong> точка у своего пола, в полосе <strong>−12%…+5%</strong> к полу. Такие бумаги в блоке «Лучшие» (зелёная точка на ползунке).</p>
+      <h4>График выбранной бумаги</h4>
+      <ul>
+        <li>Свечи — дневные.</li>
+        <li><strong>Синяя линия</strong> — сегодняшний P/S, протянутый по цене (продажи года стоят на месте, меняется только котировка).</li>
+        <li><strong>Чёрный пунктир</strong> — пол ряда (минимум годового P/S на срезе 18.11.2026).</li>
+        <li><strong>Зелёные пунктиры</strong> — края полосы входа: −12% и +5% от пола.</li>
+      </ul>
+      <h4>Ползунки к полу</h4>
+      <p>Зелёная полоса на шкале — от 12% под полом до 5% над ним. Чёрная черта — сам пол. Квадрат — текущий P/S. Нажатие на ползунок или тикер открывает бумагу в графике выше.</p>
+      <p><strong>Наблюдаем</strong> — глубже −12%, внутри ряда или запрет на долгий вход (например Газпром, ИКС 5). <strong>Шорт</strong> — P/S выше потолка своего ряда; это не покупка, а дорого относительно своей истории.</p>
     </div>
     <h3 style="margin:4px 0 2px">Ползунки к полу</h3>
-    <p class="hint">Зелёная полоса — от 12% под полом до 5% над ним. Чёрная черта — сам пол. Нажатие на ползунок открывает бумагу наверху.</p>
     <div id="psFloorList"></div>
     <h3 style="margin:14px 0 6px">Портфель</h3>
     <div class="ps-book">
@@ -5793,7 +5822,7 @@ function ensurePsScreen() {
 function drawPsScreen() {
   const paper = psFind(psSelected);
   const label = document.getElementById("psScreenLabel");
-  const note = document.getElementById("psScreenNote");
+  const note = document.getElementById("psScreenVerdict");
   if (!paper) {
     if (label) label.textContent = "Выберите тикер";
     return;
@@ -5835,10 +5864,9 @@ function drawPsScreen() {
     psSyncing = false;
   }
   if (note) {
-    const chartNote = candles.length
-      ? "Свечи дневные. Синяя линия — сегодняшний P/S, протянутый по цене (продажи года стоят). Чёрный пунктир — пол ряда, зелёный — края полосы −12% и +5%."
-      : "В кэше свечей этой бумаги нет.";
-    note.textContent = `${psVerdictWhy(paper, verdict)} ${paper.note || ""} ${chartNote}`;
+    const extra = candles.length ? "" : " В кэше свечей этой бумаги нет.";
+    const issuer = paper.note ? ` ${paper.note}` : "";
+    note.textContent = `${psVerdictWhy(paper, verdict)}${issuer}${extra}`;
   }
 }
 function selectPs(ticker, scrollUp) {
@@ -5865,7 +5893,7 @@ function renderPsFloor() {
   const hint = document.getElementById("psFloorHint");
   if (hint) {
     const live = pack.as_of_live ? ` Клиринг бумаг IMOEX ${pack.as_of_live}.` : "";
-    hint.textContent = `Пол ряда — срез ${pack.as_of_floor || "18.11.2026"}.${live} Переключатель и ползунок открывают свечи и P/S этой бумаги.`;
+    hint.textContent = `Пол ряда — срез ${pack.as_of_floor || "18.11.2026"}.${live} Ниже — пояснение шкалы и полосы входа.`;
   }
   document.querySelectorAll("#psFloorBasket button").forEach((btn) => {
     btn.classList.toggle("active", btn.getAttribute("data-basket") === psFloorBasket);
@@ -5898,8 +5926,8 @@ function renderPsFloor() {
         <div class="ps-chips">${chips}${more}</div>
       </button>`;
     };
-    verdictHost.innerHTML = card("best", "Лучшие", "У своего пола, полоса месяца")
-      + card("watch", "Наблюдаем", "Глубоко, внутри ряда или запрет")
+    verdictHost.innerHTML = card("best", "Лучшие", "В полосе −12%…+5% к полу — лучший вход месяца")
+      + card("watch", "Наблюдаем", "Глубоко под полом, внутри ряда или запрет")
       + card("short", "Шорт", "Выше потолка своего ряда");
   }
   const shown = psVisible().slice().sort((a, b) => {
