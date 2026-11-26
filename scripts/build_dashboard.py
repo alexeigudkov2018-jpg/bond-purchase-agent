@@ -2389,17 +2389,24 @@ a[href*="tradingview.com"] { display: none !important; }
 .head-badge .k { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
 .head-badge .v { font-size: 13px; }
 .head-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: flex-end; }
-.interact-toggle { display: inline-flex; gap: 0; border: 1px solid var(--rule); }
+.interact-toggle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border: 1px solid var(--rule);
+  max-width: 760px;
+}
 .interact-toggle button {
   font-family: "JetBrains Mono", Consolas, monospace;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  padding: 7px 10px;
+  padding: 6px 8px;
   border: 0;
   border-right: 1px solid var(--rule);
   background: var(--paper);
   color: var(--ink);
   cursor: pointer;
+  white-space: nowrap;
 }
 .interact-toggle button:last-child { border-right: 0; }
 .interact-toggle button.active { background: var(--ink); color: var(--paper); }
@@ -2478,21 +2485,32 @@ a[href*="tradingview.com"] { display: none !important; }
 .chart-workspace.mode-magnifier #rsxChart,
 .chart-workspace.mode-magnifier #haChart,
 .chart-workspace.mode-magnifier #lower { cursor: zoom-in; }
-.chart-workspace.mode-draw #price { cursor: crosshair; }
+.chart-workspace.mode-draw #price,
+.ps-draw-workspace.mode-draw #psCandleChart { cursor: crosshair; }
 .draw-overlay {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   z-index: 5;
-  display: none;
+  display: block;
   pointer-events: none;
 }
 .chart-workspace.mode-draw .draw-overlay,
-.chart-workspace.mode-move .draw-overlay {
-  display: block;
+.chart-workspace.mode-move .draw-overlay,
+.ps-draw-workspace.mode-draw .draw-overlay,
+.ps-draw-workspace.mode-move .draw-overlay {
   pointer-events: auto;
 }
+.ps-draw-workspace { margin: 0 0 4px; }
+.ps-draw-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 0 0 4px;
+}
+.ps-draw-toolbar .interact-toggle { flex-wrap: wrap; }
 .draw-hint {
   margin: 4px 0 0;
   font-family: "JetBrains Mono", Consolas, monospace;
@@ -2779,7 +2797,10 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
               <button type="button" data-interact="trend" id="btnDrawTrend">／ Тренд</button>
               <button type="button" data-interact="channel" id="btnDrawChannel">☰ Канал</button>
               <button type="button" data-interact="level" id="btnDrawLevel">― Уровень</button>
-              <button type="button" data-interact="move" id="btnDrawMove">✥ Перенос</button>
+              <button type="button" data-interact="fibret" id="btnFibRet" title="Коррекция Фибоначчи · 2 клика">Φ Корр.</button>
+              <button type="button" data-interact="fibproj" id="btnFibProj" title="Проекция Фибоначчи · 3 клика A–B–C">Φ Проек.</button>
+              <button type="button" data-interact="fibtime" id="btnFibTime" title="Проекция времени Фибоначчи · 2 клика">Φ Время</button>
+              <button type="button" data-interact="move" id="btnDrawMove" title="Сдвинуть линии мышью · двойной клик — удалить">✥ Двигать</button>
             </div>
             <button type="button" id="btnClearDraw" class="fs-btn" title="Удалить линии рисования">✕ Линии</button>
             <button type="button" id="btnFullscreen" class="fs-btn" title="Развернуть график">⛶ На весь экран</button>
@@ -2929,7 +2950,28 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
     <div class="modes ps-tickers" id="psTickerSwitch"></div>
     <div class="ps-screen" id="psScreen">
       <div class="ps-screen-label" id="psScreenLabel">Выберите тикер</div>
-      <div class="chart" id="psCandleChart"></div>
+      <div id="psDrawWorkspace" class="ps-draw-workspace">
+        <div class="ps-draw-toolbar">
+          <div class="interact-toggle" id="psInteractToggle" title="Рисование на свечах P/S">
+            <button type="button" data-interact="cursor" class="active">🖱 Курсор</button>
+            <button type="button" data-interact="trend">／ Тренд</button>
+            <button type="button" data-interact="channel">☰ Канал</button>
+            <button type="button" data-interact="level">― Уровень</button>
+            <button type="button" data-interact="fibret" title="Коррекция Фибоначчи">Φ Корр.</button>
+            <button type="button" data-interact="fibproj" title="Проекция Фибоначчи">Φ Проек.</button>
+            <button type="button" data-interact="fibtime" title="Проекция времени Фибоначчи">Φ Время</button>
+            <button type="button" data-interact="move" title="Сдвинуть линии мышью · двойной клик — удалить">✥ Двигать</button>
+          </div>
+          <button type="button" id="btnPsClearDraw" class="fs-btn" title="Удалить линии рисования">✕ Линии</button>
+        </div>
+        <p class="draw-hint" id="psDrawHint">Рисование на P/S: тренд — 2 клика; канал — 3 клика; уровень — 1 клик. Сопротивление красное, поддержка зелёная.
+          <span class="draw-legend"><span><span class="swatch res"></span>сопротивление</span><span><span class="swatch sup"></span>поддержка</span></span>
+        </p>
+        <div class="wrap chart-pane">
+          <div class="chart" id="psCandleChart"></div>
+          <canvas id="psDrawOverlay" class="draw-overlay" aria-hidden="true"></canvas>
+        </div>
+      </div>
       <div class="ps-cross" id="psCrossRead">Наведите на свечу — P/S и индикаторы встанут на этот же день.</div>
       <div class="chart" id="psStockChart"></div>
       <div class="ps-study-label">Индикаторы для изучения</div>
@@ -2960,6 +3002,7 @@ footer { padding: 0 18px 24px; font-size: 11px; color: var(--muted); }
       <p><strong>Наблюдаем</strong> — глубже −12%, внутри ряда или запрет на долгий вход (например Газпром, ИКС 5). <strong>Шорт</strong> — P/S выше потолка своего ряда; это не покупка, а дорого относительно своей истории.</p>
       <h4>Индикаторы для изучения</h4>
       <p>Кнопки под графиком P/S открывают расчёт по свечам выбранной бумаги. Можно включить несколько сразу. Колёсико и перетаскивание свечей двигают P/S и все открытые индикаторы на тот же отрезок. Перекрестие стоит на одном дне: в строке под свечами видно, что в этот день было на цене, на P/S и на индикаторе.</p>
+      <p>На свечах P/S те же инструменты рисования, что и на вкладке «Свечи»: тренд, канал (верх красный / низ зелёный) и горизонтальный уровень (выше цены — сопротивление, ниже — поддержка). Линии общие для тикера и видны на обеих вкладках.</p>
       <ul>
         <li><strong>SMA 20 / 50 / 200</strong> — короткая, средняя и годовая средние на свечах. Цена над всеми тремя — восходящий порядок.</li>
         <li><strong>Jurik RSX</strong> — сглаженный момент. Выше 50 ход вверх, ниже 50 ход вниз. Слом наклона без свечи входом не считается.</li>
@@ -3304,6 +3347,7 @@ function syncLogicalRange(source, range) {
     try { chart.timeScale().setVisibleLogicalRange(range); } catch (e) {}
   });
   syncingRange = false;
+  try { paintDrawOverlay(); } catch (e) {}
 }
 function bindRangeSync(chart) {
   if (!chart || chart.__rangeBound) return;
@@ -3553,23 +3597,81 @@ function interactionOptions(enabled) {
     },
   };
 }
-const DRAW_MODES = new Set(["trend", "channel", "level", "move"]);
+const DRAW_MODES = new Set(["trend", "channel", "level", "move", "fibret", "fibproj", "fibtime"]);
+const DRAW_PLACE = new Set(["trend", "channel", "level", "fibret", "fibproj", "fibtime"]);
 const DRAW_RES = "#b91c1c";
 const DRAW_SUP = "#15803d";
 const DRAW_TREND = "#1d4ed8";
+const DRAW_FIB = "#7c3aed";
+const FIB_RET_RATIOS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+const FIB_PROJ_RATIOS = [0.618, 1, 1.272, 1.618, 2.618];
+const FIB_TIME_RATIOS = [0.382, 0.5, 0.618, 1, 1.618, 2.618];
 let drawDraft = null;
 let drawDrag = null;
-let drawSeriesBag = [];
+let drawActiveKey = "main";
+const drawSeriesBagByKey = { main: [], ps: [] };
 let drawingsByTicker = {};
 try {
   drawingsByTicker = JSON.parse(localStorage.getItem("terminalDrawings") || "{}") || {};
 } catch (e) { drawingsByTicker = {}; }
 
+function drawSurface(key) {
+  const k = key === "ps" ? "ps" : "main";
+  if (k === "ps") {
+    let chart = null;
+    let series = null;
+    let selected = "";
+    let screenBars = [];
+    try {
+      chart = psCandleChart;
+      series = psCandleSeries;
+      selected = psSelected || "";
+      screenBars = psScreenBars || [];
+    } catch (e) {}
+    return {
+      key: "ps",
+      chart,
+      series,
+      host: document.getElementById("psCandleChart"),
+      overlay: document.getElementById("psDrawOverlay"),
+      workspace: document.getElementById("psDrawWorkspace"),
+      ticker: () => {
+        try { return psSelected || ""; } catch (e) { return selected || ""; }
+      },
+      bars: () => {
+        try {
+          if (psScreenBars && psScreenBars.length) return psScreenBars;
+          const t = psSelected || "";
+          return (candleData.bars && candleData.bars[t]) || [];
+        } catch (e) {
+          return screenBars.length ? screenBars : ((candleData.bars && candleData.bars[selected]) || []);
+        }
+      },
+      bag: drawSeriesBagByKey.ps,
+    };
+  }
+  return {
+    key: "main",
+    chart: priceChart,
+    series: priceSeries,
+    host: priceEl,
+    overlay: document.getElementById("drawOverlay"),
+    workspace: chartWorkspace,
+    ticker: () => currentTicker || "",
+    bars: () => (candleData.bars && candleData.bars[currentTicker]) || [],
+    bag: drawSeriesBagByKey.main,
+  };
+}
+function activeDraw() { return drawSurface(drawActiveKey); }
+function setDrawActive(key) {
+  drawActiveKey = key === "ps" ? "ps" : "main";
+}
+
 function applyInteractionMode(mode) {
   const next = DRAW_MODES.has(mode) || mode === "magnifier" ? mode : "cursor";
   interactMode = next;
   const zoomOn = interactMode === "magnifier";
-  const drawOn = DRAW_MODES.has(interactMode) && interactMode !== "move";
+  const drawOn = DRAW_PLACE.has(interactMode);
   const moveOn = interactMode === "move";
   if (chartWorkspace) {
     chartWorkspace.classList.toggle("mode-magnifier", zoomOn);
@@ -3577,7 +3679,13 @@ function applyInteractionMode(mode) {
     chartWorkspace.classList.toggle("mode-draw", drawOn || moveOn);
     chartWorkspace.classList.toggle("mode-move", moveOn);
   }
-  document.querySelectorAll("#interactToggle button[data-interact]").forEach((btn) => {
+  const psWs = document.getElementById("psDrawWorkspace");
+  if (psWs) {
+    psWs.classList.toggle("mode-cursor", interactMode === "cursor");
+    psWs.classList.toggle("mode-draw", drawOn || moveOn);
+    psWs.classList.toggle("mode-move", moveOn);
+  }
+  document.querySelectorAll("#interactToggle button[data-interact], #psInteractToggle button[data-interact]").forEach((btn) => {
     btn.classList.toggle("active", btn.getAttribute("data-interact") === interactMode);
   });
   if (!DRAW_MODES.has(interactMode)) {
@@ -3590,28 +3698,45 @@ function applyInteractionMode(mode) {
   paneCharts().forEach((chart) => {
     try { chart.applyOptions(opts); } catch (e) {}
   });
-  syncDrawOverlaySize();
+  try {
+    const ps = drawSurface("ps");
+    if (ps.chart) {
+      const base = typeof psChartHands === "function" ? psChartHands() : {};
+      if (DRAW_MODES.has(interactMode)) ps.chart.applyOptions(Object.assign({}, base, interactionOptions(false)));
+      else ps.chart.applyOptions(base);
+    }
+  } catch (e) {}
+  syncDrawOverlaySize(drawSurface("main"));
+  syncDrawOverlaySize(drawSurface("ps"));
 }
-const interactToggle = document.getElementById("interactToggle");
-if (interactToggle) {
-  interactToggle.addEventListener("click", (event) => {
+document.querySelectorAll("#interactToggle, #psInteractToggle").forEach((toggle) => {
+  toggle.addEventListener("click", (event) => {
     const btn = event.target.closest("button[data-interact]");
     if (!btn) return;
+    if (toggle.id === "psInteractToggle") setDrawActive("ps");
+    else setDrawActive("main");
     applyInteractionMode(btn.getAttribute("data-interact"));
   });
+});
+function drawHintHtml(prefix) {
+  const legend = `<span class="draw-legend"><span><span class="swatch res"></span>сопротивление</span><span><span class="swatch sup"></span>поддержка</span></span>`;
+  if (interactMode === "trend") return `${prefix}Тренд: два клика по свечному графику.${legend}`;
+  if (interactMode === "channel") return `${prefix}Канал: 1–2 клик — граница, 3-й — параллель. Проекция короткая и бледная.${legend}`;
+  if (interactMode === "level") return `${prefix}Горизонтальный уровень: один клик. Выше цены — красное сопротивление, ниже — зелёная поддержка.${legend}`;
+  if (interactMode === "fibret") return `${prefix}Коррекция Фибоначчи: 2 клика (начало → конец волны). Уровни 0…100%.${legend}`;
+  if (interactMode === "fibproj") return `${prefix}Проекция Фибоначчи: 3 клика A→B (импульс), C (старт проекции).${legend}`;
+  if (interactMode === "fibtime") return `${prefix}Проекция времени Фибоначчи: 2 клика по размаху — вертикали по долям времени.${legend}`;
+  if (interactMode === "move") return `${prefix}<strong>Двигать</strong>: зажмите и тяните линию/точку. Двойной клик по объекту — удалить.${legend}`;
+  return `${prefix}Рисование: тренд/канал/уровень/Φ. Кнопка «Двигать» — сдвиг и удаление линий.${legend}`;
 }
 function updateDrawHint() {
   const el = document.getElementById("drawHint");
-  if (!el) return;
-  const legend = `<span class="draw-legend"><span><span class="swatch res"></span>сопротивление</span><span><span class="swatch sup"></span>поддержка</span></span>`;
-  if (interactMode === "trend") el.innerHTML = `Тренд: два клика по свечному графику.${legend}`;
-  else if (interactMode === "channel") el.innerHTML = `Канал: 1–2 клик — одна граница, 3-й — параллель. Верх красный, низ зелёный.${legend}`;
-  else if (interactMode === "level") el.innerHTML = `Горизонтальный уровень: один клик. Выше цены — красное сопротивление, ниже — зелёная поддержка.${legend}`;
-  else if (interactMode === "move") el.innerHTML = `Перенос: тяните точку или линию мышью. Двойной клик по объекту — удалить.${legend}`;
-  else el.innerHTML = `Рисование: тренд — 2 клика; канал — 3 клика; уровень — 1 клик. Сопротивление красное, поддержка зелёная.${legend}`;
+  if (el) el.innerHTML = drawHintHtml("");
+  const psEl = document.getElementById("psDrawHint");
+  if (psEl) psEl.innerHTML = drawHintHtml("P/S · ");
 }
 function drawingsOf(ticker) {
-  const key = ticker || currentTicker || "";
+  const key = ticker || "";
   if (!key) return [];
   if (!Array.isArray(drawingsByTicker[key])) drawingsByTicker[key] = [];
   return drawingsByTicker[key];
@@ -3619,55 +3744,77 @@ function drawingsOf(ticker) {
 function saveDrawings() {
   try { localStorage.setItem("terminalDrawings", JSON.stringify(drawingsByTicker)); } catch (e) {}
 }
-function clearDrawSeriesBag() {
-  while (drawSeriesBag.length) {
-    const series = drawSeriesBag.pop();
-    try { priceChart.removeSeries(series); } catch (e) {}
+function clearDrawSeriesBag(surf) {
+  const target = surf || drawSurface("main");
+  const bag = target.bag;
+  const chart = target.chart;
+  while (bag.length) {
+    const series = bag.pop();
+    try { if (chart) chart.removeSeries(series); } catch (e) {}
   }
 }
-function lastClosePrice() {
-  const bars = candleData.bars[currentTicker] || [];
+function lastClosePrice(surf) {
+  const bars = (surf || activeDraw()).bars();
   return bars.length ? bars[bars.length - 1].close : null;
 }
-function barIndex(time) {
-  const bars = candleData.bars[currentTicker] || [];
+function barIndex(time, surf) {
+  const bars = (surf || activeDraw()).bars();
   let idx = bars.findIndex((bar) => bar.time === time);
   if (idx >= 0) return idx;
-  // nearest by string date
   for (let i = 0; i < bars.length; i++) {
     if (bars[i].time >= time) return i;
   }
   return bars.length ? bars.length - 1 : -1;
 }
-function linePriceAt(a, b, time) {
-  const x1 = barIndex(a.time);
-  const x2 = barIndex(b.time);
-  const x = barIndex(time);
+function linePriceAt(a, b, time, surf) {
+  const x1 = barIndex(a.time, surf);
+  const x2 = barIndex(b.time, surf);
+  const x = barIndex(time, surf);
   if (x1 < 0 || x2 < 0 || x < 0 || x1 === x2) return a.price;
   return a.price + (b.price - a.price) * ((x - x1) / (x2 - x1));
 }
-function extendLinePoints(a, b) {
-  const bars = candleData.bars[currentTicker] || [];
-  if (!bars.length) return [a, b].filter(Boolean);
-  const x1 = barIndex(a.time);
-  const x2 = barIndex(b.time);
+function extendLinePoints(a, b, surf) {
+  const s = surf || activeDraw();
+  const bars = s.bars();
+  if (!bars.length) return [a, b].filter(Boolean).map((p) => ({ time: p.time, value: p.price }));
+  const x1 = barIndex(a.time, s);
+  const x2 = barIndex(b.time, s);
   if (x1 < 0 || x2 < 0 || x1 === x2) {
     return [
-      { time: bars[0].time, value: a.price },
-      { time: bars[bars.length - 1].time, value: a.price },
+      { time: bars[Math.max(0, x1)].time, value: a.price },
+      { time: bars[Math.min(bars.length - 1, x1 + 8)].time, value: a.price },
     ];
   }
-  const left = 0;
-  const right = bars.length - 1;
-  const pLeft = a.price + (b.price - a.price) * ((left - x1) / (x2 - x1));
-  const pRight = a.price + (b.price - a.price) * ((right - x1) / (x2 - x1));
   return [
-    { time: bars[left].time, value: pLeft },
-    { time: bars[right].time, value: pRight },
+    { time: bars[x1].time, value: a.price },
+    { time: bars[x2].time, value: b.price },
   ];
 }
-function levelPoints(price) {
-  const bars = candleData.bars[currentTicker] || [];
+function softEdgeBundle(a, b, surf) {
+  const s = surf || activeDraw();
+  const bars = s.bars();
+  const core = extendLinePoints(a, b, s);
+  if (!bars.length) return { core, ghost: [] };
+  const x1 = barIndex(a.time, s);
+  const x2 = barIndex(b.time, s);
+  if (x1 < 0 || x2 < 0 || x1 === x2) return { core, ghost: [] };
+  const lo = Math.min(x1, x2);
+  const hi = Math.max(x1, x2);
+  const span = Math.max(1, hi - lo);
+  const pad = Math.max(3, Math.min(12, Math.round(span * 0.18)));
+  const left = Math.max(0, lo - pad);
+  const right = Math.min(bars.length - 1, hi + pad);
+  const priceAt = (i) => a.price + (b.price - a.price) * ((i - x1) / (x2 - x1));
+  return {
+    core,
+    ghost: [
+      { time: bars[left].time, value: priceAt(left) },
+      { time: bars[right].time, value: priceAt(right) },
+    ],
+  };
+}
+function levelPoints(price, surf) {
+  const bars = (surf || activeDraw()).bars();
   if (!bars.length) return [];
   return [
     { time: bars[0].time, value: price },
@@ -3677,13 +3824,13 @@ function levelPoints(price) {
 function roleColor(role) {
   return role === "resistance" ? DRAW_RES : (role === "support" ? DRAW_SUP : DRAW_TREND);
 }
-function classifyLevel(price) {
-  const last = lastClosePrice();
+function classifyLevel(price, surf) {
+  const last = lastClosePrice(surf);
   if (last == null || price == null) return "resistance";
   return price >= last ? "resistance" : "support";
 }
-function buildChannelDrawing(a, b, c) {
-  const baseAtC = linePriceAt(a, b, c.time);
+function buildChannelDrawing(a, b, c, surf) {
+  const baseAtC = linePriceAt(a, b, c.time, surf);
   const offset = c.price - baseAtC;
   const a2 = { time: a.time, price: a.price + offset };
   const b2 = { time: b.time, price: b.price + offset };
@@ -3700,154 +3847,320 @@ function buildChannelDrawing(a, b, c) {
     lowerB: lower.b,
   };
 }
-function addLineBag(color, width) {
-  const series = priceChart.addLineSeries({
+function fibPriceLevels(a, b, ratios) {
+  return ratios.map((r) => ({
+    ratio: r,
+    price: a.price + (b.price - a.price) * r,
+  }));
+}
+function fibProjLevels(a, b, c, ratios) {
+  const swing = b.price - a.price;
+  return ratios.map((r) => ({
+    ratio: r,
+    price: c.price + swing * r,
+  }));
+}
+function fibTimeIndexes(a, b, surf, ratios) {
+  const i0 = barIndex(a.time, surf);
+  const i1 = barIndex(b.time, surf);
+  if (i0 < 0 || i1 < 0) return [];
+  const span = i1 - i0;
+  if (!span) return [];
+  const bars = surf.bars();
+  return ratios.map((r) => {
+    const idx = Math.round(i0 + span * r);
+    const clamped = Math.max(0, Math.min(bars.length - 1, idx));
+    return { ratio: r, index: clamped, time: bars[clamped].time, beyond: idx > bars.length - 1 || idx < 0 };
+  });
+}
+function addLineBag(surf, color, width) {
+  if (!surf || !surf.chart) return null;
+  const series = surf.chart.addLineSeries({
     color,
     lineWidth: width || 2,
     priceLineVisible: false,
     lastValueVisible: false,
     crosshairMarkerVisible: false,
   });
-  drawSeriesBag.push(series);
+  surf.bag.push(series);
   return series;
 }
-function renderDrawings() {
-  clearDrawSeriesBag();
-  const list = drawingsOf(currentTicker);
+function paintChannelEdge(surf, a, b, solidColor, ghostColor) {
+  const pack = softEdgeBundle(a, b, surf);
+  if (pack.ghost && pack.ghost.length >= 2) {
+    const ghost = addLineBag(surf, ghostColor, 1);
+    if (ghost) {
+      ghost.applyOptions({ lineStyle: 2 });
+      ghost.setData(pack.ghost);
+    }
+  }
+  const solid = addLineBag(surf, solidColor, 2);
+  if (solid) solid.setData(pack.core);
+}
+function paintFibHorizontals(surf, levels) {
+  levels.forEach((lvl) => {
+    const role = classifyLevel(lvl.price, surf);
+    const color = roleColor(role);
+    const series = addLineBag(surf, color, lvl.ratio === 0.5 || lvl.ratio === 0.618 || lvl.ratio === 1 ? 2 : 1);
+    if (!series) return;
+    series.applyOptions({ lineStyle: 2, title: String(lvl.ratio) });
+    series.setData(levelPoints(lvl.price, surf));
+  });
+}
+function renderDrawingsOn(surf) {
+  if (!surf || !surf.chart || !surf.series) return;
+  clearDrawSeriesBag(surf);
+  const list = drawingsOf(surf.ticker());
   list.forEach((item) => {
     if (item.type === "trend") {
-      const series = addLineBag(DRAW_TREND, 2);
-      series.setData(extendLinePoints(item.a, item.b));
-      item._series = [series];
+      const series = addLineBag(surf, DRAW_TREND, 2);
+      if (series) series.setData(extendLinePoints(item.a, item.b, surf));
     } else if (item.type === "level") {
-      const role = item.role || classifyLevel(item.price);
+      const role = item.role || classifyLevel(item.price, surf);
       item.role = role;
-      const series = addLineBag(roleColor(role), 2);
-      series.applyOptions({ lineStyle: 2 });
-      series.setData(levelPoints(item.price));
-      item._series = [series];
+      const series = addLineBag(surf, roleColor(role), 2);
+      if (series) {
+        series.applyOptions({ lineStyle: 2 });
+        series.setData(levelPoints(item.price, surf));
+      }
     } else if (item.type === "channel") {
-      const up = addLineBag(DRAW_RES, 2);
-      const dn = addLineBag(DRAW_SUP, 2);
-      up.setData(extendLinePoints(item.upperA, item.upperB));
-      dn.setData(extendLinePoints(item.lowerA, item.lowerB));
-      item._series = [up, dn];
+      paintChannelEdge(surf, item.upperA, item.upperB, DRAW_RES, "rgba(185,28,28,0.22)");
+      paintChannelEdge(surf, item.lowerA, item.lowerB, DRAW_SUP, "rgba(21,128,61,0.22)");
+    } else if (item.type === "fibret") {
+      paintFibHorizontals(surf, fibPriceLevels(item.a, item.b, FIB_RET_RATIOS));
+      const base = addLineBag(surf, DRAW_FIB, 1);
+      if (base) {
+        base.applyOptions({ lineStyle: 2 });
+        base.setData(extendLinePoints(item.a, item.b, surf));
+      }
+    } else if (item.type === "fibproj") {
+      paintFibHorizontals(surf, fibProjLevels(item.a, item.b, item.c, FIB_PROJ_RATIOS));
+      const impulse = addLineBag(surf, DRAW_FIB, 1);
+      if (impulse) impulse.setData(extendLinePoints(item.a, item.b, surf));
+    } else if (item.type === "fibtime") {
+      // verticals painted on overlay
     }
   });
+}
+function renderDrawings() {
+  renderDrawingsOn(drawSurface("main"));
+  try { renderDrawingsOn(drawSurface("ps")); } catch (e) {}
   paintDrawOverlay();
 }
-function pointFromEvent(event) {
-  if (!priceEl || !priceSeries) return null;
-  const rect = priceEl.getBoundingClientRect();
+function normalizeDrawTime(raw, surf, x) {
+  if (raw != null) {
+    if (typeof raw === "string") return raw;
+    if (typeof raw === "number" && Number.isFinite(raw)) {
+      // unix seconds — rare here; fall through to logical if bars are strings
+    }
+    if (raw.year && raw.month && raw.day) {
+      const mm = String(raw.month).padStart(2, "0");
+      const dd = String(raw.day).padStart(2, "0");
+      return `${raw.year}-${mm}-${dd}`;
+    }
+  }
+  try {
+    const logical = surf.chart.timeScale().coordinateToLogical(x);
+    const bars = surf.bars();
+    if (logical != null && bars.length) {
+      const i = Math.max(0, Math.min(bars.length - 1, Math.round(logical)));
+      return bars[i].time;
+    }
+  } catch (e) {}
+  return null;
+}
+function pointFromEvent(event, surf) {
+  const s = surf || activeDraw();
+  if (!s.host || !s.series || !s.chart) return null;
+  const rect = s.host.getBoundingClientRect();
   const x = event.clientX - rect.left;
   const y = event.clientY - rect.top;
-  let time = null;
+  let timeRaw = null;
   let price = null;
-  try { time = priceChart.timeScale().coordinateToTime(x); } catch (e) {}
-  try { price = priceSeries.coordinateToPrice(y); } catch (e) {}
+  try { timeRaw = s.chart.timeScale().coordinateToTime(x); } catch (e) {}
+  try { price = s.series.coordinateToPrice(y); } catch (e) {}
+  const time = normalizeDrawTime(timeRaw, s, x);
   if (time == null || price == null || Number.isNaN(price)) return null;
-  if (typeof time !== "string") {
-    // business day object
-    if (time.year && time.month && time.day) {
-      const mm = String(time.month).padStart(2, "0");
-      const dd = String(time.day).padStart(2, "0");
-      time = `${time.year}-${mm}-${dd}`;
-    } else return null;
-  }
   return { time, price: Number(price), x, y };
 }
-function syncDrawOverlaySize() {
-  const canvas = document.getElementById("drawOverlay");
-  if (!canvas || !priceEl) return;
-  const w = priceEl.clientWidth || 0;
-  const h = priceEl.clientHeight || 0;
+function syncDrawOverlaySize(surf) {
+  const s = surf || activeDraw();
+  const canvas = s.overlay;
+  if (!canvas || !s.host) return;
+  const w = s.host.clientWidth || 0;
+  const h = s.host.clientHeight || 0;
   if (canvas.width !== w) canvas.width = w;
   if (canvas.height !== h) canvas.height = h;
 }
-function toXY(point) {
-  if (!point || !priceSeries) return null;
+function toXY(point, surf) {
+  const s = surf || activeDraw();
+  if (!point || !s.series || !s.chart) return null;
   let x = null;
   let y = null;
-  try { x = priceChart.timeScale().timeToCoordinate(point.time); } catch (e) {}
-  try { y = priceSeries.priceToCoordinate(point.price); } catch (e) {}
+  try { x = s.chart.timeScale().timeToCoordinate(point.time); } catch (e) {}
+  try { y = s.series.priceToCoordinate(point.price); } catch (e) {}
   if (x == null || y == null || Number.isNaN(x) || Number.isNaN(y)) return null;
   return { x, y };
 }
-function paintDrawOverlay() {
-  const canvas = document.getElementById("drawOverlay");
-  if (!canvas) return;
-  syncDrawOverlaySize();
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const draft = drawDraft;
-  if (!draft || !draft.points || !draft.points.length) return;
-  const pts = draft.points.concat(draft.hover ? [draft.hover] : []).map(toXY).filter(Boolean);
-  ctx.lineWidth = 1.5;
-  ctx.setLineDash([5, 4]);
-  if (draft.type === "trend" && pts.length >= 1) {
-    ctx.strokeStyle = DRAW_TREND;
+function paintFibTimeOverlay(ctx, canvas, surf, item) {
+  const marks = fibTimeIndexes(item.a, item.b, surf, FIB_TIME_RATIOS);
+  marks.forEach((mark) => {
+    const xy = toXY({ time: mark.time, price: lastClosePrice(surf) || item.a.price }, surf);
+    if (!xy) return;
+    ctx.strokeStyle = "rgba(124,58,237,0.45)";
+    ctx.lineWidth = mark.ratio === 1 ? 1.5 : 1;
+    ctx.setLineDash(mark.ratio === 1 ? [] : [3, 4]);
     ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    if (pts[1]) ctx.lineTo(pts[1].x, pts[1].y);
+    ctx.moveTo(xy.x, 0);
+    ctx.lineTo(xy.x, canvas.height);
     ctx.stroke();
-  } else if (draft.type === "level") {
-    const pricePt = draft.points[0] || draft.hover;
-    const xy = pricePt ? toXY(pricePt) : null;
-    if (xy) {
-      const last = lastClosePrice();
-      ctx.strokeStyle = (last != null && pricePt.price >= last) ? DRAW_RES : DRAW_SUP;
-      ctx.beginPath();
-      ctx.moveTo(0, xy.y);
-      ctx.lineTo(canvas.width, xy.y);
-      ctx.stroke();
-    }
-  } else if (draft.type === "channel") {
-    if (pts.length >= 2) {
-      ctx.strokeStyle = "#5C4F38";
+    ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(124,58,237,0.75)";
+    ctx.font = "10px JetBrains Mono, monospace";
+    ctx.fillText(String(mark.ratio), xy.x + 3, 12);
+  });
+  const a = toXY(item.a, surf);
+  const b = toXY(item.b, surf);
+  if (a && b) {
+    ctx.strokeStyle = DRAW_FIB;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+function paintDrawOverlay() {
+  ["main", "ps"].forEach((key) => {
+    const s = drawSurface(key);
+    const canvas = s.overlay;
+    if (!canvas) return;
+    syncDrawOverlaySize(s);
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // committed fib-time verticals always visible when overlay is shown
+    try {
+      drawingsOf(s.ticker()).forEach((item) => {
+        if (item.type === "fibtime") paintFibTimeOverlay(ctx, canvas, s, item);
+      });
+    } catch (e) {}
+    if (drawActiveKey !== key) return;
+    const draft = drawDraft;
+    if (!draft || !draft.points || (!draft.points.length && !draft.hover)) return;
+    const pts = draft.points.concat(draft.hover ? [draft.hover] : []).map((p) => toXY(p, s)).filter(Boolean);
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 4]);
+    if (draft.type === "trend" && pts.length >= 1) {
+      ctx.strokeStyle = DRAW_TREND;
       ctx.beginPath();
       ctx.moveTo(pts[0].x, pts[0].y);
-      ctx.lineTo(pts[1].x, pts[1].y);
+      if (pts[1]) ctx.lineTo(pts[1].x, pts[1].y);
       ctx.stroke();
-    }
-    const third = draft.points[2] || draft.hover;
-    if (draft.points.length >= 2 && third) {
-      const built = buildChannelDrawing(draft.points[0], draft.points[1], third);
-      const up = [toXY(built.upperA), toXY(built.upperB)].filter(Boolean);
-      const dn = [toXY(built.lowerA), toXY(built.lowerB)].filter(Boolean);
-      if (up.length === 2) {
-        ctx.strokeStyle = DRAW_RES;
+    } else if (draft.type === "level") {
+      const pricePt = draft.points[0] || draft.hover;
+      const xy = pricePt ? toXY(pricePt, s) : null;
+      if (xy) {
+        const last = lastClosePrice(s);
+        ctx.strokeStyle = (last != null && pricePt.price >= last) ? DRAW_RES : DRAW_SUP;
         ctx.beginPath();
-        ctx.moveTo(up[0].x, up[0].y);
-        ctx.lineTo(up[1].x, up[1].y);
+        ctx.moveTo(0, xy.y);
+        ctx.lineTo(canvas.width, xy.y);
         ctx.stroke();
       }
-      if (dn.length === 2) {
-        ctx.strokeStyle = DRAW_SUP;
+    } else if (draft.type === "channel") {
+      if (pts.length >= 2) {
+        ctx.strokeStyle = "#5C4F38";
         ctx.beginPath();
-        ctx.moveTo(dn[0].x, dn[0].y);
-        ctx.lineTo(dn[1].x, dn[1].y);
+        ctx.moveTo(pts[0].x, pts[0].y);
+        ctx.lineTo(pts[1].x, pts[1].y);
         ctx.stroke();
       }
+      const third = draft.points[2] || draft.hover;
+      if (draft.points.length >= 2 && third) {
+        const built = buildChannelDrawing(draft.points[0], draft.points[1], third, s);
+        const up = [toXY(built.upperA, s), toXY(built.upperB, s)].filter(Boolean);
+        const dn = [toXY(built.lowerA, s), toXY(built.lowerB, s)].filter(Boolean);
+        if (up.length === 2) {
+          ctx.strokeStyle = DRAW_RES;
+          ctx.beginPath();
+          ctx.moveTo(up[0].x, up[0].y);
+          ctx.lineTo(up[1].x, up[1].y);
+          ctx.stroke();
+        }
+        if (dn.length === 2) {
+          ctx.strokeStyle = DRAW_SUP;
+          ctx.beginPath();
+          ctx.moveTo(dn[0].x, dn[0].y);
+          ctx.lineTo(dn[1].x, dn[1].y);
+          ctx.stroke();
+        }
+      }
+    } else if ((draft.type === "fibret" || draft.type === "fibtime") && pts.length >= 1) {
+      ctx.strokeStyle = DRAW_FIB;
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      if (pts[1]) ctx.lineTo(pts[1].x, pts[1].y);
+      ctx.stroke();
+      if (draft.type === "fibret" && pts.length >= 2) {
+        const a = draft.points[0];
+        const b = draft.points[1] || draft.hover;
+        if (a && b) {
+          fibPriceLevels(a, b, FIB_RET_RATIOS).forEach((lvl) => {
+            const y = toXY({ time: b.time, price: lvl.price }, s);
+            if (!y) return;
+            ctx.strokeStyle = roleColor(classifyLevel(lvl.price, s));
+            ctx.beginPath();
+            ctx.moveTo(0, y.y);
+            ctx.lineTo(canvas.width, y.y);
+            ctx.stroke();
+          });
+        }
+      }
+      if (draft.type === "fibtime" && draft.points[0] && (draft.points[1] || draft.hover)) {
+        paintFibTimeOverlay(ctx, canvas, s, { a: draft.points[0], b: draft.points[1] || draft.hover });
+      }
+    } else if (draft.type === "fibproj") {
+      ctx.strokeStyle = DRAW_FIB;
+      if (pts.length >= 2) {
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        ctx.lineTo(pts[1].x, pts[1].y);
+        ctx.stroke();
+      }
+      const c = draft.points[2] || draft.hover;
+      if (draft.points.length >= 2 && c) {
+        fibProjLevels(draft.points[0], draft.points[1], c, FIB_PROJ_RATIOS).forEach((lvl) => {
+          const y = toXY({ time: c.time, price: lvl.price }, s);
+          if (!y) return;
+          ctx.strokeStyle = roleColor(classifyLevel(lvl.price, s));
+          ctx.beginPath();
+          ctx.moveTo(0, y.y);
+          ctx.lineTo(canvas.width, y.y);
+          ctx.stroke();
+        });
+      }
     }
-  }
-  pts.forEach((p) => {
-    ctx.setLineDash([]);
-    ctx.fillStyle = "#1C1915";
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
-    ctx.fill();
+    pts.forEach((p) => {
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#1C1915";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
   });
 }
-function hitDrawing(pt) {
+function hitDrawing(pt, surf) {
   if (!pt) return null;
-  const list = drawingsOf(currentTicker);
+  const s = surf || activeDraw();
+  const list = drawingsOf(s.ticker());
   let best = null;
   let bestDist = 12;
   const dist = (a, b) => {
-    const pa = toXY(a);
-    const pb = toXY(b);
+    const pa = toXY(a, s);
+    const pb = toXY(b, s);
     if (!pa || !pb) return Infinity;
-    // distance from point to segment
     const x = pt.x, y = pt.y;
     const x1 = pa.x, y1 = pa.y, x2 = pb.x, y2 = pb.y;
     const dx = x2 - x1, dy = y2 - y1;
@@ -3858,17 +4171,11 @@ function hitDrawing(pt) {
     return Math.hypot(x - hx, y - hy);
   };
   list.forEach((item, index) => {
-    if (item.type === "trend") {
+    if (item.type === "trend" || item.type === "fibret" || item.type === "fibtime") {
       const d = dist(item.a, item.b);
-      if (d < bestDist) { bestDist = d; best = { index, item, kind: "trend" }; }
-      [["a", item.a], ["b", item.b]].forEach(([key, p]) => {
-        const xy = toXY(p);
-        if (!xy) return;
-        const dd = Math.hypot(pt.x - xy.x, pt.y - xy.y);
-        if (dd < bestDist) { bestDist = dd; best = { index, item, kind: "trend", handle: key }; }
-      });
+      if (d < bestDist) { bestDist = d; best = { index, item, kind: item.type }; }
     } else if (item.type === "level") {
-      const y = toXY({ time: pt.time, price: item.price });
+      const y = toXY({ time: pt.time, price: item.price }, s);
       if (y) {
         const d = Math.abs(pt.y - y.y);
         if (d < bestDist) { bestDist = d; best = { index, item, kind: "level" }; }
@@ -3878,30 +4185,35 @@ function hitDrawing(pt) {
       const d2 = dist(item.lowerA, item.lowerB);
       if (d1 < bestDist) { bestDist = d1; best = { index, item, kind: "channel", edge: "upper" }; }
       if (d2 < bestDist) { bestDist = d2; best = { index, item, kind: "channel", edge: "lower" }; }
+    } else if (item.type === "fibproj") {
+      const d = dist(item.a, item.b);
+      if (d < bestDist) { bestDist = d; best = { index, item, kind: "fibproj" }; }
+      const dc = toXY(item.c, s);
+      if (dc && Math.hypot(pt.x - dc.x, pt.y - dc.y) < bestDist) {
+        bestDist = Math.hypot(pt.x - dc.x, pt.y - dc.y);
+        best = { index, item, kind: "fibproj", handle: "c" };
+      }
     }
   });
   return best;
 }
 function finishDraft() {
   if (!drawDraft) return;
-  const list = drawingsOf(currentTicker);
+  const s = activeDraw();
+  const list = drawingsOf(s.ticker());
   if (drawDraft.type === "trend" && drawDraft.points.length >= 2) {
-    list.push({
-      id: "d" + Date.now(),
-      type: "trend",
-      a: drawDraft.points[0],
-      b: drawDraft.points[1],
-    });
+    list.push({ id: "d" + Date.now(), type: "trend", a: drawDraft.points[0], b: drawDraft.points[1] });
   } else if (drawDraft.type === "level" && drawDraft.points.length >= 1) {
     const price = drawDraft.points[0].price;
-    list.push({
-      id: "d" + Date.now(),
-      type: "level",
-      price,
-      role: classifyLevel(price),
-    });
+    list.push({ id: "d" + Date.now(), type: "level", price, role: classifyLevel(price, s) });
   } else if (drawDraft.type === "channel" && drawDraft.points.length >= 3) {
-    list.push(buildChannelDrawing(drawDraft.points[0], drawDraft.points[1], drawDraft.points[2]));
+    list.push(buildChannelDrawing(drawDraft.points[0], drawDraft.points[1], drawDraft.points[2], s));
+  } else if (drawDraft.type === "fibret" && drawDraft.points.length >= 2) {
+    list.push({ id: "d" + Date.now(), type: "fibret", a: drawDraft.points[0], b: drawDraft.points[1] });
+  } else if (drawDraft.type === "fibproj" && drawDraft.points.length >= 3) {
+    list.push({ id: "d" + Date.now(), type: "fibproj", a: drawDraft.points[0], b: drawDraft.points[1], c: drawDraft.points[2] });
+  } else if (drawDraft.type === "fibtime" && drawDraft.points.length >= 2) {
+    list.push({ id: "d" + Date.now(), type: "fibtime", a: drawDraft.points[0], b: drawDraft.points[1] });
   } else {
     return;
   }
@@ -3912,19 +4224,22 @@ function finishDraft() {
 }
 function onDrawPointerDown(event) {
   if (!DRAW_MODES.has(interactMode)) return;
-  const pt = pointFromEvent(event);
+  const key = event.currentTarget && event.currentTarget.id === "psDrawOverlay" ? "ps" : "main";
+  setDrawActive(key);
+  const s = activeDraw();
+  const pt = pointFromEvent(event, s);
   if (!pt) return;
   event.preventDefault();
   if (interactMode === "move") {
-    const hit = hitDrawing(pt);
+    const hit = hitDrawing(pt, s);
     if (!hit) return;
     if (event.detail === 2) {
-      drawingsOf(currentTicker).splice(hit.index, 1);
+      drawingsOf(s.ticker()).splice(hit.index, 1);
       saveDrawings();
       renderDrawings();
       return;
     }
-    drawDrag = { hit, start: pt, snapshot: JSON.parse(JSON.stringify(hit.item)) };
+    drawDrag = { hit, start: pt, snapshot: JSON.parse(JSON.stringify(hit.item)), surface: key };
     return;
   }
   if (!drawDraft || drawDraft.type !== interactMode) {
@@ -3935,42 +4250,45 @@ function onDrawPointerDown(event) {
   }
   paintDrawOverlay();
   if (interactMode === "level" && drawDraft.points.length >= 1) finishDraft();
-  else if (interactMode === "trend" && drawDraft.points.length >= 2) finishDraft();
-  else if (interactMode === "channel" && drawDraft.points.length >= 3) finishDraft();
+  else if ((interactMode === "trend" || interactMode === "fibret" || interactMode === "fibtime") && drawDraft.points.length >= 2) finishDraft();
+  else if ((interactMode === "channel" || interactMode === "fibproj") && drawDraft.points.length >= 3) finishDraft();
   else updateDrawHint();
 }
 function onDrawPointerMove(event) {
   if (!DRAW_MODES.has(interactMode)) return;
-  const pt = pointFromEvent(event);
+  const key = event.currentTarget && event.currentTarget.id === "psDrawOverlay" ? "ps" : "main";
+  if (!drawDrag) setDrawActive(key);
+  const s = activeDraw();
+  const pt = pointFromEvent(event, s);
   if (!pt) return;
   if (interactMode === "move" && drawDrag) {
     const dxPrice = pt.price - drawDrag.start.price;
     const item = drawDrag.hit.item;
     const snap = drawDrag.snapshot;
+    const bars = s.bars();
     const shiftPoint = (p) => {
-      const bars = candleData.bars[currentTicker] || [];
-      const i0 = barIndex(p.time);
-      const i1 = barIndex(pt.time);
-      const iStart = barIndex(drawDrag.start.time);
+      const i0 = barIndex(p.time, s);
+      const i1 = barIndex(pt.time, s);
+      const iStart = barIndex(drawDrag.start.time, s);
       const shift = i1 - iStart;
       const ni = Math.max(0, Math.min(bars.length - 1, i0 + shift));
       return { time: bars[ni].time, price: p.price + dxPrice };
     };
-    if (item.type === "trend") {
-      if (drawDrag.hit.handle === "a") item.a = { time: pt.time, price: pt.price };
-      else if (drawDrag.hit.handle === "b") item.b = { time: pt.time, price: pt.price };
-      else {
-        item.a = shiftPoint(snap.a);
-        item.b = shiftPoint(snap.b);
-      }
+    if (item.type === "trend" || item.type === "fibret" || item.type === "fibtime") {
+      item.a = shiftPoint(snap.a);
+      item.b = shiftPoint(snap.b);
     } else if (item.type === "level") {
       item.price = pt.price;
-      item.role = classifyLevel(item.price);
+      item.role = classifyLevel(item.price, s);
     } else if (item.type === "channel") {
       item.upperA = shiftPoint(snap.upperA);
       item.upperB = shiftPoint(snap.upperB);
       item.lowerA = shiftPoint(snap.lowerA);
       item.lowerB = shiftPoint(snap.lowerB);
+    } else if (item.type === "fibproj") {
+      item.a = shiftPoint(snap.a);
+      item.b = shiftPoint(snap.b);
+      item.c = shiftPoint(snap.c);
     }
     renderDrawings();
     return;
@@ -3993,20 +4311,34 @@ function onDrawPointerUp() {
     renderDrawings();
   }
 }
+function clearDrawingsForActive() {
+  const s = activeDraw();
+  drawingsByTicker[s.ticker() || ""] = [];
+  drawDraft = null;
+  saveDrawings();
+  renderDrawings();
+}
 (function bindDrawOverlay() {
-  const canvas = document.getElementById("drawOverlay");
-  if (!canvas || canvas.dataset.bound) return;
-  canvas.dataset.bound = "1";
-  canvas.addEventListener("pointerdown", onDrawPointerDown);
-  canvas.addEventListener("pointermove", onDrawPointerMove);
+  ["drawOverlay", "psDrawOverlay"].forEach((id) => {
+    const canvas = document.getElementById(id);
+    if (!canvas || canvas.dataset.bound) return;
+    canvas.dataset.bound = "1";
+    canvas.addEventListener("pointerdown", onDrawPointerDown);
+    canvas.addEventListener("pointermove", onDrawPointerMove);
+  });
   window.addEventListener("pointerup", onDrawPointerUp);
   const clearBtn = document.getElementById("btnClearDraw");
   if (clearBtn) {
     clearBtn.addEventListener("click", () => {
-      drawingsByTicker[currentTicker || ""] = [];
-      drawDraft = null;
-      saveDrawings();
-      renderDrawings();
+      setDrawActive("main");
+      clearDrawingsForActive();
+    });
+  }
+  const clearPs = document.getElementById("btnPsClearDraw");
+  if (clearPs) {
+    clearPs.addEventListener("click", () => {
+      setDrawActive("ps");
+      clearDrawingsForActive();
     });
   }
   updateDrawHint();
@@ -6042,7 +6374,11 @@ function resizeAllCharts() {
   if (rsiStochChart && rsiStochChartEl) rsiStochChart.applyOptions(Object.assign(chartBase(paneH), { width: rsiStochChartEl.clientWidth, height: rsiStochChartEl.clientHeight || paneH }));
   if (rsxChart && rsxChartEl) rsxChart.applyOptions(Object.assign(chartBase(paneH), { width: rsxChartEl.clientWidth, height: rsxChartEl.clientHeight || paneH }));
   if (haChart && haChartEl) haChart.applyOptions(Object.assign(chartBase(haH), { width: haChartEl.clientWidth, height: haChartEl.clientHeight || haH }));
-  try { syncDrawOverlaySize(); paintDrawOverlay(); } catch (e) {}
+  try {
+    syncDrawOverlaySize(drawSurface("main"));
+    syncDrawOverlaySize(drawSurface("ps"));
+    paintDrawOverlay();
+  } catch (e) {}
 }
 
 function showTicker(ticker) {
@@ -6050,7 +6386,7 @@ function showTicker(ticker) {
   Object.entries(buttons).forEach(([name, button]) => button.classList.toggle("active", name === ticker));
   clearTrackedPriceLines();
   clearIndicatorOverlays();
-  try { clearDrawSeriesBag(); drawDraft = null; } catch (e) {}
+  try { clearDrawSeriesBag(drawSurface("main")); drawDraft = null; } catch (e) {}
   const bars = candleData.bars[ticker] || [];
   refreshHeadBadges(ticker, bars);
   const rows = eventsOf(ticker);
@@ -6702,6 +7038,15 @@ function ensurePsScreen() {
     psWatchRange(psStockChart);
     psBindCrosshair(psCandleChart);
     psBindCrosshair(psStockChart);
+    if (!psCandleChart.__drawPaint) {
+      psCandleChart.__drawPaint = true;
+      psCandleChart.timeScale().subscribeVisibleLogicalRangeChange(() => {
+        try {
+          syncDrawOverlaySize(drawSurface("ps"));
+          paintDrawOverlay();
+        } catch (e) {}
+      });
+    }
   } else {
     psCandleChart.applyOptions(Object.assign(chartBase(380), psChartHands()));
     psStockChart.applyOptions(Object.assign(chartBase(210), psChartHands()));
@@ -6764,6 +7109,11 @@ function drawPsScreen() {
     note.textContent = `${psVerdictWhy(paper, verdict)}${issuer}${extra}`;
   }
   drawPsStudies();
+  try {
+    syncDrawOverlaySize(drawSurface("ps"));
+    renderDrawingsOn(drawSurface("ps"));
+    paintDrawOverlay();
+  } catch (e) {}
 }
 function selectPs(ticker, scrollUp) {
   const paper = psFind(ticker);
